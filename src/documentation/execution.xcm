@@ -1,0 +1,19 @@
+metadata
+    Title : Model Execution Subsystem
+    Author : Leon Starr
+    Document ID : mint.modelx.td.1
+    Version : 0.1.0
+    Creation date : February 15, 2025
+    Modification date : February 15, 2025
+    Organization : Model Integration, LLC / www.modelint.com
+    Copyright notice > MIT
+    Organization logo > mint
+domain Model Execution, MODELX
+subsystem Model Execution, MODELX 1-99
+class Instance State Machine
+attributes
+    Floor : Level Name {I, R3}
+    Shaft : Shaft ID {I, R3}
+    Bank : Bank Name {R3c}
+    Stop requested : Boolean
+--
