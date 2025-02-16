@@ -1,19 +1,134 @@
 metadata
     Title : Model Execution Subsystem
     Author : Leon Starr
-    Document ID : mint.modelx.td.1
+    Document ID : mint.sm-meta.td.18
     Version : 0.1.0
     Creation date : February 15, 2025
     Modification date : February 15, 2025
     Organization : Model Integration, LLC / www.modelint.com
     Copyright notice > MIT
     Organization logo > mint
-domain Model Execution, MODELX
-subsystem Model Execution, MODELX 1-99
+domain Metamodel, METAMODEL
+subsystem Execution, X 1800-1899
+class Activity <import:Activity>
+attributes
+    Activity {I}
+    Domain {I}
+--
+class Class <import:Class Attribute>
+attributes
+    Name {I}
+    Domain {I}
+--
+class Dispatched Event
+attributes
+    ID : Dispatch ID {I}
+    Effective Event : Event Name {R1809}
+    State Model : State Model Name {R1809}
+    Domain : Domain Name {R1809}
+--
+class Effective Event <import:Event>
+attributes
+    Name {I}
+    State model {I}
+    Domain {I}
+--
+class Instance
+attributes
+    ID : Instance ID {I}
+    Class : Class Name {I, R1801}
+    Domain : Domain Name {I, R1801}
+--
 class Instance State Machine
 attributes
-    Floor : Level Name {I, R3}
-    Shaft : Shaft ID {I, R3}
-    Bank : Bank Name {R3c}
-    Stop requested : Boolean
+    ID {I, R1804}
+    Domain : Domain Name {I, I2, R1800, R1802, R1804}
+    Instance : Instance ID {I2, R1802}
+    Class : Class Name {I2, R1800, R1802}
+    Current state : State Name {I, R1800}
+--
+class Multiple Assigner <import:State>
+attributes
+    Rnum {I}
+    Domain {I}
+--
+class Multiple Assigner State Machine
+attributes
+    ID : State Machine ID {I, R1804}
+    Domain : Domain Name {I, I2, R1803, R1804}
+    Rnum : Relationship Number {I2, R1803}
+    Instance : Instance ID {I2, R1803}
+--
+class Real State <import:State>
+attributes
+    Name {I}
+    State model {I}
+    Domain {I}
+--
+class Self Directed Event
+attributes
+    ID : Dispatch ID {I, R1809}
+    Effective Event : Event Name {R1810}
+    State Model : State Model Name {R1810}
+    Domain : Domain Name {R1810}
+--
+class Single Assigner <import:State>
+attributes
+    Rnum {I}
+    Domain {I}
+--
+class Single Assigner State Machine
+attributes
+    ID : State Machine ID {I, R1804}
+    Domain : Domain Name {I, I2, R1803, R1804}
+    Rnum : Relationship Number {I2, R1803}
+--
+class State Machine
+attributes
+    ID : State Machine ID {I}
+    Domain : Domain Name {I}
+    Current state : State Name {R1800}
+--
+relationships
+    R1801
+    populates, 1 Class
+    is populated with, Mc Instance
+    Instance.(Class, Domain) -> Class.(Name, Domain)
+--
+    R1802
+    drives behavior of, 1 Instance
+    has behavior driven by, 1c Instance State Machine
+    Instance State Machine.(Instance, Class, Domain) -> Instance.(ID, Class, Domain)
+--
+    R1803
+    assigns within parition of, 1 Instance
+    is assignment parition for, Mc Assigner State Machine
+    Instance State Machine.(Instance, Class, Domain) -> Instance.(ID, Class, Domain)
+--
+    R1804
+    State Machine +
+        Instance State Machine
+        Assigner State Machine
+    <subclass>.(ID, Domain) -> State Machine.(ID, Domain)
+--
+    R1805
+    is current state of, Mc State Machine
+    is in, 1 Real State
+    State Machine.(Current state, State model, Domain) -> Real State.(Name, State model, Domain)
+--
+    R1806
+    drives behavior of, 1 Single Assigner
+    has behavior driven by, Mc Single Assigner State Machine
+    Single Assigner State Machine.(Rnum, Domain) -> Single Assigner.(Rnum, Domain)
+--
+    R1807
+    drives behavior of, 1 Multiple Assigner
+    has behavior driven by, Mc Multiple Assigner State Machine
+    Multiple Assigner State Machine.(Rnum, Domain) -> Multiple Assigner.(Rnum, Domain)
+--
+    R1808
+    Dispatched Event +
+        Self Directed Event
+        Non Self Directed Event
+    <subclass>.(ID, Domain) -> State Machine.(ID, Domain)
 --

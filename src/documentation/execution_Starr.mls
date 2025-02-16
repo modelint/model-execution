@@ -1,12 +1,31 @@
 diagram class
 notation Starr
-presentation blueprint
+presentation default
 orientation landscape
-color blueprint
+color butterscotch
 sheet A1
 padding l150 b300
 frame Model Integration Diagram
-frame_presentation blueprint
+frame_presentation default
 nodes
-
+    Dispatched Event
+    Non Self Directed Event/2
+    Self Directed Event/2
+    Single Assigner 6,4
+    Multiple Assigner 4-5,4
+    Single Assigner State Machine/2 6,7
+    Multiple Assigner State Machine/2 4,7
+    Class 11,2
+    Instance 8,2
+    State Machine 5,9
+    Instance State Machine/2 8,6-7
+    Real State 5,11
+//    Effective Event
 connectors
+    +R1801 : -/1 b|Class : -/1 t*|Instance
+    +R1802 : -/1 r|Instance : -/2 l*|Instance State Machine
+    +R1803 : -/1 l-2|Multiple Assigner State Machine : -/2 b|Instance
+    -R1804 : l|State Machine { r|Instance State Machine, r|Single Assigner State Machine, r|Multiple Assigner State Machine }
+    +R1805 : -/1 r|State Machine : -/1 l*|Real State
+    +R1806 : -/1 l|Single Assigner State Machine : -/2 r*|Single Assigner
+    +R1807 : -/1 l+2|Multiple Assigner State Machine : -/2 r*|Multiple Assigner
