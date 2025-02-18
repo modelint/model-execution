@@ -1,0 +1,76 @@
+metadata
+    Title : State Machine
+    Author : Leon Starr
+    Document ID : mint.meta.ego.td.19
+    Creation date : Feburary 17, 2025
+    Modification date : Feburary 17, 2025
+    Version : 0.1.0
+    Organization : Model Integration, LLC / www.modelint.com
+    Copyright notice > MIT
+    Organization logo > mint
+domain Metamodel
+class State Machine
+events
+    New input
+    No event from self
+    Process active event
+    Event ignored
+    No events
+    Transition response
+    Enter state
+    Ignore response
+    No response
+    Activity complete
+--
+state WAITING FOR EVENT
+activity
+transitions
+    New input > Event from self?
+--
+state Event from self?
+activity
+    // Check for event from self
+transitions
+    No event from self > Non self event?
+    Process active event > Determine response
+--
+state Non self event?
+activity
+    // Check for non self directed event
+transitions
+    No events > WAITING FOR EVENT
+    Process active event > Determine response
+--
+state Determine response
+activity
+    // Determine response
+transitions
+    Transition response > EXECUTING ACTIVITY
+    Ignore response > Ignore
+    No response > CANT HAPPEN
+--
+state EXECUTING ACTIVITY
+activity
+    // Update current state
+    // Trigger Activity -> state's activity
+transitions
+    Activity complete > Event from self?
+--
+state Transition
+activity
+    // Update current state
+    Enter state -> me
+transitions
+    Enter state > EXECUTING ACTIVITY
+--
+state Ignore
+activity
+    // Update current state
+    Event ignored > me
+transitions
+    Event ignored > Event from self?
+--
+state CANT HAPPEN
+activity
+    // Report error
+--

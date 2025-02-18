@@ -4,16 +4,18 @@ metadata
     Document ID : mint.sm-meta.td.18
     Version : 0.1.0
     Creation date : February 15, 2025
-    Modification date : February 15, 2025
+    Modification date : February 17, 2025
     Organization : Model Integration, LLC / www.modelint.com
     Copyright notice > MIT
     Organization logo > mint
 domain Metamodel, METAMODEL
 subsystem Execution, X 1800-1899
-class Activity <import:Activity>
+class Active Event
 attributes
-    Activity {I}
-    Domain {I}
+    Event : Dispatch ID {I, R1812}
+    State machine : State Machine ID {I2, R1812}
+    Domain : Domain Name {I, I2, R1812}
+    Response : Event Response
 --
 class Class <import:Class Attribute>
 attributes
@@ -23,9 +25,11 @@ attributes
 class Dispatched Event
 attributes
     ID : Dispatch ID {I}
-    Effective Event : Event Name {R1809}
-    State Model : State Model Name {R1809}
-    Domain : Domain Name {R1809}
+    State machine : State Machine ID {I, R1809}
+    Effective event : Event Name {R1810}
+    State model : State Model Name {R1810}
+    Domain : Domain Name {I, R1809, R1810}
+    Arrival time : Time
 --
 class Effective Event <import:Event>
 attributes
@@ -59,6 +63,21 @@ attributes
     Rnum : Relationship Number {I2, R1803}
     Instance : Instance ID {I2, R1803}
 --
+class Non Self Directed Event
+attributes
+    ID : Dispatch ID {I, R1808}
+    Domain : Domain Name {I, R1808}
+    State machine : State Machine ID {I, R1808}
+--
+class Parameter <import:Activity>
+attributes
+    Name {I}
+    Signature {I, R828}
+    Domain {I, I2, R828, R827, R833}
+    Input flow {I2, R833}
+    Activity {I2, R833}
+    Type {R827}
+--
 class Real State <import:State>
 attributes
     Name {I}
@@ -67,10 +86,9 @@ attributes
 --
 class Self Directed Event
 attributes
-    ID : Dispatch ID {I, R1809}
-    Effective Event : Event Name {R1810}
-    State Model : State Model Name {R1810}
-    Domain : Domain Name {R1810}
+    ID : Dispatch ID {I, R1808}
+    Domain : Domain Name {I, I2, R1808}
+    Order : Ordinal {I2, OR1811}
 --
 class Single Assigner <import:State>
 attributes
@@ -88,6 +106,14 @@ attributes
     ID : State Machine ID {I}
     Domain : Domain Name {I}
     Current state : State Name {R1800}
+--
+class Supplied Parameter Value
+attributes
+    Event : Dispatch ID {I, R1813}
+    State machine : State Machine ID {I, R1813}
+    Domain : Domain Name {I, R1813}
+    Parameter : Parameter Name {I, R1813}
+    State signature : Signature Number {I, R1813}
 --
 relationships
     R1801
@@ -130,5 +156,33 @@ relationships
     Dispatched Event +
         Self Directed Event
         Non Self Directed Event
-    <subclass>.(ID, Domain) -> State Machine.(ID, Domain)
+    <subclass>.(ID, State machine ID, Domain) -> Dispatched Event.(ID, State machine ID, Domain)
+--
+    R1809
+    is delivered to, 1 State Machine
+    has received, Mc Dispatched Event
+    Dispatched Event.(State machine, Domain) -> State Machine.(ID, Domain)
+--
+    R1810
+    is defined by, 1 Effective Event
+    defines, Mc Dispatched Event
+    Dispatched Event.(Effective event, State model, Domain) -> Effective Event.(Name, State model, Domain)
+--
+    OR1811
+    before / after, Self Directed Event
+    Order : I2
+--
+    R1812
+    is processing, 1c Dispatched Event
+    is being processed by, 1c State Machine
+    1 Active Event
+    Active Event.(State machine, Domain) -> State Machine.(ID, Domain)
+    Active Event.(Event, State machine, Domain) -> Dipatched Event.(ID, State machine Domain)
+--
+    R1813
+    supplies value for, Mc Parameter
+    defines value in, Mc Dispatched Event
+    1 Parameter Value
+    Supplied Parameter Value.(Event, State machine, Domain) -> Dispatched Event.(ID, State machine, Domain)
+    Supplied Parameter Value.(Parameter, State signature, Domain) -> Parameter.(Name, Signature, Domain)
 --
