@@ -2,14 +2,20 @@ metadata
     Title : Model Execution Subsystem
     Author : Leon Starr
     Document ID : mint.sm-meta.td.18
-    Version : 0.1.0
+    Version : 0.2.0
     Creation date : February 15, 2025
-    Modification date : February 17, 2025
+    Modification date : February 18, 2025
     Organization : Model Integration, LLC / www.modelint.com
     Copyright notice > MIT
     Organization logo > mint
 domain Metamodel, METAMODEL
 subsystem Execution, X 1800-1899
+class Activity Execution
+attributes
+    Activity {I, R1815}
+    Domain {I, I2, R1815}
+    State machine {I2, R1815}
+--
 class Active Event
 attributes
     Event : Dispatch ID {I, R1812}
@@ -17,10 +23,22 @@ attributes
     Domain : Domain Name {I, I2, R1812}
     Response : Event Response
 --
+class State Activity <import:Activity>
+attributes
+    Activity {I}
+    Domain {I}
+--
 class Class <import:Class Attribute>
 attributes
     Name {I}
     Domain {I}
+--
+class Destination State
+attributes
+    State machine {I, R1814}
+    Domain {I, R1814}
+    Name {R1814}
+    State model {R1814}
 --
 class Dispatched Event
 attributes
@@ -185,4 +203,18 @@ relationships
     1 Parameter Value
     Supplied Parameter Value.(Event, State machine, Domain) -> Dispatched Event.(ID, State machine, Domain)
     Supplied Parameter Value.(Parameter, State signature, Domain) -> Parameter.(Name, Signature, Domain)
+--
+    R1814
+    will transition to, 1c Real State
+    is next state of, Mc State Machine
+    1 Destination State
+    Destination State.(State machine, Domain) -> State Machine.(ID, Domain)
+    Destination State.(Name, State model, Domain) -> Real State.(Name, State model, Domain)
+--
+    R1815
+    is executing, 1c State Activity
+    is being executed by, 1c State Machine
+    1 Activity Execution
+    Activity Execution.(State machine, Domain) -> State Machine.(ID, Domain)
+    Activity Execution.(Activity, Domain) -> State Activity.(Activity, Domain)
 --
