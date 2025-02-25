@@ -36,6 +36,7 @@ class Schema:
         Database.open_session(name=self.user)  # User model created in this database
         self.load_metamodel()
         self.build_class_relvars()
+        self.build_rels()
 
     def load_metamodel(self):
         """ Let's load and print out the metamodel database """
@@ -44,11 +45,29 @@ class Schema:
         # Print out the populated metamodel
         Relvar.printall(db=self.db)
 
+    def build_rels(self):
+        """
+        Create constraints for referential attributes for all generalization and association relationships
+        """
+        # Simple associations
+        # Get rnums from Association class
+        # Subtract from all rnums in Association
+        R = f"Domain:<{self.domain}>"
+        Relation.restrict(db=self.db, relation='Association', restriction=R, svar_name='assocs')
+        Relation.project(db=self.db, attributes=('Rnum',), svar_name='assocs')
+        Relation.restrict(db=self.db, relation='Association_Class', restriction=R, svar_name='aclasses')
+        result = Relation.project(db=self.db, attributes=('Rnum',), svar_name='aclasses')
+        assoc_rnums = [r['Rnum'] for r in result.body]
+        result = Relation.subtract(db=self.db, rname2='aclasses', rname1='assocs')
+        non_assoc_rnums = [r['Rnum'] for r in result.body]
+        result = Relation.restrict(db=self.db, relation='Generalization', restriction=R)
+        gen_rnums = [r['Rnum'] for r in result.body]
+
+        pass
+
     def build_class_relvars(self):
         """
         Create class relvars
-
-        :return:
         """
         # Load the user to system types.yaml file
         user_types = load_yaml(self.types_filename)
@@ -85,8 +104,8 @@ class Schema:
             Relvar.create_relvar(db=self.user, name=cname, attrs=attr_list, ids=ids)
 
         # Print out the populated metamodel
-        print("\nUser model\n-----")
-        Relvar.printall(db=self.user)
+        # print("\nUser model\n-----")
+        # Relvar.printall(db=self.user)
         pass
 
 
