@@ -12,6 +12,9 @@ from pyral.relvar import Relvar
 from pyral.relation import Relation
 from pyral.rtypes import Attribute, Mult
 
+# Model Execution
+from model_execution.scenario import Scenario
+
 # Here is a mapping from metamodel multiplcity notation to that used by the target TclRAL tclral
 # When interacting with PyRAL we must supply the tclral specific value
 mult_tclral = {
@@ -32,7 +35,7 @@ class Schema:
     TclRAL schema a domain's class model
     """
 
-    def __init__(self, filename: str, domain: str, types: Path):
+    def __init__(self, filename: str, domain: str, types: Path, scenario: Path):
 
         self.ordinal_rnums = None
         self.gen_rnums = None
@@ -54,6 +57,7 @@ class Schema:
         self.build_simple_assocs()
         self.build_associative_rels()
         self.build_gen_rels()
+        s = Scenario(scenario_file=scenario)
         pass
 
     def build_gen_rels(self):

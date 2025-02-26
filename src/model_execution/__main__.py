@@ -28,6 +28,8 @@ def parse(cl_input):
                         help='Name of the populated metamodel database text file produced by xuml-populate')
     parser.add_argument('-dom', '--domain', action='store',
                         help='Name of the domain to build')
+    parser.add_argument('-s', '--scenario', action='store',
+                        help='Name of the scenario *.sip file to load')
     parser.add_argument('-types', action='store', help='This yaml file maps user model attribute types '
                                                        'to system types. No need to specify .yaml extension')
     # parser.add_argument('-D', '--debug', action='store_true',
@@ -54,7 +56,7 @@ def main():
 
     # Domain specified
     if args.database:
-        domain_schema = Schema(filename=args.database, domain=args.domain, types=Path(args.types))
+        domain_schema = Schema(filename=args.database, domain=args.domain, types=Path(args.types), scenario=args.scenario)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
     print("\nNo problemo")
