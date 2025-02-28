@@ -7,10 +7,10 @@ import logging.config
 import sys
 import argparse
 from pathlib import Path
-from model_execution.schema import Schema
-from model_execution import version
+from mx.schema import Schema
+from mx import version
 
-_logpath = Path("model_execution.log")
+_logpath = Path("mx.log")
 _progname = 'Blueprint Model Execution'
 
 
