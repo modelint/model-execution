@@ -54,24 +54,43 @@ class Scenario:
                     # The column is an attribute, just add it directly to the expanded header
                     # We need to delimit with underscores instead of spaces for database insertion
                     expanded_header.append(col.replace(' ', '_'))
-                elif isinstance(col, list):  # It must be a list of dictionary describing a reference
+                elif isinstance(col, list):  # It must be a list of dictionaries describing a reference
                     for ref in col:
-                        rnum = ref['rnum']
-                        to_class = ref['to class']
+                        # Since an attribute may participate in more than one relationship
+                        # there may be multiple references in the same column, for example:
+                        #    R38>Bank Level, R5>Bank
+                        # is parsed into two components
+                        rnum = ref['rnum']  # The rnum on this reference
+                        to_class = ref['to class']  # Refering to some target attribute in this class
+                        # Lookup the attribute reference in the metamodel
                         R = f"Rnum:<{rnum}>, From_class:<{class_name}>, To_class:<{to_class}>, Domain:<{self.domain}>"
                         Relation.restrict(db=mmdb, relation='Attribute_Reference', restriction=R, svar_name='ra')
                         result = Relation.project(db=mmdb, attributes=('From_attribute','To_attribute'), svar_name='ra')
+                        if not result.body:
+                            msg = f"Initial instance ref expansion: No attribute references defined for{R}"
+                            _logger.exception(msg)
+                            raise MXInitialInstanceReferenceException(msg)
+                        # We already know the rnum, from class (class_name) and to class, so we just need a projection
+                        # on the local attribute and where the attribute in the target class
                         for attr_ref in result.body:
+                            # A reference can consist of multiple attributes, so we process each one
                             from_attr = attr_ref['From_attribute']
                             to_attr = attr_ref['To_attribute']
+                            # Add a dictionary entry so that we can lookup up referenced values
                             ref_path[to_class] = AttrRef(from_attr=from_attr, to_attr=to_attr, to_class=to_class)
+                            # Add the from attribute to our expanded header
                             if from_attr not in expanded_header:
+                                # It might already be there if the same attribute participates in more than one
+                                # relationship. If so, we only need one value anyway, so add the from attr only
+                                # if it isn't already in the header.
                                 expanded_header.append(from_attr)
                 else:
                     msg = f"Unrecognized column format in initial instance parse: [{col}]"
                     _logger.exception(msg)
                     raise MXException(msg)
 
+            # Now that the relation header for our instance population is created, we need to fill in the relation
+            # body (the actual instance values corresponding to each attribute in the expanded header)
             for irow in i_spec.population:
                 row_dict = dict()
                 for index, attr in enumerate(expanded_header):
