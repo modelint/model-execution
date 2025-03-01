@@ -45,7 +45,6 @@ class Scenario:
 
         # Process each class (c) and its initial instance specification (i)
         for class_name, i_spec in self.pop.items():
-            alias_index = dict()
             expanded_header = []  # A list of attributes with any references expanded to from_attributes
             instance_tuples = []  # The expanded instance tuples including values for the from_attributes
             ref_path = dict()  # Each
@@ -73,13 +72,10 @@ class Scenario:
                             raise MXInitialInstanceReferenceException(msg)
                         # We already know the rnum, from class (class_name) and to class, so we just need a projection
                         # on the local attribute and where the attribute in the target class
-                        # exp_col_position = len(expanded_header)
-                        # ref_path[len(expanded_header)] = []
                         for attr_ref in result.body:
                             # A reference can consist of multiple attributes, so we process each one
                             from_attr = attr_ref['From_attribute']
                             to_attr = attr_ref['To_attribute']
-                            # alias_index[from_attr] = alias_position
                             # Add a dictionary entry so that we can lookup up referenced values
                             ref_path[len(expanded_header)] = AttrRef(from_attr=from_attr, to_attr=to_attr,
                                                                       to_class=to_class, alias=col_position)
@@ -107,7 +103,6 @@ class Scenario:
                         # If there is no matching key for the attribute in the ref_path, it means that
                         # this was not a reference that got expanded.  So we simply assign the value
                         # from the parsed population to the corressponding attribute in the expanded header
-                        # row_dict[attr.replace(' ','_')] = irow['row'][index]
                         row_dict[attr.replace(' ','_')] = irow['row'][irow_col]
                     else:
                         if not in_ref:
@@ -123,11 +118,9 @@ class Scenario:
                         #     P { [Penthouse] [4.0] [2.0] [25] [7.0] [9.0] }
                         #
                         ref = ref_path[index]
-                        # alias_position = alias_index[attr]
                         alias = irow['row'][ref.alias]['ref to']  # The alias 'P' in the above example
                         # Get the population of the referenced class
                         target_pop = self.pop[ref.to_class]
-                        # target_pop = self.pop[ref_path[attr].to_class]
                         # Get index of referenced value
                         to_attr_index = target_pop.header.index(ref.to_attr)
                         # Now search through the target population looking for the instance named by the alias
