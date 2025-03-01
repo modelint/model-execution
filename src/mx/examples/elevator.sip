@@ -84,18 +84,18 @@ FP1  { [Freight]      [P1] }
 FP2  { [Freight]      [P2] }
 --
 Top Bank Level
-R38>Bank Level, R5>Bank | Calling down
+R38>Bank Level | Calling down
 --
-{ @PPH @P [false] }
-{ @LF7 @L [false] }
-{ @FPH @F [false] }
+{ @PPH [false] }
+{ @LF7 [false] }
+{ @FPH [false] }
 --
 Bottom Bank Level
-R38>Bank Level, R6>Bank | Calling up
+R38>Bank Level | Calling up
 --
-{ @PP1  @P [false] }
-{ @LFP2 @L [false] }
-{ @FP2  @F [false] }
+{ @PP1  [false] }
+{ @LFP2 [false] }
+{ @FP2  [false] }
 --
 Middle Bank Level
 R38>Bank Level | Calling down | Calling up
