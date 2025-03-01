@@ -1,5 +1,12 @@
 scenario : Simple Elevator
 --
+Bank
+Name | Passenger load time | Block clear time | Max close attempts | Average cabin speed | Average stop duration
+--
+L { [Lower]     [4.0] [2.0] [25] [7.0] [9.0] }
+P { [Penthouse] [4.0] [2.0] [25] [7.0] [9.0] }
+F { [Freight]   [7.0] [5.0] [25] [5.0] [14.0] }
+--
 Top Bank Level
 R38>Bank Level | Calling down
 --
@@ -26,13 +33,6 @@ Shaft | Close attempts | Lock requested | Held | Blocked | Emergency hold
 { [S4] [0] [false] [false] [false] [false] }
 { [S5] [0] [false] [false] [false] [false] }
 { [S6] [0] [false] [false] [false] [false] }
---
-Bank
-Name | Passenger load time | Block clear time | Max close attempts | Average cabin speed | Average stop duration
---
-L { [Lower]     [4.0] [2.0] [25] [7.0] [9.0] }
-P { [Penthouse] [4.0] [2.0] [25] [7.0] [9.0] }
-F { [Freight]   [7.0] [5.0] [25] [5.0] [14.0] }
 --
 Cabin
 Shaft | Travel direction | Current floor

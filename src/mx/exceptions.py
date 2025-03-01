@@ -13,3 +13,7 @@ class MXScenarioException(MXException):
 class MXInitialInstanceReferenceException(MXScenarioException):
     """ Error processing initial instance reference in scenario specification """
     pass
+
+class MXScalarException(MXScenarioException):
+    """ Error processing initial instance user type in scenario specification """
+    pass

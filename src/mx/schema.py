@@ -42,6 +42,7 @@ class Schema:
         self.gen_rnums = None
         self.non_assoc_rnums = None
         self.assoc_rnums = None
+        self.user_types = None
 
         self.name = "cm_schema"
         self.types_filename = str(types.name) + '.yaml'
@@ -56,7 +57,7 @@ class Schema:
         self.build_simple_assocs()
         self.build_associative_rels()
         self.build_gen_rels()
-        s = Scenario(scenario_file=scenario, domain=self.domain)
+        s = Scenario(scenario_file=scenario, domain=self.domain, dbtypes=self.user_types)
         pass
 
     def build_gen_rels(self):
@@ -188,13 +189,12 @@ class Schema:
         result = Relation.restrict(db=mmdb, relation='Ordinal_Relationship', restriction=R)
         self.ordinal_rnums = [r['Rnum'] for r in result.body]
 
-
     def build_class_relvars(self):
         """
         Create class relvars
         """
         # Load the user to system types.yaml file
-        user_types = load_yaml(self.types_filename)
+        self.user_types = load_yaml(self.types_filename)
 
         R = f"Domain:<{self.domain}>"
         Relation.restrict(db=mmdb, relation='Class', restriction=R, svar_name='classes')
@@ -214,10 +214,8 @@ class Schema:
             result = Relation.project(db=mmdb, attributes=('Name', 'Scalar'), svar_name='attrs')
             attrs = result.body
 
-            attr_list = [Attribute(name=a['Name'], type=user_types[a['Scalar']]) for a in attrs]
+            attr_list = [Attribute(name=a['Name'], type=self.user_types[a['Scalar']]) for a in attrs]
 
-
-            # attr_list = [a['Name'].replace(" ", "_") for a in attrs]
             id_dict = defaultdict(list)
 
             for i in id_attrs:

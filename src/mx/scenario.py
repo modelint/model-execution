@@ -4,6 +4,7 @@
 from pathlib import Path
 from collections import namedtuple
 import logging
+from typing import Dict
 
 # Model Integration
 from sip_parser.parser import SIParser
@@ -19,11 +20,13 @@ AttrRef = namedtuple('AttrRef', 'from_attr to_attr to_class alias')
 
 _logger = logging.getLogger(__name__)
 
+tcl_to_python = { 'string': str, 'boolean': bool, 'double': float, 'int': int }
+
 pop_scenario = 'pop'  # Name of transaction that loads the schema
 
 class Scenario:
 
-    def __init__(self, scenario_file: Path, domain: str):
+    def __init__(self, scenario_file: Path, domain: str, dbtypes=Dict[str, str]):
         """
         We see that there is an R1 ref.  We need to find the target attributes and class
         The metamodel gives us Shaft.Bank -> Bank.Name
@@ -35,10 +38,12 @@ class Scenario:
         And, at this point, we are building the relation.create command
         When we get all the values, we commit and move on to the next instance
 
-        :param scenario_file:
-        :param domain:
+        :param scenario_file:  The path to the *.sip file providing the intial instance population
+        :param domain:  The subject matter domain being populated
+        :param dbtypes: The actual TclRAL types used to represent user model types
         """
         self.domain = domain
+        self.dbtypes = dbtypes
 
         # Parse the scenario's initial population file (*.sip file)
         parse_result = SIParser.parse_file(file_input=scenario_file, debug=False)
@@ -109,7 +114,11 @@ class Scenario:
                         # If there is no matching key for the attribute in the ref_path, it means that
                         # this was not a reference that got expanded.  So we simply assign the value
                         # from the parsed population to the corresponding attribute in the expanded header
-                        row_dict[attr.replace(' ', '_')] = irow['row'][irow_col]
+                        attr_value = irow['row'][irow_col]  # This will be a string
+                        # Cast it to the appropriate TclRAL type for db insertion
+                        cast_attr_value = self.cast_to_dbtype(attr_name=attr, attr_class=class_name, value=attr_value)
+                        row_dict[attr.replace(' ', '_')] = cast_attr_value  # We can't have spaces in relvar names
+                        irow_col = irow_col + 1  # Increment column position
                     else:
                         if not in_ref:
                             # We are beginning to process a reference, so we want to advance the position
@@ -139,7 +148,8 @@ class Scenario:
                         # And then grab the value in that row corresponding to the to_attr_index
                         ref_value = referenced_i[to_attr_index]
                         # And now add the key value pair of referencing attr and target value to our row of values
-                        row_dict[ref.from_attr] = ref_value
+                        cast_ref_value = self.cast_to_dbtype(attr_name=attr, attr_class=class_name, value=ref_value)
+                        row_dict[ref.from_attr] = cast_ref_value
                 instance_tuples.append(row_dict)  # Add the completed row of attr values to our relation
 
             # Now we are ready to create the structure we need to insert into the class relvar in the user db
@@ -153,6 +163,36 @@ class Scenario:
                 table.append(drow)
             self.relations[class_name] = table
         self.insert()
+
+    def cast_to_dbtype(self, attr_name: str, attr_class: str, value: str) -> int | str | float | bool:
+        """
+        Casts a string value to a python type (int, str, ...) that correponds to a TclRAL type that
+        is used to represent the Scalar defined in the user model.
+
+        Looks up the Scalar associated with the supplied attribute. This is the type specified in the user
+        model such as 'Bank Name', 'Duration', etc.
+
+        Consults the user model Scalar -> TclRAL type mapping to determine which type to use in the user db.
+        These are low level system types that TclRAL supports like 'string', 'int', 'boolean', etc.
+
+        :param attr_name: Name of the user model attribute
+        :param attr_class: Name of the attribute's class
+        :param value: The value to be cast
+        :return: The TclRAL type used to represent the Scalar
+        """
+        # Look up the user type in the populated metamodel
+
+        R = f"Class:<{attr_class}>, Name:<{attr_name}>, Domain:<{self.domain}>"
+        result = Relation.restrict(db=mmdb, relation='Attribute', restriction=R)
+        if not result.body:
+            msg = f"No Scalar found in populated metamodel for attribute [{self.domain}:{attr_class}.{attr_name}]"
+            _logger.exception(msg)
+            raise MXScalarException(msg)
+        scalar = result.body[0]['Scalar']
+        dbtype = self.dbtypes[scalar]
+        # Now choose the corresponding python type
+        python_value = tcl_to_python[dbtype](value)
+        return python_value
 
     def insert(self):
         """
