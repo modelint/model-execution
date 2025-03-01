@@ -14,7 +14,7 @@ from pyral.relation import Relation
 from mx.db_names import mmdb, udb
 from mx.exceptions import *
 
-AttrRef = namedtuple('AttrRef', 'from_attr to_attr to_class')
+AttrRef = namedtuple('AttrRef', 'from_attr to_attr to_class alias')
 
 _logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class Scenario:
             expanded_header = []  # A list of attributes with any references expanded to from_attributes
             instance_tuples = []  # The expanded instance tuples including values for the from_attributes
             ref_path = dict()  # Each
-            for col in i_spec.header:
+            for col_position, col in enumerate(i_spec.header):
                 # Each column in the parsed header for this class includes a sequence of attributes and
                 # optional references. A reference points to some class via a relationship rnum
                 if isinstance(col, str):  # Attributes are just string names
@@ -73,15 +73,16 @@ class Scenario:
                             raise MXInitialInstanceReferenceException(msg)
                         # We already know the rnum, from class (class_name) and to class, so we just need a projection
                         # on the local attribute and where the attribute in the target class
-                        ref_path[to_class] = []
-                        alias_position = len(expanded_header)
+                        # exp_col_position = len(expanded_header)
+                        # ref_path[len(expanded_header)] = []
                         for attr_ref in result.body:
                             # A reference can consist of multiple attributes, so we process each one
                             from_attr = attr_ref['From_attribute']
                             to_attr = attr_ref['To_attribute']
-                            alias_index[from_attr] = alias_position
+                            # alias_index[from_attr] = alias_position
                             # Add a dictionary entry so that we can lookup up referenced values
-                            ref_path[to_class].append(AttrRef(from_attr=from_attr, to_attr=to_attr, to_class=to_class))
+                            ref_path[len(expanded_header)] = AttrRef(from_attr=from_attr, to_attr=to_attr,
+                                                                      to_class=to_class, alias=col_position)
                             # Add the from attribute to our expanded header
                             if from_attr not in expanded_header:
                                 # It might already be there if the same attribute participates in more than one
@@ -96,15 +97,22 @@ class Scenario:
             # Now that the relation header for our instance population is created, we need to fill in the relation
             # body (the actual instance values corresponding to each attribute in the expanded header)
             for irow in i_spec.population:
+                irow_col = 0  # Initial column in the irow
                 row_dict = dict()  # Each value for an instance keyed by attribute name in the expanded header
+                in_ref = False
                 for index, attr in enumerate(expanded_header):
                     # We walk through the values matching the attribute order, so we remember the attr ordering
                     if attr in i_spec.header:
+                        in_ref = False
                         # If there is no matching key for the attribute in the ref_path, it means that
                         # this was not a reference that got expanded.  So we simply assign the value
                         # from the parsed population to the corressponding attribute in the expanded header
-                        row_dict[attr.replace(' ','_')] = irow['row'][index]
+                        # row_dict[attr.replace(' ','_')] = irow['row'][index]
+                        row_dict[attr.replace(' ','_')] = irow['row'][irow_col]
                     else:
+                        if not in_ref:
+                            irow_col = irow_col + 1
+                        in_ref = True
                         # The attribute was expanded from a reference and we need to obtain its value from
                         # an attribute in the target class for the instance matching the referenced alias
                         # So first we grab the alias associated with this instance's reference. It tells us which
@@ -114,19 +122,20 @@ class Scenario:
                         # There is a matching row in the Bank population here:
                         #     P { [Penthouse] [4.0] [2.0] [25] [7.0] [9.0] }
                         #
-                        alias_position = alias_index[attr]
-                        alias = irow['row'][alias_position]['ref to']  # The alias 'P' in the above example
+                        ref = ref_path[index]
+                        # alias_position = alias_index[attr]
+                        alias = irow['row'][ref.alias]['ref to']  # The alias 'P' in the above example
                         # Get the population of the referenced class
-                        target_pop = self.pop[to_class]
+                        target_pop = self.pop[ref.to_class]
                         # target_pop = self.pop[ref_path[attr].to_class]
                         # Get index of referenced value
-                        to_attr_index = target_pop.header.index(to_attr)
+                        to_attr_index = target_pop.header.index(ref.to_attr)
                         # Now search through the target population looking for the instance named by the alias
-                        referenced_i = [i for i in target_pop.population if i['alias'] == alias][0]
+                        referenced_i = [i['row'] for i in target_pop.population if i['alias'] == alias][0]
                         # And then grab the value in that row corresponding to the to_attr_index
-                        ref_value = referenced_i['row'][to_attr_index]
+                        ref_value = referenced_i[to_attr_index]
                         # And now add the key value pair of referencing attr and target value to our row of values
-                        row_dict[from_attr] = ref_value
+                        row_dict[ref.from_attr] = ref_value
                 instance_tuples.append(row_dict)  # Add the completed row of attr values to our relation
 
             # Now we are ready to create the structure we need to insert into the class relvar in the user db
