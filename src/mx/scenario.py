@@ -1,6 +1,5 @@
 """ scenario.py -- Populate the schema """
 
-
 # System
 from pathlib import Path
 from collections import namedtuple
@@ -9,6 +8,8 @@ import logging
 # Model Integration
 from sip_parser.parser import SIParser
 from pyral.relation import Relation
+from pyral.relvar import Relvar
+from pyral.transaction import Transaction
 
 # Model Execution
 from mx.db_names import mmdb, udb
@@ -17,6 +18,8 @@ from mx.exceptions import *
 AttrRef = namedtuple('AttrRef', 'from_attr to_attr to_class alias')
 
 _logger = logging.getLogger(__name__)
+
+pop_scenario = 'pop'  # Name of transaction that loads the schema
 
 class Scenario:
 
@@ -41,13 +44,13 @@ class Scenario:
         parse_result = SIParser.parse_file(file_input=scenario_file, debug=False)
         self.name = parse_result.name  # Name of this scenario
         self.pop = parse_result.classes  # Dictionary of initial instance populations keyed by class name
-        self.relations = dict()  # This is the set of relations keyed by relvar name ready for insertion into the user db
+        self.relations = dict()  # The set of relations keyed by relvar name ready for insertion into the user db
 
         # Process each class (c) and its initial instance specification (i)
         for class_name, i_spec in self.pop.items():
             expanded_header = []  # A list of attributes with any references expanded to from_attributes
             instance_tuples = []  # The expanded instance tuples including values for the from_attributes
-            ref_path = dict()  # Each
+            ref_path = dict()  # Each attribute reference and data required to resolve it
             for col_position, col in enumerate(i_spec.header):
                 # Each column in the parsed header for this class includes a sequence of attributes and
                 # optional references. A reference points to some class via a relationship rnum
@@ -62,10 +65,11 @@ class Scenario:
                         # is parsed into two components
                         rnum = ref['rnum']  # The rnum on this reference
                         to_class = ref['to class']  # Refering to some target attribute in this class
-                        # Lookup the attribute reference in the metamodel
+                        # Look up the attribute reference(s) in the metamodel
                         R = f"Rnum:<{rnum}>, From_class:<{class_name}>, To_class:<{to_class}>, Domain:<{self.domain}>"
                         Relation.restrict(db=mmdb, relation='Attribute_Reference', restriction=R, svar_name='ra')
-                        result = Relation.project(db=mmdb, attributes=('From_attribute','To_attribute'), svar_name='ra')
+                        result = Relation.project(db=mmdb, attributes=('From_attribute', 'To_attribute'),
+                                                  svar_name='ra')
                         if not result.body:
                             msg = f"Initial instance ref expansion: No attribute references defined for{R}"
                             _logger.exception(msg)
@@ -76,9 +80,10 @@ class Scenario:
                             # A reference can consist of multiple attributes, so we process each one
                             from_attr = attr_ref['From_attribute']
                             to_attr = attr_ref['To_attribute']
-                            # Add a dictionary entry so that we can lookup up referenced values
+                            # Add a dictionary entry so that we can look up referenced values
                             ref_path[len(expanded_header)] = AttrRef(from_attr=from_attr, to_attr=to_attr,
-                                                                      to_class=to_class, alias=col_position)
+                                                                     to_class=to_class, alias=col_position)
+                            # We key the path to the position of the from_attr in the expanded header
                             # Add the from attribute to our expanded header
                             if from_attr not in expanded_header:
                                 # It might already be there if the same attribute participates in more than one
@@ -93,21 +98,24 @@ class Scenario:
             # Now that the relation header for our instance population is created, we need to fill in the relation
             # body (the actual instance values corresponding to each attribute in the expanded header)
             for irow in i_spec.population:
-                irow_col = 0  # Initial column in the irow
+                # For each instance row under the class header parsed from the init file
+                irow_col = 0  # Initial column position in the irow
                 row_dict = dict()  # Each value for an instance keyed by attribute name in the expanded header
-                in_ref = False
+                in_ref = False  # We are not currently expanding a reference
                 for index, attr in enumerate(expanded_header):
                     # We walk through the values matching the attribute order, so we remember the attr ordering
                     if attr in i_spec.header:
-                        in_ref = False
+                        in_ref = False  # Not processing a reference
                         # If there is no matching key for the attribute in the ref_path, it means that
                         # this was not a reference that got expanded.  So we simply assign the value
-                        # from the parsed population to the corressponding attribute in the expanded header
-                        row_dict[attr.replace(' ','_')] = irow['row'][irow_col]
+                        # from the parsed population to the corresponding attribute in the expanded header
+                        row_dict[attr.replace(' ', '_')] = irow['row'][irow_col]
                     else:
                         if not in_ref:
+                            # We are beginning to process a reference, so we want to advance the position
+                            # just once (not for every referential attribute)
                             irow_col = irow_col + 1
-                        in_ref = True
+                        in_ref = True  # This keeps us from incrementing the counter until we're done
                         # The attribute was expanded from a reference and we need to obtain its value from
                         # an attribute in the target class for the instance matching the referenced alias
                         # So first we grab the alias associated with this instance's reference. It tells us which
@@ -117,7 +125,10 @@ class Scenario:
                         # There is a matching row in the Bank population here:
                         #     P { [Penthouse] [4.0] [2.0] [25] [7.0] [9.0] }
                         #
+
+                        # We want the reference path keyed to the current position in the expanded header
                         ref = ref_path[index]
+
                         alias = irow['row'][ref.alias]['ref to']  # The alias 'P' in the above example
                         # Get the population of the referenced class
                         target_pop = self.pop[ref.to_class]
@@ -141,9 +152,14 @@ class Scenario:
                 drow = ClassTupleType(*dvalues)
                 table.append(drow)
             self.relations[class_name] = table
-            pass
+        self.insert()
+
+    def insert(self):
+        """
+        Insert relations in the user database
+        """
+        Transaction.open(db=udb, name=pop_scenario)
+        for relation, population in self.relations.items():
+            Relvar.insert(db=udb, tr=pop_scenario, relvar=relation.replace(' ', '_'), tuples=population)
+        Transaction.execute(db=udb, name=pop_scenario)
         pass
-
-
-
-

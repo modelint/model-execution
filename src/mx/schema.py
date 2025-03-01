@@ -228,8 +228,8 @@ class Schema:
             Relvar.create_relvar(db=udb, name=cname, attrs=attr_list, ids=ids)
 
         # Print out the populated metamodel
-        # print("\nUser model\n-----")
-        # Relvar.printall(db=udb)
+        print("\nUser model\n-----")
+        Relvar.printall(db=udb)
         pass
 
 
