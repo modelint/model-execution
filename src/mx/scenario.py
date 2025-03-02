@@ -193,8 +193,12 @@ class Scenario:
             raise MXScalarException(msg)
         scalar = result.body[0]['Scalar']
         dbtype = self.dbtypes[scalar]
-        # Now choose the corresponding python type
-        python_value = tcl_to_python[dbtype](value)
+        # Now cast using corresponding python type
+        # Boolean is a special case as it does not provide a string to bool casting function
+        if dbtype == 'boolean':
+            python_value = True if value.strip().lower() == 'true' else False
+        else:
+            python_value = tcl_to_python[dbtype](value)
         return python_value
 
     def insert(self):
