@@ -3,16 +3,9 @@ scenario : Simple Elevator
 Bank
 Name | Passenger load time | Block clear time | Max close attempts | Average cabin speed | Average stop duration
 --
-L { [Lower]     [4.0] [2.0] [25] [7.0] [9.0] }
+L { [Lower Floors]     [4.0] [2.0] [25] [7.0] [9.0] }
 P { [Penthouse] [4.0] [2.0] [25] [7.0] [9.0] }
 F { [Freight]   [7.0] [5.0] [25] [5.0] [14.0] }
---
-Top Bank Level
-R38>Bank Level | Calling down
---
-{ @PPH [false] }
-{ @LF7 [false] }
-{ @FPH [false] }
 --
 Shaft
 ID | In service | R1>Bank
@@ -37,12 +30,12 @@ Shaft | Close attempts | Lock requested | Held | Blocked | Emergency hold
 Cabin
 Shaft | Travel direction | Current floor
 --
-{ [S1] [.up]   [L] }
-{ [S2] [.down] [2] }
-{ [S3] [.up]   [G1] }
-{ [S4] [.down] [P] }
-{ [S5] [.up]   [L] }
-{ [S6] [.down] [7] }
+{ [S1] [.up]   [3] }
+{ [S2] [.down] [PH] }
+{ [S3] [.up]   [L] }
+{ [S4] [.down] [5] }
+{ [S5] [.down]   [L] }
+{ [S6] [.up] [5] }
 --
 Floor
 Name | Height
@@ -90,6 +83,13 @@ FL   { [Freight]      [L] }
 FP1  { [Freight]      [P1] }
 FP2  { [Freight]      [P2] }
 --
+Top Bank Level
+R38>Bank Level | Calling down
+--
+{ @PPH [false] }
+{ @LF7 [false] }
+{ @FPH [false] }
+--
 Bottom Bank Level
 R38>Bank Level | Calling up
 --
@@ -102,7 +102,6 @@ R38>Bank Level | Calling down | Calling up
 --
 { @P8   [false] [false] }
 { @PL   [false] [false] }
-{ @PP1  [false] [false] }
 { @LF6  [false] [false] }
 { @LF5  [false] [false] }
 { @LF4  [false] [false] }
@@ -150,9 +149,9 @@ Shaft | Floor
 { [S2] [4] }
 { [S2] [3] }
 { [S2] [2] }
-{ [S2] [S1] }
+{ [S2] [1] }
 { [S2] [L] }
-{ [S2] [PS1] }
+{ [S2] [P1] }
 { [S2] [P2] }
 { [S3] [PH] }
 { [S3] [8] }
@@ -172,7 +171,7 @@ Shaft | Floor
 { [S4] [6] }
 { [S4] [5] }
 { [S4] [4] }
-{ [S4] [S3] }
+{ [S4] [3] }
 { [S4] [2] }
 { [S4] [1] }
 { [S4] [L] }
@@ -194,7 +193,7 @@ Shaft | Floor
 { [S6] [8] }
 { [S6] [7] }
 { [S6] [6] }
-{ [S6] [S5] }
+{ [S6] [5] }
 { [S6] [4] }
 { [S6] [3] }
 { [S6] [2] }

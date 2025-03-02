@@ -163,6 +163,9 @@ class Scenario:
                 table.append(drow)
             self.relations[class_name] = table
         self.insert()
+        # Print out the populated user model
+        print("\nPopulated user model\n-----")
+        Relvar.printall(db=udb)
 
     def cast_to_dbtype(self, attr_name: str, attr_class: str, value: str) -> int | str | float | bool:
         """
@@ -202,4 +205,3 @@ class Scenario:
         for relation, population in self.relations.items():
             Relvar.insert(db=udb, tr=pop_scenario, relvar=relation.replace(' ', '_'), tuples=population)
         Transaction.execute(db=udb, name=pop_scenario)
-        pass
