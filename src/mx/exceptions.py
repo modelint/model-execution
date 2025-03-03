@@ -10,10 +10,18 @@ class MXScenarioException(MXException):
     """ Error in scenario specification """
     pass
 
+class MXStateMachineException(MXException):
+    """ Error while executing state machine"""
+    pass
+
 class MXInitialInstanceReferenceException(MXScenarioException):
     """ Error processing initial instance reference in scenario specification """
     pass
 
 class MXScalarException(MXScenarioException):
     """ Error processing initial instance user type in scenario specification """
+    pass
+
+class MXNoEventResponseException(MXStateMachineException):
+    """ Metamodel does not specify any kind of response for an specific event received in a givent state """
     pass
