@@ -167,7 +167,7 @@ class Schema:
         Database.load(db=mmdb, fname=self.filename)
 
         # Print out the populated metamodel
-        # Relvar.printall(db=mmdb)
+        Relvar.printall(db=mmdb)
 
     def sort_rels(self):
         """
