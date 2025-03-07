@@ -16,6 +16,8 @@ from pyral.rtypes import Attribute, Mult
 from mx.scenario import Scenario
 from mx.db_names import mmdb, udb
 
+_logger = logging.getLogger(__name__)
+
 # Here is a mapping from metamodel multiplcity notation to that used by the target TclRAL tclral
 # When interacting with PyRAL we must supply the tclral specific value
 mult_tclral = {
@@ -164,6 +166,8 @@ class Schema:
 
     def load_metamodel(self):
         """ Let's load and print out the metamodel database """
+
+        _logger.info(f"Loading the metamodel database from: [{self.filename}]")
         Database.load(db=mmdb, fname=self.filename)
 
         # Print out the populated metamodel

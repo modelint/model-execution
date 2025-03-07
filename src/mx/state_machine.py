@@ -21,6 +21,8 @@ class EventResponse(Enum):
 
 _logger = logging.getLogger(__name__)
 
+sm_id_map = {}  # Map of identifier values to state machine instances
+
 class StateMachine:
 
     def __init__(self, current_state: str, state_model: str, domain: str):

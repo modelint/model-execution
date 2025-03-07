@@ -46,11 +46,13 @@ class Scenario:
         self.dbtypes = dbtypes
 
         # Parse the scenario's initial population file (*.sip file)
+        _logger.info(f"Parsing sip: [{scenario_file}]")
         parse_result = SIParser.parse_file(file_input=scenario_file, debug=False)
         self.name = parse_result.name  # Name of this scenario
         self.pop = parse_result.classes  # Dictionary of initial instance populations keyed by class name
         self.relations = dict()  # The set of relations keyed by relvar name ready for insertion into the user db
 
+        _logger.info(f"Sip parsed, loading initial instance population into user db")
         # Process each class (c) and its initial instance specification (i)
         for class_name, i_spec in self.pop.items():
             expanded_header = []  # A list of attributes with any references expanded to from_attributes

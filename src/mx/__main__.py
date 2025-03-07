@@ -7,7 +7,7 @@ import logging.config
 import sys
 import argparse
 from pathlib import Path
-from mx.schema import Schema
+from mx.xe import XE
 from mx import version
 
 _logpath = Path("mx.log")
@@ -56,7 +56,8 @@ def main():
 
     # Domain specified
     if args.database:
-        domain_schema = Schema(filename=args.database, domain=args.domain, types=Path(args.types), scenario=args.scenario)
+        XE.initialize_domain(populated_mmdb_filename=args.database, domain=args.domain, types=Path(args.types),
+                             starting_context=args.scenario)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
     print("\nNo problemo")

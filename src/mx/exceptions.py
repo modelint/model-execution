@@ -6,6 +6,9 @@ class MXException(Exception):
     """ Top level Model Execution exception """
     pass
 
+class MXUserDBException(MXException):
+    """ Errors accessing data in the User DB """
+
 class MXScenarioException(MXException):
     """ Error in scenario specification """
     pass
@@ -25,3 +28,6 @@ class MXScalarException(MXScenarioException):
 class MXNoEventResponseException(MXStateMachineException):
     """ Metamodel does not specify any kind of response for an specific event received in a givent state """
     pass
+
+class MXUserDBMissingData(MXUserDBException):
+    """ Errors finding specific data in the User DB """
