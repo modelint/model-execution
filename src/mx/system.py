@@ -7,24 +7,23 @@ import logging
 from pyral.relation import Relation
 
 # Model Execution
-from mx.db_names import udb
+from mx.db_names import udb, mmdb
 from mx.exceptions import *
 
 _logger = logging.getLogger(__name__)
 
 class System:
 
-    def __init__(self, name: str):
+    def __init__(self):
         """
-
-        :param name:  The name of the system
+        Initialize the entire System
         """
-        result = Relation.restrict(db=udb, relation='System')
+        result = Relation.restrict(db=mmdb, relation='System')
         if not result.body:
             msg = f"System name not found in the user db"
             _logger.exception(msg)
             raise MXUserDBException(msg)
 
         self.name = result.body[0]['Name']
+        pass
 
-    def

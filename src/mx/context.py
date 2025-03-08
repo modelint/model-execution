@@ -24,9 +24,9 @@ tcl_to_python = { 'string': str, 'boolean': bool, 'double': float, 'int': int }
 
 pop_scenario = 'pop'  # Name of transaction that loads the schema
 
-class Scenario:
+class Context:
 
-    def __init__(self, scenario_file: Path, domain: str, dbtypes=Dict[str, str]):
+    def __init__(self, sip_file: Path, domain: str, dbtypes):
         """
         We see that there is an R1 ref.  We need to find the target attributes and class
         The metamodel gives us Shaft.Bank -> Bank.Name
@@ -38,7 +38,7 @@ class Scenario:
         And, at this point, we are building the relation.create command
         When we get all the values, we commit and move on to the next instance
 
-        :param scenario_file:  The path to the *.sip file providing the intial instance population
+        :param sip_file:  The path to the *.sip file providing the intial instance population
         :param domain:  The subject matter domain being populated
         :param dbtypes: The actual TclRAL types used to represent user model types
         """
@@ -46,8 +46,8 @@ class Scenario:
         self.dbtypes = dbtypes
 
         # Parse the starting_context's initial population file (*.sip file)
-        _logger.info(f"Parsing sip: [{scenario_file}]")
-        parse_result = SIParser.parse_file(file_input=scenario_file, debug=False)
+        _logger.info(f"Parsing sip: [{sip_file}]")
+        parse_result = SIParser.parse_file(file_input=sip_file, debug=False)
         self.name = parse_result.name  # Name of this starting_context
         self.pop = parse_result.classes  # Dictionary of initial instance populations keyed by class name
         self.relations = dict()  # The set of relations keyed by relvar name ready for insertion into the user db

@@ -60,7 +60,7 @@ def main():
     # Domain specified
     if args.database:
         XE.initialize_domain(populated_mmdb_filename=args.database, domain=args.domain, user_tcl_type_map=Path(args.types),
-                             starting_context=args.starting_context)
+                             sip_file=args.starting_context)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
     print("\nNo problemo")

@@ -13,7 +13,7 @@ from pyral.relation import Relation
 from pyral.rtypes import Attribute, Mult
 
 # Model Execution
-from mx.scenario import Scenario
+from mx.context import Context
 from mx.db_names import mmdb, udb
 
 _logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class Schema:
     TclRAL schema a domain's class model
     """
 
-    def __init__(self, filename: str, domain: str, types: Path, starting_context: Path):
+    def __init__(self, filename: str, domain: str, types: Path):
 
         self.ordinal_rnums = None
         self.gen_rnums = None
@@ -59,7 +59,6 @@ class Schema:
         self.build_simple_assocs()
         self.build_associative_rels()
         self.build_gen_rels()
-        s = Scenario(scenario_file=starting_context, domain=self.domain, dbtypes=self.user_types)
         pass
 
     def build_gen_rels(self):
