@@ -1,4 +1,4 @@
-""" scenario.py -- Populate the schema """
+""" starting_context.py -- Populate the schema """
 
 # System
 from pathlib import Path
@@ -45,10 +45,10 @@ class Scenario:
         self.domain = domain
         self.dbtypes = dbtypes
 
-        # Parse the scenario's initial population file (*.sip file)
+        # Parse the starting_context's initial population file (*.sip file)
         _logger.info(f"Parsing sip: [{scenario_file}]")
         parse_result = SIParser.parse_file(file_input=scenario_file, debug=False)
-        self.name = parse_result.name  # Name of this scenario
+        self.name = parse_result.name  # Name of this starting_context
         self.pop = parse_result.classes  # Dictionary of initial instance populations keyed by class name
         self.relations = dict()  # The set of relations keyed by relvar name ready for insertion into the user db
 

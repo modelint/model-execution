@@ -10,7 +10,7 @@ class MXUserDBException(MXException):
     """ Errors accessing data in the User DB """
 
 class MXScenarioException(MXException):
-    """ Error in scenario specification """
+    """ Error in starting_context specification """
     pass
 
 class MXStateMachineException(MXException):
@@ -18,11 +18,11 @@ class MXStateMachineException(MXException):
     pass
 
 class MXInitialInstanceReferenceException(MXScenarioException):
-    """ Error processing initial instance reference in scenario specification """
+    """ Error processing initial instance reference in starting_context specification """
     pass
 
 class MXScalarException(MXScenarioException):
-    """ Error processing initial instance user type in scenario specification """
+    """ Error processing initial instance user type in starting_context specification """
     pass
 
 class MXNoEventResponseException(MXStateMachineException):

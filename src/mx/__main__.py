@@ -2,11 +2,14 @@
 Blueprint Model Execution
 
 """
+# System
 import logging
 import logging.config
 import sys
 import argparse
 from pathlib import Path
+
+# MX
 from mx.xe import XE
 from mx import version
 
@@ -28,8 +31,8 @@ def parse(cl_input):
                         help='Name of the populated metamodel database text file produced by xuml-populate')
     parser.add_argument('-dom', '--domain', action='store',
                         help='Name of the domain to build')
-    parser.add_argument('-s', '--scenario', action='store',
-                        help='Name of the scenario *.sip file to load')
+    parser.add_argument('-context', '--starting_context', action='store',
+                        help='Name of the starting_context *.sip file to load')
     parser.add_argument('-types', action='store', help='This yaml file maps user model attribute types '
                                                        'to system types. No need to specify .yaml extension')
     # parser.add_argument('-D', '--debug', action='store_true',
@@ -56,8 +59,8 @@ def main():
 
     # Domain specified
     if args.database:
-        XE.initialize_domain(populated_mmdb_filename=args.database, domain=args.domain, types=Path(args.types),
-                             starting_context=args.scenario)
+        XE.initialize_domain(populated_mmdb_filename=args.database, domain=args.domain, user_tcl_type_map=Path(args.types),
+                             starting_context=args.starting_context)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
     print("\nNo problemo")
