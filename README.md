@@ -4,7 +4,13 @@
 
 When you use MX, you always supply it with a System in the form of a populated metamodel database.
 
-`mx -s elevator.ral -t ev_types.yaml -c three_bank1.sip -x lobby_to_three.scn`
+`mx -s elevator -t ev_types -c three_bank1 -x lobby_to_three`
+
+The extensions for each of these files is:
+
+elevator.ral (or .txt), ev_types.yaml, three_bank1.sip and lobby_to_three.scn
+
+But you don't need to specify them since MX will check anyway.
 
 ### -s or --system
 
