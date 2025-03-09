@@ -27,14 +27,15 @@ def get_logger():
 # Configure the expected parameters and actions for the argparse module
 def parse(cl_input):
     parser = argparse.ArgumentParser(description=_progname)
-    parser.add_argument('-db', '--database', action='store',
-                        help='Name of the populated metamodel database text file produced by xuml-populate')
-    parser.add_argument('-dom', '--domain', action='store',
-                        help='Name of the domain to build')
-    parser.add_argument('-context', '--starting_context', action='store',
+    parser.add_argument('-s', '--system', action='store',
+                        help='Name of the populated metamodel database text file *.ral produced by xuml-populate')
+    parser.add_argument('-c', '--context', action='store',
                         help='Name of the starting_context *.sip file to load')
-    parser.add_argument('-types', action='store', help='This yaml file maps user model attribute types '
-                                                       'to system types. No need to specify .yaml extension')
+    parser.add_argument('-x', '--scenario', action='store',
+                        help='Name of the scenario *.scn file to run')
+    parser.add_argument('-t', '--types', action='store', help='This yaml file maps user model '
+                                                              'attribute types to system types. '
+                                                              'No need to specify .yaml extension')
     # parser.add_argument('-D', '--debug', action='store_true',
     #                     help='Debug mode'),
     # parser.add_argument('-A', '--actions', action='store_true',
@@ -58,9 +59,9 @@ def main():
         sys.exit(0)
 
     # Domain specified
-    if args.database:
-        XE.initialize_domain(populated_mmdb_filename=args.database, domain=args.domain, user_tcl_type_map=Path(args.types),
-                             sip_file=args.starting_context)
+    if args.system:
+        XE.initialize_domain(populated_mmdb_filename=args.system, user_tcl_type_map=Path(args.types),
+                             sip_file=args.context, scenario_file=args.scenario)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
     print("\nNo problemo")

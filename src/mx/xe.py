@@ -9,6 +9,7 @@ from typing import NamedTuple, Dict
 from mx.schema import Schema
 from mx.context import Context
 from mx.system import System
+from mx.scenario import Scenario
 
 _logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class XE:
 
     @classmethod
     def initialize_domain(cls, populated_mmdb_filename: str, domain: str, user_tcl_type_map: Path,
-                          sip_file: Path):
+                          sip_file: Path, scenario_file: Path):
         """
         Generate a user database (udb) from the populated metamodel (mmdb) and then populate the udb with
         a population of initial instances establishing a starting context for any further execution.
@@ -34,7 +35,7 @@ class XE:
         :param user_tcl_type_map: Mapping of model to TclRAL types defined for this domain
         :param sip_file: *.sip file specifying an initial population of user instance values for the user model
          to be generated
-        :return:
+        :param scenario_file: Path to an *.scn file defining a scenario to run
         """
 
         # Create a schema for the user model database and initiate a udb database session in PyRAL

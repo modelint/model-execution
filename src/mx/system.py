@@ -18,6 +18,7 @@ class System:
         """
         Initialize the entire System
         """
+        # Get the System name from the populated metamodel
         result = Relation.restrict(db=mmdb, relation='System')
         if not result.body:
             msg = f"System name not found in the user db"
@@ -26,4 +27,6 @@ class System:
 
         self.name = result.body[0]['Name']
         pass
+
+
 

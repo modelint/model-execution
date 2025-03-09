@@ -1,6 +1,6 @@
 """ s1_driver.py -- Temporary hand coded driver for an elevator starting_context -- future drivers will be generated """
 
-from mx.ee import EE
+from mx.operation import EE
 
 def ev1_scenario:
     """
