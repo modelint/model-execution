@@ -13,7 +13,6 @@ from pyral.relation import Relation
 from pyral.rtypes import Attribute, Mult
 
 # Model Execution
-from mx.context import Context
 from mx.db_names import mmdb, udb
 
 _logger = logging.getLogger(__name__)
@@ -38,8 +37,9 @@ class Schema:
     TclRAL schema a domain's class model
     """
 
-    def __init__(self, filename: str, domain: str, types: Path):
+    def __init__(self, types: Path, debug: bool = False):
 
+        self.debug = debug
         self.ordinal_rnums = None
         self.gen_rnums = None
         self.non_assoc_rnums = None
@@ -48,18 +48,26 @@ class Schema:
 
         self.name = "cm_schema"
         self.types_filename = str(types.name) + '.yaml'
-        self.domain = domain
-        self.filename = filename
+        # self.filename = filename if filename.endswith(dbfile_ext) else filename + dbfile_ext
         # Open a PyRAL session
-        Database.open_session(name=mmdb)  # This is the metamodel mmdb populated with the user model
+        # Database.open_session(name=mmdb)  # This is the metamodel mmdb populated with the user model
         Database.open_session(name=udb)  # User model created in this database
-        self.load_metamodel()
-        self.build_class_relvars()
-        self.sort_rels()
-        self.build_simple_assocs()
-        self.build_associative_rels()
-        self.build_gen_rels()
-        pass
+        # self.load_metamodel()
+
+        result = Relation.restrict(db=mmdb, relation='Domain')
+        for d in result.body:
+            self.domain = d['Name']
+            self.build_class_relvars()
+            self.sort_rels()
+            self.build_simple_assocs()
+            self.build_associative_rels()
+            self.build_gen_rels()
+            if self.debug:
+                print(f"\nvvv Unpopulated [{self.domain}] Domain Model vvv ")
+                Relvar.printall(db=udb)
+                print(f"^^^ Unpopulated [{self.domain}] Domain Model ^^^ ")
+
+
 
     def build_gen_rels(self):
         """
@@ -168,9 +176,6 @@ class Schema:
 
         _logger.info(f"Loading the metamodel database from: [{self.filename}]")
         Database.load(db=mmdb, fname=self.filename)
-
-        # Print out the populated metamodel
-        Relvar.printall(db=mmdb)
 
     def sort_rels(self):
         """

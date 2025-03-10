@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import NamedTuple, Dict
 
 # MX
+from mx.metamodel_db import MetamodelDB
 from mx.schema import Schema
 from mx.context import Context
 from mx.system import System
@@ -23,28 +24,38 @@ class XE:
     system: System = None
 
     @classmethod
-    def initialize_domain(cls, populated_mmdb_filename: str, domain: str, user_tcl_type_map: Path,
-                          sip_file: Path, scenario_file: Path):
+    def initialize(cls, populated_mmdb_filename: str, user_tcl_type_map: Path, sip_file: Path, scenario_file: Path,
+                   debug: bool = False):
         """
         Generate a user database (udb) from the populated metamodel (mmdb) and then populate the udb with
         a population of initial instances establishing a starting context for any further execution.
 
         :param populated_mmdb_filename: Name of metamodel database populated with the domain model - this is a
          serialized TclRAL text file. The user model is generated from the instances in this metamodel database
-        :param domain: Name of the domain to be initialized
         :param user_tcl_type_map: Mapping of model to TclRAL types defined for this domain
         :param sip_file: *.sip file specifying an initial population of user instance values for the user model
          to be generated
         :param scenario_file: Path to an *.scn file defining a scenario to run
+        :param debug: Debug mode - prints schemas and other info to the console
         """
+        cls.debug = debug
+
+        # Load a metamodel file populated with a system
+        MetamodelDB.initialize(filename=populated_mmdb_filename)
+
+        # Set the system name
+        cls.system = System()
+
+        if debug:
+            MetamodelDB.display(system_name=cls.system.name)
 
         # Create a schema for the user model database and initiate a udb database session in PyRAL
-        schema = Schema(filename=populated_mmdb_filename, domain=domain, types=user_tcl_type_map)
+        schema = Schema(types=user_tcl_type_map, debug=debug)
+
         # Populate the schema with initial user instance values
-        context = Context(sip_file=sip_file, domain=domain, dbtypes=schema.user_types)
-        cls.domains[domain] = ExecutableDomain(schema=schema, context=context)
+        # context = Context(sip_file=sip_file, domain=domain, dbtypes=schema.user_types)
+        # cls.domains[domain] = ExecutableDomain(schema=schema, context=context)
         # Initialize the system (build the dynamic components within)
-        cls.system = System()
 
         # Run the scenario (sequence of interactions)
         pass

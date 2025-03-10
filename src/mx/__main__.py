@@ -36,8 +36,8 @@ def parse(cl_input):
     parser.add_argument('-t', '--types', action='store', help='This yaml file maps user model '
                                                               'attribute types to system types. '
                                                               'No need to specify .yaml extension')
-    # parser.add_argument('-D', '--debug', action='store_true',
-    #                     help='Debug mode'),
+    parser.add_argument('-D', '--debug', action='store_true',
+                        help='Debug mode'),
     # parser.add_argument('-A', '--actions', action='store_true',
     #                     help='Parse actions'),
     parser.add_argument('-V', '--version', action='store_true',
@@ -60,8 +60,8 @@ def main():
 
     # Domain specified
     if args.system:
-        XE.initialize_domain(populated_mmdb_filename=args.system, user_tcl_type_map=Path(args.types),
-                             sip_file=args.context, scenario_file=args.scenario)
+        XE.initialize(populated_mmdb_filename=args.system, user_tcl_type_map=Path(args.types),
+                      sip_file=args.context, scenario_file=args.scenario, debug=args.debug)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
     print("\nNo problemo")
