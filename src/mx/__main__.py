@@ -33,13 +33,13 @@ def parse(cl_input):
                         help='Name of the starting_context *.sip file to load')
     parser.add_argument('-x', '--scenario', action='store',
                         help='Name of the scenario *.scn file to run')
-    parser.add_argument('-t', '--types', action='store', help='This yaml file maps user model '
-                                                              'attribute types to system types. '
-                                                              'No need to specify .yaml extension')
+    parser.add_argument('-td', '--types_dir', action='store', help='A directory of yaml files mapping '
+                                                                  'user model types to system db_types. It should '
+                                                                  'contain one yaml file per domain, with each name '
+                                                                  'matching the domain name using underscores instead '
+                                                                  'of spaces in the name.')
     parser.add_argument('-D', '--debug', action='store_true',
                         help='Debug mode'),
-    # parser.add_argument('-A', '--actions', action='store_true',
-    #                     help='Parse actions'),
     parser.add_argument('-V', '--version', action='store_true',
                         help='Print the current version of the model execution app')
     return parser.parse_args(cl_input)
@@ -60,8 +60,8 @@ def main():
 
     # Domain specified
     if args.system:
-        XE.initialize(populated_mmdb_filename=args.system, user_tcl_type_map=Path(args.types),
-                      sip_file=args.context, scenario_file=args.scenario, debug=args.debug)
+        XE.initialize(populated_mmdb_filename=args.system, types_dir=Path(args.types_dir),
+                      sip_file=Path(args.context), scenario_file=Path(args.scenario), debug=args.debug)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
     print("\nNo problemo")

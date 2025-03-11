@@ -40,7 +40,7 @@ class Context:
 
         :param sip_file:  The path to the *.sip file providing the intial instance population
         :param domain:  The subject matter domain being populated
-        :param dbtypes: The actual TclRAL types used to represent user model types
+        :param dbtypes: The actual TclRAL db_types used to represent user model db_types
         """
         self.domain = domain
         self.dbtypes = dbtypes
@@ -178,7 +178,7 @@ class Context:
         model such as 'Bank Name', 'Duration', etc.
 
         Consults the user model Scalar -> TclRAL type mapping to determine which type to use in the user db.
-        These are low level system types that TclRAL supports like 'string', 'int', 'boolean', etc.
+        These are low level system db_types that TclRAL supports like 'string', 'int', 'boolean', etc.
 
         :param attr_name: Name of the user model attribute
         :param attr_class: Name of the attribute's class

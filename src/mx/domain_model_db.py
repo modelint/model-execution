@@ -1,4 +1,4 @@
-""" schema.py -- Build a TclRAL schema from a populated SM Metamodel """
+""" domain_model_db.py -- Build a TclRAL schema for a modeled domain from a populated SM Metamodel """
 
 # System
 import logging
@@ -32,42 +32,37 @@ def load_yaml(file_path):
     return data
 
 
-class Schema:
+class DomainModelDB:
     """
-    TclRAL schema a domain's class model
+    TclRAL schema for a user domain model extracted from a populated SM metamodel
     """
 
-    def __init__(self, types: Path, debug: bool = False):
+    def __init__(self, domain: str, db_types: Path, debug: bool = False):
+        """
+        Create the db schema and optionally print it out
 
+        :param domain: Name of this domain
+        :param db_types: yaml file with user to tclRAL db types mapping
+        :param debug: We print the domain schema if true
+        """
+        self.domain = domain
         self.debug = debug
         self.ordinal_rnums = None
         self.gen_rnums = None
         self.non_assoc_rnums = None
         self.assoc_rnums = None
         self.user_types = None
+        self.types_filename = db_types
 
-        self.name = "cm_schema"
-        self.types_filename = str(types.name) + '.yaml'
-        # self.filename = filename if filename.endswith(dbfile_ext) else filename + dbfile_ext
-        # Open a PyRAL session
-        # Database.open_session(name=mmdb)  # This is the metamodel mmdb populated with the user model
-        Database.open_session(name=udb)  # User model created in this database
-        # self.load_metamodel()
-
-        result = Relation.restrict(db=mmdb, relation='Domain')
-        for d in result.body:
-            self.domain = d['Name']
-            self.build_class_relvars()
-            self.sort_rels()
-            self.build_simple_assocs()
-            self.build_associative_rels()
-            self.build_gen_rels()
-            if self.debug:
-                print(f"\nvvv Unpopulated [{self.domain}] Domain Model vvv ")
-                Relvar.printall(db=udb)
-                print(f"^^^ Unpopulated [{self.domain}] Domain Model ^^^ ")
-
-
+        self.build_class_relvars()
+        self.sort_rels()
+        self.build_simple_assocs()
+        self.build_associative_rels()
+        self.build_gen_rels()
+        if self.debug:
+            print(f"\nvvv Unpopulated [{self.domain}] Domain Model vvv ")
+            Relvar.printall(db=udb)
+            print(f"^^^ Unpopulated [{self.domain}] Domain Model ^^^ ")
 
     def build_gen_rels(self):
         """
@@ -201,7 +196,7 @@ class Schema:
         """
         Create class relvars
         """
-        # Load the user to system types.yaml file
+        # Load the user to system db_types.yaml file
         self.user_types = load_yaml(self.types_filename)
 
         R = f"Domain:<{self.domain}>"
@@ -232,9 +227,3 @@ class Schema:
             ids = dict(id_dict)
 
             Relvar.create_relvar(db=udb, name=cname, attrs=attr_list, ids=ids)
-
-        # Print out the populated metamodel
-        # print("\nUser model\n-----")
-        # Relvar.printall(db=udb)
-
-
