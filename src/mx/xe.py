@@ -7,7 +7,6 @@ from typing import NamedTuple, Dict
 
 # MX
 from mx.metamodel_db import MetamodelDB
-from mx.domain_model_db import DomainModelDB
 from mx.context import Context
 from mx.system import System
 from mx.scenario import Scenario
@@ -45,9 +44,6 @@ class XE:
             MetamodelDB.display(system_name=cls.system.name)
 
         cls.system.init_domains(debug=debug)
-
-        # Create a schema for the user model database and initiate a udb database session in PyRAL
-        schema = DomainModelDB(db_types=types_dir, debug=debug)
 
         # Populate the schema with initial user instance values
         # context = Context(sip_file=sip_file, domain=domain, dbtypes=schema.user_types)

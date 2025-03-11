@@ -1,4 +1,4 @@
-scenario : Simple Elevator
+scenario : Three Bank 1
 --
 Bank
 Name | Passenger load time | Block clear time | Max close attempts | Average cabin speed | Average stop duration

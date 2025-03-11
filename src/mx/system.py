@@ -54,4 +54,7 @@ class System:
             domain_db = DomainModelDB(domain=d['Name'], db_types=db_types, debug=debug)
             pass
 
+    def populate_domains(self):
+        pass
+
 
