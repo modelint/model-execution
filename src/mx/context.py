@@ -54,7 +54,8 @@ class Context:
             raise MXFileException(f"No .sip file found for domain [{self.domaindb.domain}] in: {db_dir.resolve()}")
         if len(found_files) > 1:
             raise MXFileException(f"Multiple db_types files for domain [{self.domaindb.domain}] in: {db_dir.resolve()}")
-        pass
+
+        sip_file = found_files[0]
 
         # Parse the starting_context's initial population file (*.sip file)
         _logger.info(f"Parsing sip: [{sip_file}]")
@@ -84,7 +85,8 @@ class Context:
                         rnum = ref['rnum']  # The rnum on this reference
                         to_class = ref['to class']  # Refering to some target attribute in this class
                         # Look up the attribute reference(s) in the metamodel
-                        R = f"Rnum:<{rnum}>, From_class:<{class_name}>, To_class:<{to_class}>, Domain:<{self.domain}>"
+                        R = (f"Rnum:<{rnum}>, From_class:<{class_name}>, To_class:<{to_class}>, "
+                             f"Domain:<{self.domaindb.domain}>")
                         Relation.restrict(db=mmdb, relation='Attribute_Reference', restriction=R, svar_name='ra')
                         result = Relation.project(db=mmdb, attributes=('From_attribute', 'To_attribute'),
                                                   svar_name='ra')
@@ -178,7 +180,7 @@ class Context:
         self.insert()
         # Print out the populated user model
         print("\nPopulated user model\n-----")
-        Relvar.printall(db=udb)
+        Relvar.printall(db=self.domaindb.alias)
 
     def cast_to_dbtype(self, attr_name: str, attr_class: str, value: str) -> int | str | float | bool:
         """
@@ -198,14 +200,14 @@ class Context:
         """
         # Look up the user type in the populated metamodel
 
-        R = f"Class:<{attr_class}>, Name:<{attr_name}>, Domain:<{self.domain}>"
+        R = f"Class:<{attr_class}>, Name:<{attr_name}>, Domain:<{self.domaindb.domain}>"
         result = Relation.restrict(db=mmdb, relation='Attribute', restriction=R)
         if not result.body:
-            msg = f"No Scalar found in populated metamodel for attribute [{self.domain}:{attr_class}.{attr_name}]"
+            msg = f"No Scalar found in populated metamodel for attribute [{self.domaindb.domain}:{attr_class}.{attr_name}]"
             _logger.exception(msg)
             raise MXScalarException(msg)
         scalar = result.body[0]['Scalar']
-        dbtype = self.dbtypes[scalar]
+        dbtype = self.domaindb.user_types[scalar]
         # Now cast using corresponding python type
         # Boolean is a special case as it does not provide a string to bool casting function
         if dbtype == 'boolean':
@@ -218,7 +220,7 @@ class Context:
         """
         Insert relations in the user database
         """
-        Transaction.open(db=udb, name=pop_scenario)
+        Transaction.open(db=self.domaindb.alias, name=pop_scenario)
         for relation, population in self.relations.items():
-            Relvar.insert(db=udb, tr=pop_scenario, relvar=relation.replace(' ', '_'), tuples=population)
-        Transaction.execute(db=udb, name=pop_scenario)
+            Relvar.insert(db=self.domaindb.alias, tr=pop_scenario, relvar=relation.replace(' ', '_'), tuples=population)
+        Transaction.execute(db=self.domaindb.alias, name=pop_scenario)

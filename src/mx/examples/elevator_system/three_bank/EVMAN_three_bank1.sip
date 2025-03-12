@@ -1,4 +1,4 @@
-scenario : Three Bank 1
+scenario : Three Bank1
 --
 Bank
 Name | Passenger load time | Block clear time | Max close attempts | Average cabin speed | Average stop duration

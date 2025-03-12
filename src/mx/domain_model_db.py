@@ -60,6 +60,7 @@ class DomainModelDB:
         self.non_assoc_rnums = None
         self.assoc_rnums = None
         self.user_types = None
+        self.context = None
 
         Database.open_session(name=self.alias)  # User models created in this database
 
