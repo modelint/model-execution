@@ -5,6 +5,10 @@ import logging
 import yaml
 from pathlib import Path
 from collections import defaultdict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mx.system import System
 
 # Model Integration
 from pyral.database import Database
@@ -13,7 +17,9 @@ from pyral.relation import Relation
 from pyral.rtypes import Attribute, Mult
 
 # Model Execution
-from mx.db_names import mmdb, udb
+from mx.db_names import mmdb, types_dir_name
+from mx.context import Context
+from mx.exceptions import *
 
 _logger = logging.getLogger(__name__)
 
@@ -37,32 +43,39 @@ class DomainModelDB:
     TclRAL schema for a user domain model extracted from a populated SM metamodel
     """
 
-    def __init__(self, domain: str, db_types: Path, debug: bool = False):
+    def __init__(self, name: str, alias: str, system: 'System'):
         """
         Create the db schema and optionally print it out
 
-        :param domain: Name of this domain
-        :param db_types: yaml file with user to tclRAL db types mapping
-        :param debug: We print the domain schema if true
+        :param name: Name of this domain
+        :param alias: Alias for this domain (used for the database name)
+        :param system: The system object
         """
-        self.domain = domain
-        self.debug = debug
+        self.system = system
+        self.domain = name
+        self.alias = alias
+        self.prefixes = None
         self.ordinal_rnums = None
         self.gen_rnums = None
         self.non_assoc_rnums = None
         self.assoc_rnums = None
         self.user_types = None
-        self.types_filename = db_types
+
+        Database.open_session(name=self.alias)  # User models created in this database
 
         self.build_class_relvars()
         self.sort_rels()
         self.build_simple_assocs()
         self.build_associative_rels()
         self.build_gen_rels()
-        if self.debug:
+        if self.system.debug:
             print(f"\nvvv Unpopulated [{self.domain}] Domain Model vvv ")
-            Relvar.printall(db=udb)
+            Relvar.printall(db=self.alias)
             print(f"^^^ Unpopulated [{self.domain}] Domain Model ^^^ ")
+
+    def populate(self):
+        self.context = Context(domaindb=self)
+        pass
 
     def build_gen_rels(self):
         """
@@ -100,7 +113,7 @@ class DomainModelDB:
                 subclasses[sub_name.replace(' ','_')] = [ref['From_attribute'].replace(' ', '_') for ref in result.body]
 
             # Create the generalization constraint
-            Relvar.create_partition(db=udb, name=g, superclass_name=superclass.replace(' ','_'),
+            Relvar.create_partition(db=self.alias, name=g, superclass_name=superclass.replace(' ','_'),
                                     super_attrs=superclass_attrs, subs=subclasses)
 
     def build_associative_rels(self):
@@ -134,7 +147,7 @@ class DomainModelDB:
             ref2_from_attrs = [rc['From_attribute'].replace(' ', '_') for rc in result.body]
             ref2_to_attrs = [rc['To_attribute'].replace(' ', '_') for rc in result.body]
 
-            Relvar.create_correlation(db=udb, name=a, correlation_relvar=assoc_class.replace(' ', '_'),
+            Relvar.create_correlation(db=self.alias, name=a, correlation_relvar=assoc_class.replace(' ', '_'),
                                       correl_a_attrs=ref1_from_attrs, a_mult=mult_tclral[ref1_mult],
                                       a_relvar=ref1_class.replace(' ', '_'), a_ref_attrs=ref1_to_attrs,
                                       correl_b_attrs=ref2_from_attrs, b_mult=mult_tclral[ref2_mult],
@@ -161,7 +174,7 @@ class DomainModelDB:
             result = Relation.restrict(db=mmdb, relation='Perspective', restriction=R)
             conditional = 'c' if result.body[0]['Conditional'] == 'True' else ''
             to_mult = result.body[0]['Multiplicity'] + conditional
-            Relvar.create_association(db=udb, name=a,
+            Relvar.create_association(db=self.alias, name=a,
                                       from_relvar=from_class.replace(" ", "_"), from_attrs=from_attrs, from_mult=mult_tclral[from_mult],
                                       to_relvar=to_class.replace(" ", "_"), to_attrs=to_attrs, to_mult=mult_tclral[to_mult],
                                       )
@@ -197,7 +210,19 @@ class DomainModelDB:
         Create class relvars
         """
         # Load the user to system db_types.yaml file
-        self.user_types = load_yaml(self.types_filename)
+
+        # Create a list of prefixes to identify the file for this domain
+        # It's either going to have a name or alias prefix without any spaces in it
+        # There shouldn't be any spaces in an alias name, but we'll check just in case
+        self.prefixes = [self.domain.lower().replace(' ', '_'), self.alias.lower().replace(' ', '_')]
+        db_dir = self.system.system_dir / types_dir_name
+        found_files = [file for file in db_dir.iterdir() if file.is_file() and
+                       any(file.name.lower().startswith(prefix) for prefix in self.prefixes)]
+        if len(found_files) == 0:
+            raise MXFileException(f"No db_types file found for domain [{self.domain}] in: {db_dir.resolve()}")
+        if len(found_files) > 1:
+            raise MXFileException(f"Multiple db_types files for domain [{self.domain}] in: {db_dir.resolve()}")
+        self.user_types = load_yaml(found_files[0])
 
         R = f"Domain:<{self.domain}>"
         Relation.restrict(db=mmdb, relation='Class', restriction=R, svar_name='classes')
@@ -226,4 +251,4 @@ class DomainModelDB:
                 id_dict[key].append(i['Attribute'].replace(" ", "_"))
             ids = dict(id_dict)
 
-            Relvar.create_relvar(db=udb, name=cname, attrs=attr_list, ids=ids)
+            Relvar.create_relvar(db=self.alias, name=cname, attrs=attr_list, ids=ids)

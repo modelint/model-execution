@@ -3,30 +3,31 @@
 # System
 import logging
 from pathlib import Path
-from typing import NamedTuple, Dict
 
 # Model Integration
 from pyral.relation import Relation
-from pyral.database import Database
 
 # Model Execution
 from mx.domain_model_db import DomainModelDB
-from mx.context import Context
-from mx.db_names import udb, mmdb
+from mx.db_names import mmdb
 from mx.exceptions import *
-
-ExecutableDomain = NamedTuple('ExecutableDomain', schema=DomainModelDB, context=Context)
 
 _logger = logging.getLogger(__name__)
 
 class System:
 
-    def __init__(self, types_dir: Path):
+    def __init__(self, system_dir: Path, debug: bool = False):
         """
         Set the system name
 
-        :param types_dir: Directory containing type mapping files
+        :param system_dir: Directory containing system and type mapping files
+        :param debug:
         """
+        self.debug = debug
+        self.system_dir = system_dir
+        self.context_dir = None
+        self.domains = None
+
         # Get the System name from the populated metamodel
         result = Relation.restrict(db=mmdb, relation='System')
         if not result.body:
@@ -35,26 +36,38 @@ class System:
             raise MXUserDBException(msg)
 
         self.name = result.body[0]['Name']
-        self.domains: Dict[str, ExecutableDomain] = {}  # Each domain loaded into this environment
-        self.types_dir = types_dir
 
-    def init_domains(self, debug: bool = False):
+        # Create a dictionary of domain names
+        result = Relation.restrict(db=mmdb, relation='Domain')
+        if not result.body:
+            msg = f"No domains defined for system in metamodel"
+            _logger.exception(msg)
+            raise MXUserDBException(msg)
+
+    def init_domains(self):
         """
         Create a database containing all user model domains in the system.
 
         :param debug:
         :return:
         """
-        Database.open_session(name=udb)  # User models created in this database
-
+        # Create a dictionary of domains
         result = Relation.restrict(db=mmdb, relation='Domain')
-        for d in result.body:
-            filename = d['Name'].replace(' ', '_')+".yaml"
-            db_types = self.types_dir / filename
-            domain_db = DomainModelDB(domain=d['Name'], db_types=db_types, debug=debug)
-            pass
+        if not result.body:
+            msg = f"No domains defined for system in metamodel"
+            _logger.exception(msg)
+            raise MXUserDBException(msg)
 
-    def populate_domains(self):
-        pass
+        self.domains = {d['Name']: DomainModelDB(name=d['Name'], alias=d['Alias'], system=self)
+                        for d in result.body}
+
+    def populate(self, context_dir: Path):
+        """
+        :param context_dir: Path to the context directory
+
+        """
+        self.context_dir = context_dir
+        for name, domdb in self.domains.items():
+            domdb.populate()
 
 

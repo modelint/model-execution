@@ -18,37 +18,35 @@ class XE:
     system: System = None
 
     @classmethod
-    def initialize(cls, populated_mmdb_filename: str, types_dir: Path, sip_file: Path, scenario_file: Path,
-                   debug: bool = False):
+    def initialize(cls, system_dir: Path, context_dir: Path, scenario_file: Path, debug: bool = False):
         """
         Generate a user database (udb) from the populated metamodel (mmdb) and then populate the udb with
-        a population of initial instances establishing a starting context for any further execution.
+        a population of initial instances establishing a starting context for any further execution and then
+        run the specified scenario against it.
 
-        :param populated_mmdb_filename: Name of metamodel database populated with the domain model - this is a
-         serialized TclRAL text file. The user model is generated from the instances in this metamodel database
-        :param types_dir: Directory of files mapping model to TclRAL db_types for each domain
-        :param sip_file: *.sip file specifying an initial population of user instance values for the user model
-         to be generated
+        :param system_dir: Directory containing a populated metamodel as a TclRAL text file and one user to
+        db type mapping yaml file per domain
+        :param context_dir: Directory containing one initial instance population *.sip file per domain
         :param scenario_file: Path to an *.scn file defining a scenario to run
-        :param debug: Debug mode - prints schemas and other info to the console
+        :param debug: Debug mode - prints schemas and other info to the console if true
         """
         cls.debug = debug
+        cls.system_dir = system_dir
 
         # Load a metamodel file populated with a system
-        MetamodelDB.initialize(filename=populated_mmdb_filename)
+        MetamodelDB.initialize(system_dir=cls.system_dir)
 
         # Set the system name
-        cls.system = System(types_dir=types_dir)
+        cls.system = System(system_dir=cls.system_dir, debug=debug)
 
         if debug:
             MetamodelDB.display(system_name=cls.system.name)
 
-        cls.system.init_domains(debug=debug)
+        cls.system.init_domains()
 
-        # Populate the schema with initial user instance values
-        # context = Context(sip_file=sip_file, domain=domain, dbtypes=schema.user_types)
-        # cls.domains[domain] = ExecutableDomain(schema=schema, context=context)
+        cls.system.populate(context_dir=context_dir)
+
+        pass
         # Initialize the system (build the dynamic components within)
 
         # Run the scenario (sequence of interactions)
-        pass

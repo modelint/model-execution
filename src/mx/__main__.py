@@ -28,16 +28,12 @@ def get_logger():
 def parse(cl_input):
     parser = argparse.ArgumentParser(description=_progname)
     parser.add_argument('-s', '--system', action='store',
-                        help='Name of the populated metamodel database text file *.ral produced by xuml-populate')
+                        help='Name of a directory containing a system in a populated metamodel TclRAL file and one '
+                             'db type file per domain')
     parser.add_argument('-c', '--context', action='store',
-                        help='Name of the starting_context *.sip file to load')
+                        help='Name of the context directory specifying initial populations and states per domain')
     parser.add_argument('-x', '--scenario', action='store',
-                        help='Name of the scenario *.scn file to run')
-    parser.add_argument('-td', '--types_dir', action='store', help='A directory of yaml files mapping '
-                                                                  'user model types to system db_types. It should '
-                                                                  'contain one yaml file per domain, with each name '
-                                                                  'matching the domain name using underscores instead '
-                                                                  'of spaces in the name.')
+                        help='Name of the scenario *.scn file to run against the populated system')
     parser.add_argument('-D', '--debug', action='store_true',
                         help='Debug mode'),
     parser.add_argument('-V', '--version', action='store_true',
@@ -60,8 +56,8 @@ def main():
 
     # Domain specified
     if args.system:
-        XE.initialize(populated_mmdb_filename=args.system, types_dir=Path(args.types_dir),
-                      sip_file=Path(args.context), scenario_file=Path(args.scenario), debug=args.debug)
+        XE.initialize(system_dir=Path(args.system), context_dir=Path(args.context),
+                      scenario_file=Path(args.scenario), debug=args.debug)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
     print("\nNo problemo")

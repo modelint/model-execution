@@ -4,7 +4,10 @@
 from pathlib import Path
 from collections import namedtuple
 import logging
-from typing import Dict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mx.domain_model_db import DomainModelDB
 
 # Model Integration
 from sip_parser.parser import SIParser
@@ -13,7 +16,7 @@ from pyral.relvar import Relvar
 from pyral.transaction import Transaction
 
 # Model Execution
-from mx.db_names import mmdb, udb
+from mx.db_names import mmdb
 from mx.exceptions import *
 
 AttrRef = namedtuple('AttrRef', 'from_attr to_attr to_class alias')
@@ -26,7 +29,7 @@ pop_scenario = 'pop'  # Name of transaction that loads the schema
 
 class Context:
 
-    def __init__(self, sip_file: Path, domain: str, dbtypes):
+    def __init__(self, domaindb: 'DomainModelDB'):
         """
         We see that there is an R1 ref.  We need to find the target attributes and class
         The metamodel gives us Shaft.Bank -> Bank.Name
@@ -42,8 +45,16 @@ class Context:
         :param domain:  The subject matter domain being populated
         :param dbtypes: The actual TclRAL db_types used to represent user model db_types
         """
-        self.domain = domain
-        self.dbtypes = dbtypes
+        self.domaindb = domaindb
+
+        db_dir = self.domaindb.system.system_dir / self.domaindb.system.context_dir
+        found_files = [file for file in db_dir.iterdir() if file.is_file() and
+                       any(file.name.lower().startswith(prefix) for prefix in self.domaindb.prefixes)]
+        if len(found_files) == 0:
+            raise MXFileException(f"No .sip file found for domain [{self.domaindb.domain}] in: {db_dir.resolve()}")
+        if len(found_files) > 1:
+            raise MXFileException(f"Multiple db_types files for domain [{self.domaindb.domain}] in: {db_dir.resolve()}")
+        pass
 
         # Parse the starting_context's initial population file (*.sip file)
         _logger.info(f"Parsing sip: [{sip_file}]")

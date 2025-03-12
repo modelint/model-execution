@@ -6,6 +6,10 @@ class MXException(Exception):
     """ Top level Model Execution exception """
     pass
 
+class MXFileException(FileNotFoundError):
+    pass
+
+
 class MXUserDBException(MXException):
     """ Errors accessing data in the User DB """
 
