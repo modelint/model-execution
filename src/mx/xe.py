@@ -3,11 +3,9 @@
 # System
 import logging
 from pathlib import Path
-from typing import NamedTuple, Dict
 
 # MX
 from mx.metamodel_db import MetamodelDB
-from mx.context import Context
 from mx.system import System
 from mx.scenario import Scenario
 
