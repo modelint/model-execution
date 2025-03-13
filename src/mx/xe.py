@@ -44,6 +44,7 @@ class XE:
 
         cls.system.populate(context_dir=context_dir)
 
+        Scenario.run()
         pass
         # Initialize the system (build the dynamic components within)
 
