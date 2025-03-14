@@ -1,16 +1,21 @@
 """ dispatched_event.py """
 
-from mx.supplied_parameter_value import SuppliedParameterValue
+# System
 from datetime import datetime
+
+# Model Integration
+from pyral.relation import Relation
+
+# MX
+from mx.bridge import *
 
 class DispatchedEvent:
 
-    def __init__(self, event_spec: str, parameter_values: list[SuppliedParameterValue]):
+    def __init__(self, signal: MXSignalEvent):
         """
 
-        :param event_spec:
-        :param parameter_values:
         """
-        self.supplied_parameter_values = parameter_values
-        self.event_spec = event_spec
+        # self.supplied_parameter_values = parameter_values
+        # self.event_spec = event_spec
         self.arrival_time = datetime.now()
+        pass

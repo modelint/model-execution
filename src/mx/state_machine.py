@@ -10,18 +10,20 @@ from pyral.relation import Relation
 
 # MX
 from mx.exceptions import *
-from mx.db_names import mmdb, udb
-from mx.non_self_directed_event import NonSelfDirectedEvent
-from mx.self_directed_event import SelfDirectedEvent
+from mx.db_names import mmdb
+from mx.dispatched_event import DispatchedEvent
+
 
 class EventResponse(Enum):
     TRANSITION = 1
     IGNORE = 2
     CANT_HAPPEN = 3
 
+
 _logger = logging.getLogger(__name__)
 
 sm_id_map = {}  # Map of identifier values to state machine instances
+
 
 class StateMachine:
 
@@ -32,14 +34,14 @@ class StateMachine:
         :param current_state: The statemachine is in this state when created
         """
         self.current_state = current_state
-        self.non_self_directed_events: list[NonSelfDirectedEvent] = []
-        self.self_directed_events: list[SelfDirectedEvent] = []
+        self.non_self_directed_events: list[DispatchedEvent] = []
+        self.self_directed_events: list[DispatchedEvent] = []
         self.dest_state = None
         self.active_event = None
         self.state_model = state_model
         self.domain = domain
 
-    def accept_event_from_self(self, event:SelfDirectedEvent):
+    def accept_event_from_self(self, event: DispatchedEvent):
         """
         New SelfDirected event received, queue it
 
@@ -47,7 +49,7 @@ class StateMachine:
         """
         self.self_directed_events.append(event)
 
-    def accept_event_not_from_self(self, event:NonSelfDirectedEvent):
+    def accept_event_not_from_self(self, event: DispatchedEvent):
         """
         New NonSelfDirected event received, queue it
 

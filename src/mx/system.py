@@ -9,6 +9,7 @@ from pyral.relation import Relation
 
 # Model Execution
 from mx.domain_model_db import DomainModelDB
+from mx.domain import Domain
 from mx.db_names import mmdb
 from mx.exceptions import *
 
@@ -25,8 +26,9 @@ class System:
         """
         self.debug = debug
         self.system_dir = system_dir
-        self.context_dir = None
-        self.domains = None
+        self.context_dir = None  # Where the initial population *.sip files are
+        self.domain_dbs = None  # Each domain's schema
+        self.domains = None  # Each active domain
 
         # Get the System name from the populated metamodel
         result = Relation.restrict(db=mmdb, relation='System')
@@ -44,12 +46,9 @@ class System:
             _logger.exception(msg)
             raise MXUserDBException(msg)
 
-    def init_domains(self):
+    def create_domain_dbs(self):
         """
-        Create a database containing all user model domains in the system.
-
-        :param debug:
-        :return:
+        Create a separate database for each domain in the system
         """
         # Create a dictionary of domains
         result = Relation.restrict(db=mmdb, relation='Domain')
@@ -58,8 +57,8 @@ class System:
             _logger.exception(msg)
             raise MXUserDBException(msg)
 
-        self.domains = {d['Name']: DomainModelDB(name=d['Name'], alias=d['Alias'], system=self)
-                        for d in result.body}
+        self.domain_dbs = {d['Name']: DomainModelDB(name=d['Name'], alias=d['Alias'], system=self)
+                           for d in result.body}
 
     def populate(self, context_dir: Path):
         """
@@ -67,7 +66,12 @@ class System:
 
         """
         self.context_dir = context_dir
-        for name, domdb in self.domains.items():
+        for name, domdb in self.domain_dbs.items():
             domdb.populate()
+
+    def activate(self):
+        for domain_name, db in self.domain_dbs.items():
+            self.domains[domain_name] = Domain(name=domain_name, alias=db.alias)
+            pass
 
 

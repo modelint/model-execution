@@ -40,12 +40,19 @@ class XE:
         if debug:
             MetamodelDB.display(system_name=cls.system.name)
 
-        cls.system.init_domains()
+        # Create a database schema for each domain
+        cls.system.create_domain_dbs()
 
+        # Populate each of these schemas with the corresponding *.sip file found in the context_dir
         cls.system.populate(context_dir=context_dir)
 
-        Scenario.run()
+        # Activate the system (build the dynamic components within)
+        cls.system.activate()
+
+        # The system is now ready to react to external input
         pass
-        # Initialize the system (build the dynamic components within)
 
         # Run the scenario (sequence of interactions)
+        Scenario.run()
+        pass
+
