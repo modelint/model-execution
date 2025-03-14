@@ -2,6 +2,10 @@
 
 # System
 import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mx.domain_model_db import DomainModelDB
 
 # Model Integration
 from pyral.relation import Relation
@@ -20,7 +24,7 @@ class Domain:
     An Domain is an active component that can respond to external input
     """
 
-    def __init__(self, name: str, alias: str):
+    def __init__(self, name: str, alias: str, db:'DomainModelDB'):
         """
         Instantiate the domain
 
@@ -29,6 +33,7 @@ class Domain:
         """
         self.name = name
         self.alias = alias  # Now we have access to both the mmdb and this domain's schema
+        self.db = db
         self.lifecycles: dict[str, LifecycleStateMachine] = {}
         # self.assigners: dict[str, AssignerStateMachine] = {}
         self.initiate_lifecycles()  # Create a lifecycle statemachine for each class with a lifecycle

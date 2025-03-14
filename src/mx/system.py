@@ -71,7 +71,7 @@ class System:
 
     def activate(self):
         for domain_name, db in self.domain_dbs.items():
-            self.domains[domain_name] = Domain(name=domain_name, alias=db.alias)
+            self.domains[domain_name] = Domain(name=domain_name, alias=db.alias, db=db)
             pass
 
 

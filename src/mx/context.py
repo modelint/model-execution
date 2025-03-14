@@ -46,6 +46,7 @@ class Context:
         :param dbtypes: The actual TclRAL db_types used to represent user model db_types
         """
         self.domaindb = domaindb
+        self.initial_states: dict[str, list[str]]={}  # Initial states indexed by class name
 
         db_dir = self.domaindb.system.system_dir / self.domaindb.system.context_dir
         found_files = [file for file in db_dir.iterdir() if file.is_file() and
@@ -118,6 +119,9 @@ class Context:
             # Now that the relation header for our instance population is created, we need to fill in the relation
             # body (the actual instance values corresponding to each attribute in the expanded header)
             for irow in i_spec.population:
+                # save any initial states
+                if irow['initial_state']:
+                    self.initial_states[class_name] = irow['initial_state']
                 # For each instance row under the class header parsed from the init file
                 irow_col = 0  # Initial column position in the irow
                 row_dict = dict()  # Each value for an instance keyed by attribute name in the expanded header
