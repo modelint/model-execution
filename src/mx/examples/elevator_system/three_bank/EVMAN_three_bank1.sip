@@ -7,35 +7,35 @@ L { [Lower Floors]     [4.0] [2.0] [25] [7.0] [9.0] }
 P { [Penthouse] [4.0] [2.0] [25] [7.0] [9.0] }
 F { [Freight]   [7.0] [5.0] [25] [5.0] [14.0] }
 --
-Shaft
-ID | In service | R1>Bank
+Cabin
+Shaft | Travel direction | Current floor
 --
-{ [S1] [true] @L }
-{ [S2] [true] @L }
-{ [S3] [true] @L }
-{ [S4] [true] @P }
-{ [S5] [true] @P }
-{ [S6] [true] @F }
+{ [S1] [.up]   [3]  } > PICKUP DROPOFF
+{ [S2] [.down] [PH] } > PICKUP DROPOFF
+{ [S3] [.up]   [L]  } > PICKUP DROPOFF
+{ [S4] [.down] [5]  } > PICKUP DROPOFF
+{ [S5] [.down] [L]  } > PICKUP DROPOFF
+{ [S6] [.up]   [5]  } > PICKUP DROPOFF
 --
 Door
 Shaft | Close attempts | Lock requested | Held | Blocked | Emergency hold
 --
-{ [S1] [0] [false] [false] [false] [false] }
-{ [S2] [0] [false] [false] [false] [false] }
-{ [S3] [0] [false] [false] [false] [false] }
-{ [S4] [0] [false] [false] [false] [false] }
-{ [S5] [0] [false] [false] [false] [false] }
-{ [S6] [0] [false] [false] [false] [false] }
+{ [S1] [0] [false] [false] [false] [false] } > CLOSED
+{ [S2] [0] [false] [false] [false] [false] } > CLOSED
+{ [S3] [0] [false] [false] [false] [false] } > CLOSED
+{ [S4] [0] [false] [false] [false] [false] } > CLOSED
+{ [S5] [0] [false] [false] [false] [false] } > CLOSED
+{ [S6] [0] [false] [false] [false] [false] } > CLOSED
 --
-Cabin
-Shaft | Travel direction | Current floor
+Shaft
+ID | In service | R1>Bank
 --
-{ [S1] [.up]   [3] }
-{ [S2] [.down] [PH] }
-{ [S3] [.up]   [L] }
-{ [S4] [.down] [5] }
-{ [S5] [.down]   [L] }
-{ [S6] [.up] [5] }
+{ [S1] [true] @L } R53> NO TRANSFER > IDLE
+{ [S2] [true] @L } R53> NO TRANSFER > IDLE
+{ [S3] [true] @L } R53> NO TRANSFER > IDLE
+{ [S4] [true] @P } R53> NO TRANSFER > IDLE
+{ [S5] [true] @P } R53> NO TRANSFER > IDLE
+{ [S6] [true] @F } R53> NO TRANSFER > IDLE
 --
 Floor
 Name | Height
@@ -205,54 +205,54 @@ Shaft | Floor
 Accessible Shaft Level
 Shaft | Floor | Bank | Stop requested
 --
-{ [S6] [PH] [Freight]      [false] }
-{ [S6] [8]  [Freight]      [false] }
-{ [S6] [7]  [Freight]      [false] }
-{ [S6] [6]  [Freight]      [false] }
-{ [S6] [5]  [Freight]      [false] }
-{ [S6] [4]  [Freight]      [false] }
-{ [S6] [3]  [Freight]      [false] }
-{ [S6] [2]  [Freight]      [false] }
-{ [S6] [1]  [Freight]      [false] }
-{ [S6] [L]  [Freight]      [false] }
-{ [S6] [P1] [Freight]      [false] }
-{ [S6] [P2] [Freight]      [false] }
-{ [S1] [PH] [Penthouse]    [false] }
-{ [S1] [8]  [Penthouse]    [false] }
-{ [S1] [L]  [Penthouse]    [false] }
-{ [S1] [P1] [Penthouse]    [false] }
-{ [S2] [PH] [Penthouse]    [false] }
-{ [S2] [8]  [Penthouse]    [false] }
-{ [S2] [L]  [Penthouse]    [false] }
-{ [S2] [P1] [Penthouse]    [false] }
-{ [S3] [7]  [Lower Floors] [false] }
-{ [S3] [6]  [Lower Floors] [false] }
-{ [S3] [5]  [Lower Floors] [false] }
-{ [S3] [4]  [Lower Floors] [false] }
-{ [S3] [3]  [Lower Floors] [false] }
-{ [S3] [2]  [Lower Floors] [false] }
-{ [S3] [1]  [Lower Floors] [false] }
-{ [S3] [L]  [Lower Floors] [false] }
-{ [S3] [P1] [Lower Floors] [false] }
-{ [S3] [P2] [Lower Floors] [false] }
-{ [S4] [7]  [Lower Floors] [false] }
-{ [S4] [6]  [Lower Floors] [false] }
-{ [S4] [5]  [Lower Floors] [false] }
-{ [S4] [4]  [Lower Floors] [false] }
-{ [S4] [3]  [Lower Floors] [false] }
-{ [S4] [2]  [Lower Floors] [false] }
-{ [S4] [1]  [Lower Floors] [false] }
-{ [S4] [L]  [Lower Floors] [false] }
-{ [S4] [P1] [Lower Floors] [false] }
-{ [S4] [P2] [Lower Floors] [false] }
-{ [S5] [7]  [Lower Floors] [false] }
-{ [S5] [6]  [Lower Floors] [false] }
-{ [S5] [5]  [Lower Floors] [false] }
-{ [S5] [4]  [Lower Floors] [false] }
-{ [S5] [3]  [Lower Floors] [false] }
-{ [S5] [2]  [Lower Floors] [false] }
-{ [S5] [1]  [Lower Floors] [false] }
-{ [S5] [L]  [Lower Floors] [false] }
-{ [S5] [P1] [Lower Floors] [false] }
-{ [S5] [P2] [Lower Floors] [false] }
+{ [S6] [PH] [Freight]      [false] } > NOT REQUESTED
+{ [S6] [8]  [Freight]      [false] } > NOT REQUESTED
+{ [S6] [7]  [Freight]      [false] } > NOT REQUESTED
+{ [S6] [6]  [Freight]      [false] } > NOT REQUESTED
+{ [S6] [5]  [Freight]      [false] } > NOT REQUESTED
+{ [S6] [4]  [Freight]      [false] } > NOT REQUESTED
+{ [S6] [3]  [Freight]      [false] } > NOT REQUESTED
+{ [S6] [2]  [Freight]      [false] } > NOT REQUESTED
+{ [S6] [1]  [Freight]      [false] } > NOT REQUESTED
+{ [S6] [L]  [Freight]      [false] } > NOT REQUESTED
+{ [S6] [P1] [Freight]      [false] } > NOT REQUESTED
+{ [S6] [P2] [Freight]      [false] } > NOT REQUESTED
+{ [S1] [PH] [Penthouse]    [false] } > NOT REQUESTED
+{ [S1] [8]  [Penthouse]    [false] } > NOT REQUESTED
+{ [S1] [L]  [Penthouse]    [false] } > NOT REQUESTED
+{ [S1] [P1] [Penthouse]    [false] } > NOT REQUESTED
+{ [S2] [PH] [Penthouse]    [false] } > NOT REQUESTED
+{ [S2] [8]  [Penthouse]    [false] } > NOT REQUESTED
+{ [S2] [L]  [Penthouse]    [false] } > NOT REQUESTED
+{ [S2] [P1] [Penthouse]    [false] } > NOT REQUESTED
+{ [S3] [7]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S3] [6]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S3] [5]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S3] [4]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S3] [3]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S3] [2]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S3] [1]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S3] [L]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S3] [P1] [Lower Floors] [false] } > NOT REQUESTED
+{ [S3] [P2] [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [7]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [6]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [5]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [4]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [3]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [2]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [1]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [L]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [P1] [Lower Floors] [false] } > NOT REQUESTED
+{ [S4] [P2] [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [7]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [6]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [5]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [4]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [3]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [2]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [1]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [L]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [P1] [Lower Floors] [false] } > NOT REQUESTED
+{ [S5] [P2] [Lower Floors] [false] } > NOT REQUESTED
 --

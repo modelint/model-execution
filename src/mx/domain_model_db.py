@@ -76,7 +76,6 @@ class DomainModelDB:
 
     def populate(self):
         self.context = Context(domaindb=self)
-        pass
 
     def build_gen_rels(self):
         """
