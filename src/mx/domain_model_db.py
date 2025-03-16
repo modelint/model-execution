@@ -5,7 +5,7 @@ import logging
 import yaml
 from pathlib import Path
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 if TYPE_CHECKING:
     from mx.system import System
@@ -61,6 +61,10 @@ class DomainModelDB:
         self.assoc_rnums = None
         self.user_types = None
         self.context = None
+        self.lifecycles: dict[str, list[str]] = {}
+        self.single_assigners = None
+        MultAssignerPartition = NamedTuple('MultAssignerPartion', pclass=str, id_attrs=dict[str, list[str]])
+        self.mult_assigners: dict[str, MultAssignerPartition] = {}
 
         Database.open_session(name=self.alias)  # User models created in this database
 
@@ -73,10 +77,13 @@ class DomainModelDB:
             print(f"\nvvv Unpopulated [{self.domain}] Domain Model vvv ")
             Relvar.printall(db=self.alias)
             print(f"^^^ Unpopulated [{self.domain}] Domain Model ^^^ ")
+        self.find_lifecycles()
+        self.find_single_assigners()
+        self.find_mult_assigners()
+        pass
 
     def populate(self):
         self.context = Context(domaindb=self)
-        pass
 
     def build_gen_rels(self):
         """
@@ -180,15 +187,9 @@ class DomainModelDB:
                                       to_relvar=to_class.replace(" ", "_"), to_attrs=to_attrs, to_mult=mult_tclral[to_mult],
                                       )
 
-    def load_metamodel(self):
-        """ Let's load and print out the metamodel database """
-
-        _logger.info(f"Loading the metamodel database from: [{self.filename}]")
-        Database.load(db=mmdb, fname=self.filename)
-
     def sort_rels(self):
         """
-        Sort all of the domain's rnums into non associative, associative, and generalization relationships
+        Sort the domain's rnums into non-associative, associative, and generalization relationships
         """
         # Simple associations
         # Get rnums from Association class
@@ -253,3 +254,34 @@ class DomainModelDB:
             ids = dict(id_dict)
 
             Relvar.create_relvar(db=self.alias, name=cname, attrs=attr_list, ids=ids)
+
+    def find_lifecycles(self):
+        """
+        Find each class with a lifecycle defined and save its name and I1 identifier.
+        We use this information later when we populate the initial state of each lifecycle statemachine.
+        """
+        # Get the names of each class in this domain with a lifecycle defined
+        R = f"Domain:<{self.domain}>"
+        l_result = Relation.restrict(db=mmdb, relation='Lifecycle', restriction=R)
+        class_names = [t['Class'] for t in l_result.body]
+
+        # Now get the identifier attributes of all of these classes
+        R = f"Domain:<{self.domain}>, Identifier:<1>"
+        Relation.join(db=mmdb, rname2='Identifier_Attribute', rname1='Lifecycle', svar_name='id_all')
+        # id_all relation has all identifier attributes for all classes with lifecycles
+
+        for c in class_names:
+            R = f"Class:<{c}>"
+            i_result = Relation.restrict(db=mmdb, restriction=R, relation='id_all')
+            c_id_attrs = [t['Attribute'] for t in i_result.body]  # id attributes for the current class
+            self.lifecycles[c] = c_id_attrs
+
+    def find_single_assigners(self):
+        """
+        """
+        result = Relation.restrict(db=mmdb, relation='Single_Assigner')
+        # TODO: finish this
+
+    def find_mult_assigners(self):
+        result = Relation.restrict(db=mmdb, relation='Multiple_Assigner')
+        # TODO: finish this

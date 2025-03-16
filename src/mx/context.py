@@ -4,7 +4,7 @@
 from pathlib import Path
 from collections import namedtuple
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from mx.domain_model_db import DomainModelDB
@@ -19,7 +19,9 @@ from pyral.transaction import Transaction
 from mx.db_names import mmdb
 from mx.exceptions import *
 
-AttrRef = namedtuple('AttrRef', 'from_attr to_attr to_class alias')
+AttrRef = NamedTuple('AttrRef', from_attr=str, to_attr=str, to_class=str, alias=str)
+MultipleAssignerInitialState = NamedTuple('MultipleAssignerInitialState', pclass=str, state=str)
+# AttrRef = namedtuple('AttrRef', 'from_attr to_attr to_class alias')
 
 _logger = logging.getLogger(__name__)
 
@@ -46,7 +48,8 @@ class Context:
         :param dbtypes: The actual TclRAL db_types used to represent user model db_types
         """
         self.domaindb = domaindb
-        self.initial_states: dict[str, list[str]]={}  # Initial states indexed by class name
+        self.lifecycle_istates: dict[str, str] = {}
+        self.ma_istates: dict[str, MultipleAssignerInitialState] = {}
 
         db_dir = self.domaindb.system.system_dir / self.domaindb.system.context_dir
         found_files = [file for file in db_dir.iterdir() if file.is_file() and
@@ -119,9 +122,16 @@ class Context:
             # Now that the relation header for our instance population is created, we need to fill in the relation
             # body (the actual instance values corresponding to each attribute in the expanded header)
             for irow in i_spec.population:
-                # save any initial states
-                if irow['initial_state']:
-                    self.initial_states[class_name] = irow['initial_state']
+                # save any initial states for classes and multiple assigners
+                # TODO: Support single assigners
+                for s in irow['initial_state']:
+                    if len(s) == 1:
+                        # save initial state for this class
+                        self.lifecycle_istates[class_name] = s[0]
+                    if len(s) == 2:
+                        # index by rnum and save partitioning class and initial state
+                        self.ma_istates[s[0]] = MultipleAssignerInitialState(pclass=class_name, state=s[1])
+
                 # For each instance row under the class header parsed from the init file
                 irow_col = 0  # Initial column position in the irow
                 row_dict = dict()  # Each value for an instance keyed by attribute name in the expanded header
@@ -228,3 +238,10 @@ class Context:
         for relation, population in self.relations.items():
             Relvar.insert(db=self.domaindb.alias, tr=pop_scenario, relvar=relation.replace(' ', '_'), tuples=population)
         Transaction.execute(db=self.domaindb.alias, name=pop_scenario)
+
+    def find_initial_states(self):
+        """
+
+        :return:
+        """
+        pass

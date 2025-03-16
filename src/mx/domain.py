@@ -24,7 +24,7 @@ class Domain:
     An Domain is an active component that can respond to external input
     """
 
-    def __init__(self, name: str, alias: str, db:'DomainModelDB'):
+    def __init__(self, name: str, alias: str, db: 'DomainModelDB'):
         """
         Instantiate the domain
 
@@ -43,34 +43,19 @@ class Domain:
         """
         Create a state machine for each class with a lifecycle
         """
-        # Get the names of each class in this domain with a lifecycle defined
-        R = f"Domain:<{self.name}>"
-        l_result = Relation.restrict(db=mmdb, relation='Lifecycle', restriction=R)
-        class_names = [t['Class'] for t in l_result.body]
-
-        # Now get the identifier attributes of all of these classes
-        R = f"Domain:<{self.name}>, Identifier:<1>"
-        Relation.join(db=mmdb, rname2='Identifier_Attribute', rname1='Lifecycle', svar_name='id_all')
-        # id_all relation has all identifier attributes for all classes with lifecycles
-
-        for c in class_names:
-            R = f"Class:<{c}>"
-            i_result = Relation.restrict(db=mmdb, restriction=R, relation='id_all')
-            c_id_attrs = [t['Attribute'] for t in i_result.body]  # id attributes for the current class
-
-            inst_result = Relation.restrict(db=self.alias, relation=f"{c}")
+        for class_name, id_attrs in self.db.lifecycles.items():
+            inst_result = Relation.restrict(db=self.alias, relation=f"{class_name}")
             for i in inst_result.body:
+                # Get initial state
+                istates = self.db.context.lifecycle_istates
                 # create identifier value
-                inst_id = {ia:i[ia] for ia in c_id_attrs}
-                self.lifecycles[c] = LifecycleStateMachine(current_state='IDLE', instance_id=inst_id,
-                                                           class_name=c, domain=self.name)
+                inst_id = {attr: i[attr] for attr in id_attrs}
+                istate = istates[class_name]
+                self.lifecycles[class_name] = LifecycleStateMachine(current_state=istate, instance_id=inst_id,
+                                                                    class_name=class_name, domain=self.name)
                 pass
 
-
             pass
-
-
-
 
         # for row in class_result.body:
         #     class_name = row.value()
