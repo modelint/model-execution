@@ -34,7 +34,7 @@ class Domain:
         self.name = name
         self.alias = alias  # Now we have access to both the mmdb and this domain's schema
         self.db = db
-        self.lifecycles: dict[str, LifecycleStateMachine] = {}
+        self.lifecycles: dict[str, list[LifecycleStateMachine]] = {}
         # self.assigners: dict[str, AssignerStateMachine] = {}
         self.initiate_lifecycles()  # Create a lifecycle statemachine for each class with a lifecycle
         self.initiate_assigners()  # Create an assigner statemachine for each relationship managed by an assigner
@@ -44,18 +44,21 @@ class Domain:
         Create a state machine for each class with a lifecycle
         """
         for class_name, id_attrs in self.db.lifecycles.items():
-            inst_result = Relation.restrict(db=self.alias, relation=f"{class_name}")
+            inst_result = Relation.restrict(db=self.alias, relation=f"{class_name.replace(' ', '_')}")
             for i in inst_result.body:
                 # Get initial state
                 istates = self.db.context.lifecycle_istates
                 # create identifier value
                 inst_id = {attr: i[attr] for attr in id_attrs}
                 istate = istates[class_name]
-                self.lifecycles[class_name] = LifecycleStateMachine(current_state=istate, instance_id=inst_id,
-                                                                    class_name=class_name, domain=self.name)
+                self.lifecycles.setdefault(class_name, []).append(
+                    LifecycleStateMachine(current_state=istate, instance_id=inst_id,
+                                          class_name=class_name, domain=self.name)
+                )
                 pass
 
             pass
+        pass
 
         # for row in class_result.body:
         #     class_name = row.value()

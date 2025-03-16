@@ -239,9 +239,3 @@ class Context:
             Relvar.insert(db=self.domaindb.alias, tr=pop_scenario, relvar=relation.replace(' ', '_'), tuples=population)
         Transaction.execute(db=self.domaindb.alias, name=pop_scenario)
 
-    def find_initial_states(self):
-        """
-
-        :return:
-        """
-        pass
