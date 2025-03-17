@@ -60,22 +60,17 @@ class Domain:
             pass
         pass
 
-        # for row in class_result.body:
-        #     class_name = row.value()
-        #     pass
-        #     R = f"Class:<>, Domain:<{self.name}>"
-        #     id_result =
-        #     dom_result = Relation.restrict(db=self.alias, relation=lifecycle_result['Class'])
-        #     for instance in dom_result.body:
-        #         pass
-        #         self.lifecycles[lifecycle['Name']] = LifecycleStateMachine()
-        # pass
-
     def initiate_assigners(self):
         """
+        Initiates any single and multiple assigner state machines
 
         :param self:
         """
         R = f"Domain:<{self.name}>"
-        result = Relation.restrict(db=mmdb, relation='Lifecycle', restriction=R)
+        ma_result = Relation.restrict(db=mmdb, relation='Multiple_Assigner', restriction=R)
+        if ma_result.body:
+            pass
+        sa_result = Relation.restrict(db=mmdb, relation='Single_Assigner', restriction=R)
+        if sa_result.body:
+            pass
         pass
