@@ -123,7 +123,7 @@ class Context:
             # body (the actual instance values corresponding to each attribute in the expanded header)
             for irow in i_spec.population:
                 # save any initial states for classes and multiple assigners
-                # TODO: Support single assigners
+                # TODO: Support single assigners (after SIP support added)
                 for s in irow['initial_state']:
                     if len(s) == 1:
                         # save initial state for this class

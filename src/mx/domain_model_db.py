@@ -38,6 +38,8 @@ def load_yaml(file_path):
     return data
 
 
+MultipleAssigner = NamedTuple("MultipleAssigner", rnum=str, pclass=str)
+
 class DomainModelDB:
     """
     TclRAL schema for a user domain model extracted from a populated SM metamodel
@@ -62,6 +64,7 @@ class DomainModelDB:
         self.user_types = None
         self.context = None
         self.lifecycles: dict[str, list[str]] = {}
+        self.pclasses: dict[str, list[str]] = {}
         self.single_assigners = None
         MultAssignerPartition = NamedTuple('MultAssignerPartion', pclass=str, id_attrs=dict[str, list[str]])
         self.mult_assigners: dict[str, MultAssignerPartition] = {}
@@ -262,26 +265,52 @@ class DomainModelDB:
         """
         # Get the names of each class in this domain with a lifecycle defined
         R = f"Domain:<{self.domain}>"
-        l_result = Relation.restrict(db=mmdb, relation='Lifecycle', restriction=R)
-        class_names = [t['Class'] for t in l_result.body]
+        lcyc_result = Relation.restrict(db=mmdb, relation='Lifecycle', restriction=R)
+        class_names = [t['Class'] for t in lcyc_result.body]
 
         # Now get the identifier attributes of all of these classes
         R = f"Domain:<{self.domain}>, Identifier:<1>"
         Relation.join(db=mmdb, rname2='Identifier_Attribute', rname1='Lifecycle', svar_name='id_all')
         # id_all relation has all identifier attributes for all classes with lifecycles
 
+        # Save the primary identifier for each class with a lifecycle
         for c in class_names:
             R = f"Class:<{c}>"
-            i_result = Relation.restrict(db=mmdb, restriction=R, relation='id_all')
-            c_id_attrs = [t['Attribute'] for t in i_result.body]  # id attributes for the current class
+            id_result = Relation.restrict(db=mmdb, restriction=R, relation='id_all')
+            c_id_attrs = [t['Attribute'] for t in id_result.body]  # id attributes for the current class
             self.lifecycles[c] = c_id_attrs
 
     def find_single_assigners(self):
         """
+        For each relationship that uses one, create a single assigner
         """
-        result = Relation.restrict(db=mmdb, relation='Single_Assigner')
-        # TODO: finish this
+        R = f"Domain:<{self.domain}>"
+        result = Relation.restrict(db=mmdb, relation='Single_Assigner', restriction=R)
+        self.single_assigners = [t['rnum'] for t in result.body]
 
     def find_mult_assigners(self):
-        result = Relation.restrict(db=mmdb, relation='Multiple_Assigner')
-        # TODO: finish this
+        """
+        For each
+        """
+        # Get the names of each partitioning class in this domain
+        R = f"Domain:<{self.domain}>"
+        p_result = Relation.restrict(db=mmdb, relation='Multiple_Assigner', restriction=R)
+        pclass_names = [t['Partitioning_class'] for t in p_result.body]
+
+        # Now get the identifier attributes of all of these classes
+        R = f"Domain:<{self.domain}>, Identifier:<1>"
+        Relation.join(db=mmdb, rname2='Identifier_Attribute', rname1='Multiple_Assigner',
+                      attrs={'Partitioning_class': 'Class', 'Domain':'Domain'}, svar_name='id_pall')
+        # id_pall relation has all identifier attributes for all partitioning classes
+
+        # Save the primary identifier for each partitioning class
+        for c in pclass_names:
+            R = f"Partitioning_class:<{c}>"
+            id_result = Relation.restrict(db=mmdb, restriction=R, relation='id_pall')
+            c_id_attrs = [t['Attribute'] for t in id_result.body]  # id attributes for the current class
+            self.pclasses[c] = c_id_attrs
+
+        R = f"Domain:<{self.domain}>"
+        result = Relation.restrict(db=mmdb, relation='Multiple_Assigner', restriction=R)
+        self.mult_assigners = [MultipleAssigner(rnum=t['Rnum'], pclass=t['Partitioning_class'])
+                               for t in result.body]
