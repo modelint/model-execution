@@ -28,7 +28,7 @@ class System:
         self.system_dir = system_dir
         self.context_dir = None  # Where the initial population *.sip files are
         self.domain_dbs = None  # Each domain's schema
-        self.domains = None  # Each active domain
+        self.domains: dict[str, Domain] = {}  # Each active domain
 
         # Get the System name from the populated metamodel
         result = Relation.restrict(db=mmdb, relation='System')
