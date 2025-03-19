@@ -50,7 +50,6 @@ class XE:
         cls.system.activate()
 
         # The system is now ready to react to external input
-        pass
 
         # Run the scenario (sequence of interactions)
         Scenario.run()

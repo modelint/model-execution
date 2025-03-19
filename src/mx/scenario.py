@@ -13,16 +13,22 @@ _logger = logging.getLogger(__name__)
 
 # Interaction
 MXInteraction = NamedTuple('MXInteraction', source=str, dest=str, delay=float,
-                           action=MXSignalEvent | MXLifecycleStateEntered)
+                           action=ModeledOperation | BridgeableCondition)
 
 s = [
     # UI requests floor going up
     MXInteraction(source='UI', dest='EVMAN', delay=0,
-                  action=MXSignalEvent(op='BLEV', source=None, event_spec='Floor request',
-                                       state_model='Bank Level', domain='EVMAN',
-                                       params={'dir': '.up'},
-                                       instance={'Bank': 'Lower Floors', 'Floor': 'L'})
+                  action=MXCallMethod(op='BLEV', source=None, method='Floor request',
+                                      class_name='Bank Level', domain='EVMAN',
+                                      params={'dir': '.up'},
+                                      instance={'Bank': 'Lower Floors', 'Floor': 'L'})
                   ),
+    # MXInteraction(source='UI', dest='EVMAN', delay=0,
+    #               action=MXSignalEvent(op='BLEV', source=None, event_spec='Floor request',
+    #                                    state_model='Bank Level', domain='EVMAN',
+    #                                    params={'dir': '.up'},
+    #                                    instance={'Bank': 'Lower Floors', 'Floor': 'L'})
+    #               ),
     # Cabin starts opening door
     MXInteraction(source='EVMAN', dest='TRANS', delay=0,
                   action=MXLifecycleStateEntered(instance={'Shaft': 'S1'}, state='OPENING',

@@ -41,7 +41,6 @@ class Domain:
         self.assigners: dict[str, list[AssignerStateMachine]] = {}
         self.initiate_lifecycles()  # Create a lifecycle statemachine for each class with a lifecycle
         self.initiate_assigners()  # Create an assigner statemachine for each relationship managed by an assigner
-        pass
 
     def initiate_lifecycles(self):
         """
