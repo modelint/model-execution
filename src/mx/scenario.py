@@ -7,6 +7,7 @@ import time
 
 # MX
 from mx.dispatched_event import DispatchedEvent
+from mx.method import Method
 from mx.bridge import *
 
 _logger = logging.getLogger(__name__)
@@ -100,6 +101,8 @@ class Scenario:
             if i.delay:
                 _logger.info(f"Processing: {i.delay} sec...")
                 time.sleep(i.delay)
+            if isinstance(i.action, MXCallMethod):
+                pass
             if isinstance(i.action, MXSignalEvent):
                 print("signal event")
                 DispatchedEvent(signal=i.action)

@@ -3,7 +3,6 @@
 # System
 import logging
 import yaml
-from pathlib import Path
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, NamedTuple
 
@@ -66,6 +65,7 @@ class DomainModelDB:
         self.lifecycles: dict[str, list[str]] = {}
         self.pclasses: dict[str, list[str]] = {}
         self.single_assigners = None
+        self.methods = None
         MultAssignerPartition = NamedTuple('MultAssignerPartion', pclass=str, id_attrs=dict[str, list[str]])
         self.mult_assigners: dict[str, MultAssignerPartition] = {}
 
@@ -314,3 +314,4 @@ class DomainModelDB:
         result = Relation.restrict(db=mmdb, relation='Multiple_Assigner', restriction=R)
         self.mult_assigners = [MultipleAssigner(rnum=t['Rnum'], pclass=t['Partitioning_class'])
                                for t in result.body]
+

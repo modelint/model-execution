@@ -13,10 +13,11 @@ from pyral.relation import Relation
 # Model Execution
 # from domain_model_db import MultipleAssigner
 # from mx.single_assigner_state_machine import SingleAssignerStateMachine
+from mx.method import Method
 from mx.multiple_assigner_state_machine import MultipleAssignerStateMachine
 from mx.assigner_state_machine import AssignerStateMachine
 from mx.lifecycle_state_machine import LifecycleStateMachine
-# from mx.db_names import mmdb
+from mx.db_names import mmdb
 # from mx.exceptions import *
 
 _logger = logging.getLogger(__name__)
@@ -37,10 +38,21 @@ class Domain:
         self.name = name
         self.alias = alias  # Now we have access to both the mmdb and this domain's schema
         self.db = db
+        self.methods = None
         self.lifecycles: dict[str, list[LifecycleStateMachine]] = {}
         self.assigners: dict[str, list[AssignerStateMachine]] = {}
         self.initiate_lifecycles()  # Create a lifecycle statemachine for each class with a lifecycle
         self.initiate_assigners()  # Create an assigner statemachine for each relationship managed by an assigner
+        self.initiate_methods()
+
+    def initiate_methods(self):
+        def find_methods(self):
+            R = f"Domain:<{self.domain}>"
+            result = Relation.restrict(db=mmdb, relation='Method', restriction=R)
+            self.methods = [Method(anum=t['Anum'], name=t['Name'], class_name=t['Class_name']) for t in result.body]
+            pass
+
+        pass
 
     def initiate_lifecycles(self):
         """
