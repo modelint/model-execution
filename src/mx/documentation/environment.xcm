@@ -1,0 +1,20 @@
+metadata
+    Title : Model Execution Subsystem
+    Author : Leon Starr
+    Document ID : mint.xe.td.1
+    Version : 0.1.0
+    Creation date : March 21, 2025
+    Modification date : March 21, 2025
+    Organization : Model Integration, LLC / www.modelint.com
+    Copyright notice > MIT
+    Organization logo > mint
+domain Model Execution, MX
+subsystem Environment, ENV 1-99
+class Execution Environment, XE
+attributes
+    ID : Environment ID {I}
+--
+relationships
+    R1
+
+
