@@ -7,7 +7,7 @@ from pathlib import Path
 # MX
 from mx.metamodel_db import MetamodelDB
 from mx.system import System
-from mx.scenario import Scenario
+from mx.scenarios.scenario import Scenario
 
 _logger = logging.getLogger(__name__)
 

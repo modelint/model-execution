@@ -8,6 +8,7 @@ import logging.config
 import sys
 import argparse
 from pathlib import Path
+import atexit
 
 # MX
 from mx.xe import XE
@@ -16,6 +17,9 @@ from mx import version
 _logpath = Path("mx.log")
 _progname = 'Blueprint Model Execution'
 
+def clean_up():
+    """Normal and exception exit activities"""
+    _logpath.unlink(missing_ok=True)
 
 def get_logger():
     """Initiate the logger"""
@@ -36,6 +40,10 @@ def parse(cl_input):
                         help='Name of the scenario *.scn file to run against the populated system')
     parser.add_argument('-D', '--debug', action='store_true',
                         help='Debug mode'),
+    parser.add_argument('-L', '--log', action='store_true',
+                        help='Generate a diagnostic log file')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Verbose messages')
     parser.add_argument('-V', '--version', action='store_true',
                         help='Print the current version of the model execution app')
     return parser.parse_args(cl_input)
@@ -54,13 +62,18 @@ def main():
         print(f'{_progname} version: {version}')
         sys.exit(0)
 
+    if not args.log:
+        # If no log file is requested, remove the log file before termination
+        atexit.register(clean_up)
+
     # Domain specified
     if args.system:
         XE.initialize(system_dir=Path(args.system), context_dir=Path(args.context),
                       scenario_file=Path(args.scenario), debug=args.debug)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
-    print("\nNo problemo")
+    if args.verbose:
+        print("\nNo problemo")
 
 
 if __name__ == "__main__":
