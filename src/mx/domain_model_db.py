@@ -5,6 +5,7 @@ import logging
 import yaml
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, NamedTuple
+from contextlib import redirect_stdout
 
 if TYPE_CHECKING:
     from mx.system import System
@@ -77,13 +78,27 @@ class DomainModelDB:
         self.build_associative_rels()
         self.build_gen_rels()
         if self.system.debug:
-            print(f"\nvvv Unpopulated [{self.domain}] Domain Model vvv ")
-            Relvar.printall(db=self.alias)
-            print(f"^^^ Unpopulated [{self.domain}] Domain Model ^^^ ")
+            self.print()
         self.find_lifecycles()
         self.find_single_assigners()
         self.find_mult_assigners()
         pass
+
+    def display(self):
+        """
+        Display the user domain schema on the console
+        """
+        print(f"\nvvv Unpopulated [{self.domain}] Domain Model vvv ")
+        Relvar.printall(db=self.alias)
+        print(f"^^^ Unpopulated [{self.domain}] Domain Model ^^^ ")
+
+    def print(self):
+        """
+        Print out the user domain schema
+        """
+        with open(f"{self.alias.lower()}.txt", 'w') as f:
+            with redirect_stdout(f):
+                Relvar.printall(db=mmdb)
 
     def populate(self):
         self.context = Context(domaindb=self)

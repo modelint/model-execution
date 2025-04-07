@@ -7,7 +7,7 @@ from pathlib import Path
 # MX
 from mx.metamodel_db import MetamodelDB
 from mx.system import System
-from mx.scenarios.scenario import Scenario
+from mx.scenarios.scenario_ping import Scenario
 
 _logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class XE:
         cls.system = System(system_dir=cls.system_dir, debug=debug)
 
         if debug:
-            MetamodelDB.display(system_name=cls.system.name)
+            MetamodelDB.print()
 
         # Create a database schema for each domain
         cls.system.create_domain_dbs()

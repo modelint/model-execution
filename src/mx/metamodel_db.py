@@ -3,6 +3,7 @@
 # System
 import logging
 from pathlib import Path
+from contextlib import redirect_stdout
 
 # Model Integration
 from pyral.database import Database
@@ -35,6 +36,15 @@ class MetamodelDB:
         _logger.info(f"Loading the metamodel database from: [{cls.filename}]")
         Database.open_session(name=mmdb)
         Database.load(db=mmdb, fname=cls.filename)
+
+    @classmethod
+    def print(cls):
+        """
+        Print out the populated metamodel
+        """
+        with open("mmdb.txt", 'w') as f:
+            with redirect_stdout(f):
+                Relvar.printall(db=mmdb)
 
     @classmethod
     def display(cls, system_name: str):

@@ -1,4 +1,4 @@
-scenario : Three Bank1
+scenario : One Bank1
 --
 Bank
 Name | Passenger load time | Block clear time | Max close attempts | Average cabin speed | Average stop duration
@@ -56,12 +56,10 @@ R38>Bank Level | Calling up
 Middle Bank Level
 R38>Bank Level | Calling down | Calling up
 --
-{ @LF5  [false] [false] }
 { @LF4  [false] [false] }
 { @LF3  [false] [false] }
 { @LF2  [true] [false] }
 { @LF1  [false] [false] }
-{ @LFL  [false] [false] }
 --
 Building
 Name | Average floor gap

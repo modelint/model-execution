@@ -32,3 +32,23 @@ s = [
                                       instance={'Shaft': 'S1'})
                   ),
 ]
+class Scenario:
+
+    @classmethod
+    def run(cls):
+        for i in s:
+            if i.delay:
+                _logger.info(f"Processing: {i.delay} sec...")
+                time.sleep(i.delay)
+            if isinstance(i.action, MXCallMethod):
+                pass
+            if isinstance(i.action, MXSignalEvent):
+                print("signal event")
+                DispatchedEvent(signal=i.action)
+                pass
+
+            elif isinstance(i.action, MXLifecycleStateEntered):
+                print("state entered")
+            else:
+                print("Unknown interaction type")
+        pass
