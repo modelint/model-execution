@@ -77,8 +77,8 @@ class DomainModelDB:
         self.build_simple_assocs()
         self.build_associative_rels()
         self.build_gen_rels()
-        if self.system.debug:
-            self.print()
+        # if self.system.debug:
+        #     self.print()
         self.find_lifecycles()
         self.find_single_assigners()
         self.find_mult_assigners()
@@ -98,10 +98,11 @@ class DomainModelDB:
         """
         with open(f"{self.alias.lower()}.txt", 'w') as f:
             with redirect_stdout(f):
-                Relvar.printall(db=mmdb)
+                Relvar.printall(db=self.alias)
 
     def populate(self):
         self.context = Context(domaindb=self)
+        self.print()
 
     def build_gen_rels(self):
         """

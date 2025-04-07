@@ -1,0 +1,9 @@
+Wets Name : string
+Positive Integer : int
+Transit Lane Name : string
+Enum : string
+Culvert Name : string
+Valve Name : string
+Gate Name : string
+Vessel License : string
+Transit Lane Gate Position : int
