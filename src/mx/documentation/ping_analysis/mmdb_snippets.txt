@@ -1,0 +1,200 @@
+-- Action --
++--------+------------+---------------------+
+| ID     | Activity   | Domain              |
++========+============+=====================+
+| ACTN1  | A7         | Elevator Management |
+| ACTN2  | A7         | Elevator Management |
+| ACTN3  | A7         | Elevator Management |
+| ACTN4  | A7         | Elevator Management |
+| ACTN5  | A7         | Elevator Management |
+| ACTN6  | A7         | Elevator Management |
+| ACTN7  | A7         | Elevator Management |
+| ACTN8  | A7         | Elevator Management |
+| ACTN9  | A7         | Elevator Management |
+| ACTN10 | A7         | Elevator Management |
+| ACTN11 | A7         | Elevator Management |
+| ACTN12 | A7         | Elevator Management |
+| ACTN13 | A7         | Elevator Management |
+| ACTN14 | A7         | Elevator Management |
++--------+------------+---------------------+
+-- Set_Action --
++-------+-------------+------------+---------------------+----------------+
+| ID    | Operation   | Activity   | Domain              | Input_b_flow   |
++=======+=============+============+=====================+================+
+| ACTN7 | UNION       | A7         | Elevator Management | F9             |
+| ACTN9 | JOIN        | A7         | Elevator Management | F12            |
++-------+-------------+------------+---------------------+----------------+
+
+-- Select_Action --
++-------+------------+---------------------+--------------+
+| ID    | Activity   | Domain              | Input_flow   |
++=======+============+=====================+==============+
+| ACTN2 | A7         | Elevator Management | F4           |
+| ACTN5 | A7         | Elevator Management | F7           |
++-------+------------+---------------------+--------------+
+
+-- Scalar_Switch_Action --
++--------+------------+---------------------+----------------+
+| ID     | Activity   | Domain              | Scalar_input   |
++========+============+=====================+================+
+| ACTN14 | A7         | Elevator Management | F2             |
++--------+------------+---------------------+----------------+
+
+-- Restrict_Action --
++----------+------------+---------------------+
+| Action   | Activity   | Domain              |
++==========+============+=====================+
+| ACTN12   | A7         | Elevator Management |
+| ACTN13   | A7         | Elevator Management |
++----------+------------+---------------------+
+
+-- Restriction_Condition --
++----------+------------+---------------------+----------------------------------------------+-------------------------+
+| Action   | Activity   | Domain              | Expression                                   | Selection_cardinality   |
++==========+============+=====================+==============================================+=========================+
+| ACTN2    | A7         | Elevator Management |                                              | ALL                     |
+| ACTN5    | A7         | Elevator Management | ==  dir                                      | ALL                     |
+| ACTN12   | A7         | Elevator Management | DESCENDING(Height)  >=  current floor height | ONE                     |
+| ACTN13   | A7         | Elevator Management | ASCENDING(Height)  <  current floor height   | ONE                     |
++----------+------------+---------------------+----------------------------------------------+-------------------------+
+
+-- Rename_Action --
++-------+------------+---------------------+------------------+------------------------+----------------+----------------------------------+
+| ID    | Activity   | Domain              | From_attribute   | From_non_scalar_type   | To_attribute   | To_table                         |
++=======+============+=====================+==================+========================+================+==================================+
+| ACTN8 | A7         | Elevator Management | Name             | Floor                  | Floor          | Height_Distance_Floor_Level Name |
++-------+------------+---------------------+------------------+------------------------+----------------+----------------------------------+
+-- Relational_Action --
++--------+------------+---------------------+
+| ID     | Activity   | Domain              |
++========+============+=====================+
+| ACTN3  | A7         | Elevator Management |
+| ACTN6  | A7         | Elevator Management |
+| ACTN7  | A7         | Elevator Management |
+| ACTN8  | A7         | Elevator Management |
+| ACTN9  | A7         | Elevator Management |
+| ACTN12 | A7         | Elevator Management |
+| ACTN13 | A7         | Elevator Management |
++--------+------------+---------------------+
+
+-- Read_Action --
++--------+------------+---------------------+-----------------+
+| ID     | Activity   | Domain              | Instance_flow   |
++========+============+=====================+=================+
+| ACTN11 | A7         | Elevator Management | F14             |
++--------+------------+---------------------+-----------------+
+-- Project_Action --
++-------+------------+---------------------+
+| ID    | Activity   | Domain              |
++=======+============+=====================+
+| ACTN3 | A7         | Elevator Management |
+| ACTN6 | A7         | Elevator Management |
++-------+------------+---------------------+
+
+-- Switch_Action --
++--------+------------+---------------------+
+| ID     | Activity   | Domain              |
++========+============+=====================+
+| ACTN14 | A7         | Elevator Management |
++--------+------------+---------------------+
+-- Traverse_Action --
++--------+------------+---------------------+-----------------------------------------------+---------------+--------------------+
+| ID     | Activity   | Domain              | Path                                          | Source_flow   | Destination_flow   |
++========+============+=====================+===============================================+===============+====================+
+| ACTN1  | A7         | Elevator Management | /R2/R28/Shaft Level/R3/Accessible Shaft Level | F1            | F4                 |
+| ACTN4  | A7         | Elevator Management | /R49/Floor Service                            | F4            | F7                 |
+| ACTN10 | A7         | Elevator Management | /R43/R28                                      | F1            | F14                |
++--------+------------+---------------------+-----------------------------------------------+---------------+--------------------+
+
+-- Labeled_Flow --
++------+------------+---------------------+----------------------+
+| ID   | Activity   | Domain              | Name                 |
++======+============+=====================+======================+
+| F1   | A7         | Elevator Management | me                   |
+| F2   | A7         | Elevator Management | dir                  |
+| F4   | A7         | Elevator Management | shaft aslevs         |
+| F6   | A7         | Elevator Management | stop here floors     |
+| F9   | A7         | Elevator Management | calling floors       |
+| F13  | A7         | Elevator Management | destination heights  |
+| F15  | A7         | Elevator Management | current floor height |
+| F16  | A7         | Elevator Management | up_nearest dest      |
+| F17  | A7         | Elevator Management | down_nearest dest    |
+| F20  | A7         | Elevator Management | nearest dest         |
+| F18  | A7         | Elevator Management | up                   |
+| F19  | A7         | Elevator Management | down                 |
++------+------------+---------------------+----------------------+
+-- Flow --
++------+------------+---------------------+
+| ID   | Activity   | Domain              |
++======+============+=====================+
+| F1   | A7         | Elevator Management |
+| F2   | A7         | Elevator Management |
+| F3   | A7         | Elevator Management |
+| F4   | A7         | Elevator Management |
+| F5   | A7         | Elevator Management |
+| F6   | A7         | Elevator Management |
+| F7   | A7         | Elevator Management |
+| F8   | A7         | Elevator Management |
+| F9   | A7         | Elevator Management |
+| F10  | A7         | Elevator Management |
+| F11  | A7         | Elevator Management |
+| F12  | A7         | Elevator Management |
+| F13  | A7         | Elevator Management |
+| F14  | A7         | Elevator Management |
+| F15  | A7         | Elevator Management |
+| F16  | A7         | Elevator Management |
+| F17  | A7         | Elevator Management |
+| F20  | A7         | Elevator Management |
+| F18  | A7         | Elevator Management |
+| F19  | A7         | Elevator Management |
++------+------------+---------------------+
+
+
+-- Instance_Flow --
++------+------------+---------------------+------------------------+
+| ID   | Activity   | Domain              | Class                  |
++======+============+=====================+========================+
+| F1   | A7         | Elevator Management | Cabin                  |
+| F3   | A7         | Elevator Management | Accessible Shaft Level |
+| F4   | A7         | Elevator Management | Accessible Shaft Level |
+| F5   | A7         | Elevator Management | Accessible Shaft Level |
+| F7   | A7         | Elevator Management | Floor Service          |
+| F8   | A7         | Elevator Management | Floor Service          |
+| F11  | A7         | Elevator Management | Floor                  |
+| F14  | A7         | Elevator Management | Floor                  |
++------+------------+---------------------+------------------------+
+
+-- Multiple_Instance_Flow --
++------+------------+---------------------+
+| ID   | Activity   | Domain              |
++======+============+=====================+
+| F3   | A7         | Elevator Management |
+| F4   | A7         | Elevator Management |
+| F5   | A7         | Elevator Management |
+| F7   | A7         | Elevator Management |
+| F8   | A7         | Elevator Management |
+| F11  | A7         | Elevator Management |
++------+------------+---------------------+
+
+-- Relation_Flow --
++------+------------+---------------------+----------------------------------+
+| ID   | Activity   | Domain              | Type                             |
++======+============+=====================+==================================+
+| F6   | A7         | Elevator Management | Floor_Level Name                 |
+| F9   | A7         | Elevator Management | Floor_Level Name                 |
+| F10  | A7         | Elevator Management | Floor_Level Name                 |
+| F12  | A7         | Elevator Management | Height_Distance_Floor_Level Name |
+| F13  | A7         | Elevator Management | Floor_Level Name_Height_Distance |
+| F16  | A7         | Elevator Management | Floor_Level Name_Height_Distance |
+| F17  | A7         | Elevator Management | Floor_Level Name_Height_Distance |
+| F20  | A7         | Elevator Management | Floor_Level Name_Height_Distance |
++------+------------+---------------------+----------------------------------+
+
+-- Scalar_Flow --
++------+------------+---------------------+------------+
+| ID   | Activity   | Domain              | Type       |
++======+============+=====================+============+
+| F2   | A7         | Elevator Management | Direction  |
+| F15  | A7         | Elevator Management | Distance   |
++------+------------+---------------------+------------+
+

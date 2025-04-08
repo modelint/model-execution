@@ -34,7 +34,7 @@ class Method(Activity):
         R = f"Name:<{self.name}>, Class:<{self.class_name}>, Domain:<{domain_name}>"
         result = Relation.restrict(db=mmdb, relation='Method', restriction=R)
         if not result.body:
-            msg = f"Method [{self.domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
+            msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
             _logger.error(msg)
             raise MXMetamodelDBException(msg)
 
