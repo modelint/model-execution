@@ -5,12 +5,16 @@
 
 # System
 import logging
-from typing import NamedTuple
+from typing import NamedTuple, TYPE_CHECKING
 import time
+
+if TYPE_CHECKING:
+    from mx.system import System
 
 # MX
 from mx.dispatched_event import DispatchedEvent
 from mx.method import Method
+from mx.domain import Domain
 from mx.bridge import *
 
 _logger = logging.getLogger(__name__)
@@ -35,13 +39,13 @@ s = [
 class Scenario:
 
     @classmethod
-    def run(cls):
+    def run(cls, sys_domains: dict[str, Domain]):
         for i in s:
             if i.delay:
                 _logger.info(f"Processing: {i.delay} sec...")
                 time.sleep(i.delay)
             if isinstance(i.action, MXCallMethod):
-                m = Method(name=i.action.method, class_name=i.action.class_name, domain_alias=i.dest,
+                m = Method(name=i.action.method, class_name=i.action.class_name, domain_name=sys_domains[i.dest].name,
                            instance_id=i.action.instance, parameters=i.action.params)
                 pass
             if isinstance(i.action, MXSignalEvent):

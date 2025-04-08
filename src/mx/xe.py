@@ -52,6 +52,6 @@ class XE:
         # The system is now ready to react to external input
 
         # Run the scenario (sequence of interactions)
-        Scenario.run()
+        Scenario.run(sys_domains=cls.system.domains)
         pass
 

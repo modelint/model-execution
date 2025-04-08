@@ -1,6 +1,7 @@
 """ method.py -- class method """
 
 # System
+import logging
 
 # Model Integration
 from pyral.relation import Relation
@@ -11,16 +12,17 @@ from mx.bridge import NamedValues
 from db_names import mmdb
 from exceptions import *
 
+_logger = logging.getLogger(__name__)
 
 class Method(Activity):
 
-    def __init__(self, name: str, class_name: str, domain_alias: str,
+    def __init__(self, name: str, class_name: str, domain_name: str,
                  instance_id: NamedValues, parameters: NamedValues):
         """
 
         :param name:
         :param class_name:
-        :param domain_alias:
+        :param domain_name:
         :param instance_id:
         :param parameters:
         """
@@ -29,17 +31,13 @@ class Method(Activity):
         self.class_name = class_name
         self.xi_flow = None
 
-        # Get the domain name from the alias
-        R = f"Alias:<{domain_alias}>"
-        result = Relation.restrict(db=mmdb, relation='Domain', restriction=R)
-        if len(result.body) != 1:
-            pass
-        domain_name = result.body[0]['Name']
-
         R = f"Name:<{self.name}>, Class:<{self.class_name}>, Domain:<{domain_name}>"
         result = Relation.restrict(db=mmdb, relation='Method', restriction=R)
-        if len(result.body) != 1:
-            pass
+        if not result.body:
+            msg = f"Method [{self.domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
+            _logger.error(msg)
+            raise MXMetamodelDBException(msg)
+
         anum = result.body[0]['Anum']
         self.xi_flow = result.body[0]['Executing_instance_flow']
 

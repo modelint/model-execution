@@ -15,6 +15,7 @@ from mx.exceptions import *
 
 _logger = logging.getLogger(__name__)
 
+
 class System:
 
     def __init__(self, system_dir: Path, debug: bool = False):
@@ -39,13 +40,6 @@ class System:
 
         self.name = result.body[0]['Name']
 
-        # Create a dictionary of domain names
-        result = Relation.restrict(db=mmdb, relation='Domain')
-        if not result.body:
-            msg = f"No domains defined for system in metamodel"
-            _logger.exception(msg)
-            raise MXUserDBException(msg)
-
     def create_domain_dbs(self):
         """
         Create a separate database for each domain in the system
@@ -57,7 +51,7 @@ class System:
             _logger.exception(msg)
             raise MXUserDBException(msg)
 
-        self.domain_dbs = {d['Name']: DomainModelDB(name=d['Name'], alias=d['Alias'], system=self)
+        self.domain_dbs = {d['Alias']: DomainModelDB(name=d['Name'], alias=d['Alias'], system=self)
                            for d in result.body}
 
     def populate(self, context_dir: Path):
@@ -71,7 +65,6 @@ class System:
 
     def activate(self):
         for domain_name, db in self.domain_dbs.items():
-            self.domains[domain_name] = Domain(name=domain_name, alias=db.alias, db=db)
-            pass
+            self.domains[domain_name] = Domain(name=db.domain, alias=db.alias, db=db)
 
 

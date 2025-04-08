@@ -9,6 +9,8 @@ class MXException(Exception):
 class MXFileException(FileNotFoundError):
     pass
 
+class MXMetamodelDBException(MXException):
+    """ Errors accessing data in the Metamodel DB """
 
 class MXUserDBException(MXException):
     """ Errors accessing data in the User DB """
