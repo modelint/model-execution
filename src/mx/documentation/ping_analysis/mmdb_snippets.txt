@@ -25,6 +25,20 @@
 | ACTN9 | JOIN        | A7         | Elevator Management | F12            |
 +-------+-------------+------------+---------------------+----------------+
 
+-- Table_Action --
++--------+------------+---------------------+----------------+---------------+
+| ID     | Activity   | Domain              | Input_a_flow   | Output_flow   |
++========+============+=====================+================+===============+
+| ACTN3  | A7         | Elevator Management | F5             | F6            |
+| ACTN6  | A7         | Elevator Management | F8             | F9            |
+| ACTN7  | A7         | Elevator Management | F6             | F10           |
+| ACTN8  | A7         | Elevator Management | F11            | F12           |
+| ACTN9  | A7         | Elevator Management | F10            | F13           |
+| ACTN12 | A7         | Elevator Management | F13            | F16           |
+| ACTN13 | A7         | Elevator Management | F13            | F17           |
++--------+------------+---------------------+----------------+---------------+
+
+
 -- Select_Action --
 +-------+------------+---------------------+--------------+
 | ID    | Activity   | Domain              | Input_flow   |
