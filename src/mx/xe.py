@@ -3,55 +3,84 @@
 # System
 import logging
 from pathlib import Path
+from contextlib import redirect_stdout
+
+# Model Integration
+from pyral.database import Database
+from pyral.relvar import Relvar
 
 # MX
-from mx.metamodel_db import MetamodelDB
 from mx.system import System
 from mx.scenarios.scenario_ping import Scenario
+from mx.db_names import mmdb
 
 _logger = logging.getLogger(__name__)
 
+
 class XE:
+    """
+    This class represents the overall model execution environment.
+    It follows the singleton pattern to ensure only one XE exists.
+    """
 
-    system: System = None
+    _instance = None
 
-    @classmethod
-    def initialize(cls, system_dir: Path, context_dir: Path, scenario_file: Path, debug: bool = False):
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(XE, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        # Avoid reinitialization if already initialized
+        if getattr(self, "_initialized", False):
+            return
+        self._initialized = True
+
+        self.mmdb_path = None
+        self.scenario_path = None
+        self.system = None
+        self.debug = False
+        self.verbose = False
+
+    def initialize(self, mmdb_path: Path, context_dir: Path, scenario_path: Path, verbose:bool, debug: bool):
         """
         Generate a user database (udb) from the populated metamodel (mmdb) and then populate the udb with
         a population of initial instances establishing a starting context for any further execution and then
         run the specified scenario against it.
 
-        :param system_dir: Directory containing a populated metamodel as a TclRAL text file and one user to
-        db type mapping yaml file per domain
+        :param mmdb_path: Path to the system (all domains) populated into the metamodel *.ral TclRAL
         :param context_dir: Directory containing one initial instance population *.sip file per domain
-        :param scenario_file: Path to an *.scn file defining a scenario to run
+        :param scenario_path: Path to an *.scn file defining a scenario to run
+        :param verbose: Verbose mode
         :param debug: Debug mode - prints schemas and other info to the console if true
         """
-        cls.debug = debug
-        cls.system_dir = system_dir
+        self.mmdb_path = mmdb_path
+        self.scenario_path = scenario_path
+        self.verbose = verbose
+        self.debug = debug
 
-        # Load a metamodel file populated with a system
-        MetamodelDB.initialize(system_dir=cls.system_dir)
+        # Load a metamodel file populated with the system as one or more modeled domains
+        _logger.info(f"Loading the metamodel database from: [{self.mmdb_path}]")
+        Database.open_session(name=mmdb)
+        Database.load(db=mmdb, fname=str(self.mmdb_path))
 
-        # Set the system name
-        cls.system = System(system_dir=cls.system_dir, debug=debug)
+        # Create the System instance
+        self.system = System()
 
-        if debug:
-            MetamodelDB.print()
+        if self.verbose:
+            # Display the populated metamodel
+            msg = f"Metamodel populated with the {self.system.name} system"
+            print(f"\n*** {msg} ***\n")
+            Relvar.printall(db=mmdb)
+            print(f"\n^^^ {msg} ^^^\n")
 
-        # Create a database schema for each domain
-        cls.system.create_domain_dbs()
-
-        # Populate each of these schemas with the corresponding *.sip file found in the context_dir
-        cls.system.populate(context_dir=context_dir)
-
-        # Activate the system (build the dynamic components within)
-        cls.system.activate()
-
-        # The system is now ready to react to external input
-
-        # Run the scenario (sequence of interactions)
-        Scenario.run(sys_domains=cls.system.domains)
         pass
 
+        # Populate each of these schemas with the corresponding *.sip file found in the context_dir
+        self.system.populate(context_dir=context_dir)
+
+        # Activate the system (build the dynamic components within)
+        self.system.activate()
+
+        # Run the scenario (sequence of interactions)
+        Scenario.run(sys_domains=self.system.domains)

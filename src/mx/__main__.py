@@ -32,10 +32,9 @@ def get_logger():
 def parse(cl_input):
     parser = argparse.ArgumentParser(description=_progname)
     parser.add_argument('-s', '--system', action='store',
-                        help='Name of a directory containing a system in a populated metamodel TclRAL file and one '
-                             'db type file per domain')
+                        help='Name of the metamodel TclRAL database *.ral file populated with one or more domains')
     parser.add_argument('-c', '--context', action='store',
-                        help='Name of the context directory specifying initial populations and states per domain')
+                        help='Name of the context directory specifying the initialized domain dbs and a *.sip file')
     parser.add_argument('-x', '--scenario', action='store',
                         help='Name of the scenario *.scn file to run against the populated system')
     parser.add_argument('-D', '--debug', action='store_true',
@@ -68,8 +67,9 @@ def main():
 
     # Domain specified
     if args.system:
-        XE.initialize(system_dir=Path(args.system), context_dir=Path(args.context),
-                      scenario_file=Path(args.scenario), debug=args.debug)
+        xe = XE()  # Create the singleton instance
+        xe.initialize(mmdb_path=Path(args.system), context_dir=Path(args.context),
+                      scenario_path=Path(args.scenario), verbose=args.verbose, debug=args.debug)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
     if args.verbose:
