@@ -37,6 +37,7 @@ class XE:
         self._initialized = True
 
         self.mmdb_path = None
+        self.context_dir = None
         self.scenario_path = None
         self.system = None
         self.debug = False
@@ -55,6 +56,7 @@ class XE:
         :param debug: Debug mode - prints schemas and other info to the console if true
         """
         self.mmdb_path = mmdb_path
+        self.context_dir = context_dir
         self.scenario_path = scenario_path
         self.verbose = verbose
         self.debug = debug
@@ -65,7 +67,7 @@ class XE:
         Database.load(db=mmdb, fname=str(self.mmdb_path))
 
         # Create the System instance
-        self.system = System()
+        self.system = System(xe=self)
 
         if self.verbose:
             # Display the populated metamodel
@@ -77,7 +79,7 @@ class XE:
         pass
 
         # Populate each of these schemas with the corresponding *.sip file found in the context_dir
-        self.system.populate(context_dir=context_dir)
+        # self.system.populate(context_dir=context_dir)
 
         # Activate the system (build the dynamic components within)
         self.system.activate()

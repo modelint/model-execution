@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 from pyral.database import Database
 from pyral.relvar import Relvar
 from pyral.relation import Relation
-from pyral.rtypes import Attribute, Mult
 
 # Model Execution
 from mx.db_names import mmdb, types_dir_name
