@@ -6,6 +6,10 @@ from typing import NamedTuple, Optional, Any
 # MX
 from mx.bridge import NamedValues
 
+class ActiveFlow(NamedTuple):
+    value: Any
+    flowtype: str
+
 class Activity:
 
     def __init__(self, domain: str, anum: str, parameters: NamedValues):
