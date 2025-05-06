@@ -35,10 +35,16 @@ class Domain:
 
     def __init__(self, name: str, alias: str, system: 'System'):
         """
-        Instantiate the domain
+        Initiate a database session for this domain and load it from its databae file.
+
+        Gather data of interest for the domain's execution from the database and prep the domain
+        for execution.
+
+        When execution begins, manage execution of this domain.
 
         :param name: The name of the domain, used for indexing into the mmdb
         :param alias: The domain alias serves as the name of the corresponding domain database
+        :param system: Reference to the single System object.
         """
         self.name = name
         self.alias = alias  # Now we have access to both the mmdb and this domain's schema
@@ -48,6 +54,7 @@ class Domain:
         self.pclasses: dict[str, list[str]] = {}
         self.single_assigners = None
         self.methods = None
+        # self.flows = activity: flow id, flow type(scalar, inst1, instM, table, tuple), data type(scalar, table, class)
         MultAssignerPartition = NamedTuple('MultAssignerPartion', pclass=str, id_attrs=dict[str, list[str]])
         self.mult_assigners: dict[str, MultAssignerPartition] = {}
 
@@ -67,6 +74,15 @@ class Domain:
         # self.initiate_lifecycles()  # Create a lifecycle statemachine for each class with a lifecycle
         # self.initiate_assigners()  # Create an assigner statemachine for each relationship managed by an assigner
         # self.initiate_methods()
+
+    def activate(self):
+        """
+        Create any elements necessary before scenario execution begins
+
+        :return:
+        """
+        # At this point we are only testing method execution, so there's nothing to be done.  Just return.
+        return
 
     def find_lifecycles(self):
         """
@@ -133,27 +149,19 @@ class Domain:
         Relvar.printall(db=self.alias)
         print(f"\n^^^ {self.name} domain model ^^^\n")
 
-    # def initiate_methods(self):
-    #     def find_methods(self):
-    #         R = f"Domain:<{self.domain}>"
-    #         result = Relation.restrict(db=mmdb, relation='Method', restriction=R)
-    #         self.methods = [Method(anum=t['Anum'], name=t['Name'], class_name=t['Class_name']) for t in result.body]
-    #         pass
-    #
-    #     pass
 
     # def initiate_lifecycles(self):
     #     """
     #     Create a state machine for each class with a lifecycle
     #     """
     #     # Get each class_name and its primary id for each lifecycle
-    #     for class_name, id_attrs in self.db.lifecycles.items():
+    #     for class_name, id_attrs in self.lifecycles.items():
     #         # Get all the instances from the user model for that class
     #         inst_result = Relation.restrict(db=self.alias, relation=f"{class_name.replace(' ', '_')}")
     #         # Create a lifecycle statemachine for each instance
     #         for i in inst_result.body:
     #             # Get initial state from the context
-    #             istates = self.db.context.lifecycle_istates
+    #             istates = self.context.lifecycle_istates
     #             # Create identifier value for this instance
     #             inst_id = {attr: i[attr] for attr in id_attrs}
     #             # Get the initial state for this instance from the context

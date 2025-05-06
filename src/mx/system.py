@@ -3,7 +3,6 @@
 # System
 import logging
 from typing import TYPE_CHECKING
-from pathlib import Path
 
 if TYPE_CHECKING:
     from mx.xe import XE
@@ -26,7 +25,7 @@ class System:
         Set the system name
         """
         self.xe = xe
-        self.domains: dict[str, Domain] = {}  # Each active domain
+        self.domains: dict[str, Domain] = {}
 
         # Get the System name from the populated metamodel
         system_i = Relation.restrict(db=mmdb, relation='System')
@@ -50,18 +49,8 @@ class System:
             _logger.exception(msg)
             raise MXUserDBException(msg)
 
-        self.domains = {d['Alias']: Domain(name=d['Name'], alias=d['Alias'], system=self)
-                        for d in domain_i.body}
-
-    # def populate(self, context_dir: Path):
-    #     """
-    #     :param context_dir: Path to the context directory
-    #
-    #     """
-    #     self.context_dir = context_dir
-    #     for name, domdb in self.domain_dbs.items():
-    #         domdb.populate()
+        self.domains = {d['Alias']: Domain(name=d['Name'], alias=d['Alias'], system=self) for d in domain_i.body}
 
     def activate(self):
-        for domain_name, db in self.domain_dbs.items():
-            self.domains[domain_name] = Domain(name=db.domain, alias=db.alias, db=db)
+        for d in self.domains.values():
+            d.activate()

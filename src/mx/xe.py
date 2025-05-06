@@ -3,7 +3,6 @@
 # System
 import logging
 from pathlib import Path
-from contextlib import redirect_stdout
 
 # Model Integration
 from pyral.database import Database
@@ -66,7 +65,7 @@ class XE:
         Database.open_session(name=mmdb)
         Database.load(db=mmdb, fname=str(self.mmdb_path))
 
-        # Create the System instance
+        # Create the System and get each domain ready to execute
         self.system = System(xe=self)
 
         if self.verbose:
@@ -76,13 +75,13 @@ class XE:
             Relvar.printall(db=mmdb)
             print(f"\n^^^ {msg} ^^^\n")
 
-        pass
-
-        # Populate each of these schemas with the corresponding *.sip file found in the context_dir
-        # self.system.populate(context_dir=context_dir)
-
         # Activate the system (build the dynamic components within)
         self.system.activate()
 
+        # Run the scenario
+        s = Scenario(xe=self)
+        s.run()
+
+
         # Run the scenario (sequence of interactions)
-        Scenario.run(sys_domains=self.system.domains)
+        # Scenario.run(sys_domains=self.system.domains)

@@ -1,7 +1,6 @@
 """ scenario_ping.py -- Calls the ping method """
 
-# This file will be generate form a scenario script in the future
-# but I'm handcoding this for now
+# This file will be generated from a scenario script, but its handcoded for now
 
 # System
 import logging
@@ -9,7 +8,7 @@ from typing import NamedTuple, TYPE_CHECKING
 import time
 
 if TYPE_CHECKING:
-    from mx.system import System
+    from mx.xe import XE
 
 # MX
 from mx.dispatched_event import DispatchedEvent
@@ -38,14 +37,21 @@ s = [
 ]
 class Scenario:
 
-    @classmethod
-    def run(cls, sys_domains: dict[str, Domain]):
+    def __init__(self, xe: "XE"):
+        self.xe = xe
+        pass
+
+    def run(self):
+        """
+
+        :return:
+        """
         for i in s:
             if i.delay:
                 _logger.info(f"Processing: {i.delay} sec...")
                 time.sleep(i.delay)
             if isinstance(i.action, MXCallMethod):
-                m = Method(name=i.action.method, class_name=i.action.class_name, domain_name=sys_domains[i.dest].name,
+                m = Method(name=i.action.method, class_name=i.action.class_name, domain_name=self.xe.system.domains[i.dest].name,
                            instance_id=i.action.instance, parameters=i.action.params)
                 pass
             if isinstance(i.action, MXSignalEvent):
