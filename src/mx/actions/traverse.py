@@ -12,6 +12,7 @@ from pyral.relation import Relation
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
+from mx.rvname import RVN
 
 
 class Traverse(Action):
@@ -28,23 +29,40 @@ class Traverse(Action):
         Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Traverse_Action")
         # Find just my action
         R = f"ID:<{action_id}>"
-        Relation.restrict(db=mmdb, restriction=R, svar_name="traverse_action_r")
+        traverse_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name="traverse_action_r")
+        self.source_flow = traverse_action_t.body[0]["Source_flow"]
+        self.dest_flow = traverse_action_t.body[0]["Destination_flow"]
+        self.activity = activity  # TODO: Move this into superclass eventually
+        self.domdb = self.activity.domain_alias
         Relation.print(db=mmdb, table_name="traverse action")
 
         # Now get all of the hops in the path
-        hops_r = Relation.semijoin(db=mmdb, rname1="traverse_action_r", rname2="Hop")
-        Relation.print(db=mmdb, table_name="hops")
+
+        all_hops_rv = RVN.name(db=self.domdb, name="all_hops")
+        hops_r = Relation.semijoin(db=mmdb, rname1="traverse_action_r", rname2="Hop", svar_name=all_hops_rv)
+        Relation.print(db=mmdb, variable_name=all_hops_rv)
 
         # Sort them by hop number so that we proceed 1, 2, ...
         hops = hops_r.body
         hops.sort(key=lambda d: int(d['Number']))  # Sorts in place
         # TODO: First hop is from F1 relation variable
-        pass
-        # source = Relation
-        # for h in hops:
-        #     if f
-        #     Relation.semijoin(db=)
-        #     pass
+
+        from_hop_rv = self.activity.flows[self.source_flow].value
+        for h in hops:
+            # Create relation variable for this hop
+            R = f"Number:<{h["Number"]}>"
+            this_hop_rv = RVN.name(db=mmdb, name="this_hop")
+            Relation.restrict(db=mmdb, relation=all_hops_rv, restriction=R, svar_name=this_hop_rv)
+
+            # Determine its type
+            hop_type = self.find_hop_type(hop_rv=this_hop_rv)
+            pass
+            # get hop type
+
+            # Assuming straight hops for now
+            hop_to_class = h["Class_step"].replace(' ', '_')
+            result = Relation.semijoin(db=self.domdb, rname1=from_hop_rv, rname2=hop_to_class)
+            pass
         pass
 
         # perform a series of semi-joins following the path
@@ -56,3 +74,55 @@ class Traverse(Action):
         # result = Relation.restrict(db=db, relation='Perspective', restriction=R)
 
 
+    def find_hop_type(self, hop_rv: str) -> str:
+        """
+        Determine the metamodel subclass of this Hop tuple
+
+        :param hop_rv:  A relational variable holding a single tuple representing the Hop instance
+        :return: Name of the subclass (hop type)
+        """
+        # Let's rule out (or in) Generalization first since the logic is simple
+        result = Relation.join(db=mmdb, rname1=hop_rv, rname2="Generalization")
+        if result.body:
+            result = Relation.join(db=mmdb, rname2="To_Superclass_Hop")  # Note we can join the previous result
+            if result.body:
+                return "to superclass"
+            else:
+                return "to subclass"
+
+        # It's an Association Hop
+        # We proceed from the most likely to the least likely cases
+        # Is it a straight, nonassociation class hop
+        result = Relation.join(db=mmdb, rname1=hop_rv, rname2="Straight_Hop")
+        if result.body:
+            return "straight"
+
+        # Now it's either an Association Class or Circular Hop
+        result = Relation.join(db=mmdb, rname1=hop_rv, rname2="Association_Class_Hop")
+        if result.body:
+            # It's an Association Class Hop, but which direction?
+            result = Relation.join(db=mmdb, rname2="To_Association_Class_Hop")
+            if result.body:
+                return "to association class"
+            result = Relation.join(db=mmdb, rname2="From_Asymmetric_Associaton_Class_Hop")
+            if result.body:
+                return "from asymmetric association class"
+            else:
+                return "from symmetric association class"
+
+        # It's a Circular Hop, but what kind?
+        result = Relation.join(db=mmdb, rname1=hop_rv, rname2="Symmetric_Hop")
+        if result:
+            return "symmetric"
+        result = Relation.join(db=mmdb, rname2="Asymmetric_Circular_Hop")
+        if result:
+            return "asymmetric circular"
+        else:
+            return "ordinal"
+
+
+
+
+
+        # TODO: Use PyRAL relation create to convert hop to an rv
+        pass
