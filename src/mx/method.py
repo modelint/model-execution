@@ -72,7 +72,10 @@ class Method(Activity):
         R = ", ".join(f"{k}:<{v}>" for k,v in self.instance.items())
         # Set a relation variable name for the xi flow value
         xi_flow_value = RVN.name(db=self.domain_alias, name="xi_flow_value")
-        Relation.restrict(db=self.domain_alias, relation=self.class_name, restriction=R, svar_name=xi_flow_value)
+        Relation.restrict(db=self.domain_alias, relation=self.class_name, restriction=R)
+        id_attr_names = tuple(k for k in self.instance.keys())
+        Relation.project(db=self.domain_alias, attributes=id_attr_names, svar_name=xi_flow_value)
+        Relation.print(db=self.domain_alias, variable_name=xi_flow_value)
 
         # Set the xi flow value to a relation variable holding a single instance reference for the executing instance
         self.flows[self.xi_flow] = ActiveFlow(value=xi_flow_value, flowtype=self.class_name)

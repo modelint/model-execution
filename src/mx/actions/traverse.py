@@ -25,14 +25,15 @@ class Traverse(Action):
         """
         super().__init__(anum=activity.anum, action_id=action_id)
 
+        self.activity = activity  # TODO: Move this into superclass eventually
         # All traverse actions in activity
         Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Traverse_Action")
         # Find just my action
         R = f"ID:<{action_id}>"
         traverse_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name="traverse_action_r")
-        self.source_flow = traverse_action_t.body[0]["Source_flow"]
-        self.dest_flow = traverse_action_t.body[0]["Destination_flow"]
-        self.activity = activity  # TODO: Move this into superclass eventually
+        self.source_flow_name = traverse_action_t.body[0]["Source_flow"]
+        self.source_flow = self.activity.flows[self.source_flow_name]
+        self.dest_flow_name = traverse_action_t.body[0]["Destination_flow"]
         self.domdb = self.activity.domain_alias
         Relation.print(db=mmdb, table_name="traverse action")
 
@@ -47,22 +48,34 @@ class Traverse(Action):
         hops.sort(key=lambda d: int(d['Number']))  # Sorts in place
         # TODO: First hop is from F1 relation variable
 
-        from_hop_rv = self.activity.flows[self.source_flow].value
+        from_hop_rv = self.source_flow.value
+        Relation.print(db=self.domdb, variable_name=from_hop_rv)
         for h in hops:
+            pass
             # Create relation variable for this hop
             R = f"Number:<{h["Number"]}>"
             this_hop_rv = RVN.name(db=mmdb, name="this_hop")
             Relation.restrict(db=mmdb, relation=all_hops_rv, restriction=R, svar_name=this_hop_rv)
+            Relation.print(db=mmdb, variable_name=this_hop_rv)
 
             # Determine its type
             hop_type = self.find_hop_type(hop_rv=this_hop_rv)
-            pass
-            # get hop type
 
-            # Assuming straight hops for now
-            hop_to_class = h["Class_step"].replace(' ', '_')
-            result = Relation.semijoin(db=self.domdb, rname1=from_hop_rv, rname2=hop_to_class)
-            pass
+            if hop_type == "straight":
+                # Get the referential attributes, source and target classes
+                hop_attr_refs = Relation.semijoin(db=mmdb, rname1=this_hop_rv, rname2="Attribute_Reference",
+                                       attrs={"Domain": "Domain",  "Class_step": "To_class", "Rnum": "Rnum"})
+                Relation.print(db=mmdb)
+
+                # Compose a semijoin on the domain with the source flow ## step class on Ref attrs
+                # Create attrs_ref
+                ref_dict = {aref["From_attribute"]: aref["To_attribute"] for aref in hop_attr_refs.body}
+                pass
+                hopped_rv = RVN.name(db=self.domdb, name=f"hop_number_{h["Number"]}")
+                hop_to_class = h["Class_step"].replace(' ', '_')
+                Relation.semijoin(db=self.domdb, rname1=from_hop_rv, rname2=hop_to_class,
+                                  attrs=ref_dict, svar_name=hopped_rv)
+                Relation.print(db=self.domdb, variable_name=hopped_rv)
         pass
 
         # perform a series of semi-joins following the path
@@ -73,6 +86,8 @@ class Traverse(Action):
         # R = f"Phrase:<{phrase}>, Domain:<{cls.domain}>"
         # result = Relation.restrict(db=db, relation='Perspective', restriction=R)
 
+    def straight_hop(self):
+        pass
 
     def find_hop_type(self, hop_rv: str) -> str:
         """
