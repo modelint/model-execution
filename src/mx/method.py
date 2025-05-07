@@ -20,7 +20,8 @@ _logger = logging.getLogger(__name__)
 class Method(Activity):
 
 
-    def __init__(self, name: str, class_name: str, domain_name: str, instance_id: NamedValues, parameters: NamedValues):
+    def __init__(self, name: str, class_name: str, domain_name: str, domain_alias: str,
+                 instance_id: NamedValues, parameters: NamedValues):
         """
         Lookup the Method and execute it
 
@@ -31,6 +32,8 @@ class Method(Activity):
         :param parameters:  Parameters and values for this Method's Signature
         """
         self.name = name
+        self.domain_name = domain_name
+        self.domain_alias = domain_alias
         self.instance = instance_id
         self.parameters = parameters
         self.class_name = class_name
@@ -42,7 +45,7 @@ class Method(Activity):
         self.method_rvname = RVN.name(db=mmdb, name=self.name)
 
         # Get the method attribute values (anum, xi_flow)
-        R = f"Name:<{self.name}>, Class:<{self.class_name}>, Domain:<{domain_name}>"
+        R = f"Name:<{self.name}>, Class:<{self.class_name}>, Domain:<{self.domain_name}>"
         Relation.restrict(db=mmdb, relation='Method', restriction=R)
         method_i = Relation.rename(db=mmdb, names={"Anum":"Activity"}, svar_name=self.method_rvname)
         if not method_i.body:
@@ -65,8 +68,14 @@ class Method(Activity):
     def enable_initial_flows(self):
         # Set the values of all initial flows
 
-        # Set the xi flow value to a single instance reference for the executing instance
-        self.flows[self.xi_flow] = ActiveFlow(value=self.instance, flowtype=self.class_name)
+        # Convert identifier to a restriction phrase
+        R = ", ".join(f"{k}:<{v}>" for k,v in self.instance.items())
+        # Set a relation variable name for the xi flow value
+        xi_flow_value = RVN.name(db=self.domain_alias, name="xi_flow_value")
+        Relation.restrict(db=self.domain_alias, relation=self.class_name, restriction=R, svar_name=xi_flow_value)
+
+        # Set the xi flow value to a relation variable holding a single instance reference for the executing instance
+        self.flows[self.xi_flow] = ActiveFlow(value=xi_flow_value, flowtype=self.class_name)
 
         # Set the input parameter flows
         Relation.rename(db=mmdb, relation="Parameter", names={"Name": "Pname"})

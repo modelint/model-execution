@@ -51,7 +51,8 @@ class Scenario:
                 _logger.info(f"Processing: {i.delay} sec...")
                 time.sleep(i.delay)
             if isinstance(i.action, MXCallMethod):
-                m = Method(name=i.action.method, class_name=i.action.class_name, domain_name=self.xe.system.domains[i.dest].name,
+                m = Method(name=i.action.method, class_name=i.action.class_name,
+                           domain_name=self.xe.system.domains[i.dest].name, domain_alias=i.dest,
                            instance_id=i.action.instance, parameters=i.action.params)
                 pass
             if isinstance(i.action, MXSignalEvent):

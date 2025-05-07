@@ -23,6 +23,7 @@ from mx.assigner_state_machine import AssignerStateMachine
 from mx.lifecycle_state_machine import LifecycleStateMachine
 from mx.db_names import mmdb
 # from mx.exceptions import *
+from mx.rvname import RVN
 
 _logger = logging.getLogger(__name__)
 
@@ -59,6 +60,10 @@ class Domain:
         self.mult_assigners: dict[str, MultAssignerPartition] = {}
 
         self.file_path = self.system.xe.context_dir / f"{self.alias}.ral"  # Path to the domain database file
+
+        # Initialize the variable name counter
+        RVN.init_for_db(db=self.alias)
+
         # Load the domain database
         Database.open_session(name=self.alias)
         Database.load(db=self.alias, fname=str(self.file_path))
