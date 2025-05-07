@@ -12,6 +12,7 @@ from pyral.relvar import Relvar
 from mx.system import System
 from mx.scenarios.scenario_ping import Scenario
 from mx.db_names import mmdb
+from mx.rvname import RVN
 
 _logger = logging.getLogger(__name__)
 
@@ -64,6 +65,9 @@ class XE:
         _logger.info(f"Loading the metamodel database from: [{self.mmdb_path}]")
         Database.open_session(name=mmdb)
         Database.load(db=mmdb, fname=str(self.mmdb_path))
+
+        # Initialize the variable name counter
+        RVN.init_for_db(db=mmdb)
 
         # Create the System and get each domain ready to execute
         self.system = System(xe=self)

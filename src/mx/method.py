@@ -9,15 +9,16 @@ from pyral.relation import Relation
 
 # MX
 from mx.activity import Activity, ActiveFlow
+from mx.actions.traverse import Traverse
 from mx.bridge import NamedValues
 from db_names import mmdb
 from exceptions import *
+from mx.rvname import RVN
 
 _logger = logging.getLogger(__name__)
 
 class Method(Activity):
 
-    rname = "this_method"
 
     def __init__(self, name: str, class_name: str, domain_name: str, instance_id: NamedValues, parameters: NamedValues):
         """
@@ -38,19 +39,22 @@ class Method(Activity):
         self.wave_action_ids = None
         self.flows : dict[str, Optional[ActiveFlow] ] = {}
 
+        self.method_rvname = RVN.name(db=mmdb, name=self.name)
+
         # Get the method attribute values (anum, xi_flow)
         R = f"Name:<{self.name}>, Class:<{self.class_name}>, Domain:<{domain_name}>"
-        method_i = Relation.restrict(db=mmdb, relation='Method', restriction=R, svar_name=Method.rname)
+        Relation.restrict(db=mmdb, relation='Method', restriction=R)
+        method_i = Relation.rename(db=mmdb, names={"Anum":"Activity"}, svar_name=self.method_rvname)
         if not method_i.body:
             msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
             _logger.error(msg)
             raise MXMetamodelDBException(msg)
 
-        anum = method_i.body[0]['Anum']
+        anum = method_i.body[0]['Activity']
         self.xi_flow = method_i.body[0]['Executing_instance_flow']
 
         # Create all flows with empty content
-        Relation.join(db=mmdb, rname1=Method.rname, rname2="Flow", attrs={"Anum": "Activity", "Domain": "Domain"})
+        Relation.join(db=mmdb, rname1=self.method_rvname, rname2="Flow")
         flow_ids_r = Relation.project(db=mmdb, attributes=("ID",))
         self.flows = {t["ID"]: None for t in flow_ids_r.body}
 
@@ -66,14 +70,14 @@ class Method(Activity):
 
         # Set the input parameter flows
         Relation.rename(db=mmdb, relation="Parameter", names={"Name": "Pname"})
-        p = Relation.join(db=mmdb, rname2=Method.rname, attrs={"Activity": "Anum", "Domain": "Domain"}, svar_name="my_params")
+        p = Relation.join(db=mmdb, rname2=self.method_rvname)
         param_r = Relation.project(db=mmdb, attributes=("Pname", "Input_flow", "Type"))
         for t in param_r.body:
             self.flows[t["Input_flow"]] = ActiveFlow(value=self.parameters[t["Pname"]], flowtype=t["Type"])
 
         # Now check for any class accessor and set each such flow to the name of the accessed class
-        Relation.rename(db=mmdb, relation=Method.rname, names={"Class": "MethodClass"})
-        Relation.join(db=mmdb, rname2="Class_Accessor", attrs={"Anum": "Activity", "Domain": "Domain"})
+        Relation.rename(db=mmdb, relation=self.method_rvname, names={"Class": "MethodClass"})
+        Relation.join(db=mmdb, rname2="Class_Accessor")
         ca_flows_r = Relation.project(db=mmdb, attributes=("Class", "Output_flow",))
         for t in ca_flows_r.body:
             self.flows[t["Output_flow"]] = ActiveFlow(value=None, flowtype=t["Class"])
@@ -97,5 +101,18 @@ class Method(Activity):
 
     def process_wave(self):
         for action in self.wave_action_ids:
-            pass
+
+            # Get the Action relation
+            Relation.join(db=mmdb, rname1="Action", rname2=self.method_rvname)
+            R = f"ID:<{action}>"
+            Relation.restrict(db=mmdb, restriction=R)
+
+            # Get the action type
+            atype_r = Relation.project(db=mmdb, attributes=("Type",))
+            action_type = atype_r.body[0]["Type"]
+
+            if action_type == "traverse":
+                Traverse(activity=self, action_id=action)  # The only action type we handling right now
+            else:
+                pass  # TODO: replace this if-then with dictionary based function invocation
         pass
