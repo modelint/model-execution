@@ -109,17 +109,16 @@ class Traverse(Action):
             Relation.print(db=mmdb, table_name="hop_attr_refs")
 
 
-        pass
 
         # Convert each attribute reference to a join pair
-        join_pairs = {aref["From_attribute"]: aref["To_attribute"] for aref in hop_attr_refs_r.body}
+        join_pairs = {aref["To_attribute"]: aref["From_attribute"] for aref in hop_attr_refs_r.body}
 
         hopped_rv = RVN.name(db=self.domdb, name=f"hop_number_{hop_t["Number"]}")
         hop_to_class = hop_t["Class_step"].replace(' ', '_')
-        Relation.semijoin(db=self.domdb, rname1=hop_from_rv, rname2=hop_to_class,
+        Relation.semijoin(db=self.domdb, rname2=hop_to_class, rname1=hop_from_rv,
                           attrs=join_pairs, svar_name=hopped_rv)
         if self.activity.xe.debug:
-            print("\nStraight Hop output")
+            print("\nTo Association Class Hop output")
             Relation.print(db=self.domdb, variable_name=hopped_rv)
         return hopped_rv
 
