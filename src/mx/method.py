@@ -2,7 +2,10 @@
 
 # System
 import logging
-from typing import Optional, Any
+from typing import TYPE_CHECKING, Optional, Any
+
+if TYPE_CHECKING:
+    from mx.xe import XE
 
 # Model Integration
 from pyral.relation import Relation
@@ -17,14 +20,15 @@ from mx.rvname import RVN
 
 _logger = logging.getLogger(__name__)
 
+
 class Method(Activity):
 
-
-    def __init__(self, name: str, class_name: str, domain_name: str, domain_alias: str,
+    def __init__(self, xe: "XE", name: str, class_name: str, domain_name: str, domain_alias: str,
                  instance_id: NamedValues, parameters: NamedValues):
         """
         Lookup the Method and execute it
 
+        :param xe: For access to environment settings (debug, verbose, etc)
         :param name:  Method name
         :param class_name:  Method is defined on this class
         :param domain_name:  Method is defined on class in this domain
@@ -40,14 +44,14 @@ class Method(Activity):
         self.xi_flow = None
         self.current_wave = 1
         self.wave_action_ids = None
-        self.flows : dict[str, Optional[ActiveFlow] ] = {}
+        self.flows: dict[str, Optional[ActiveFlow]] = {}
 
         self.method_rvname = RVN.name(db=mmdb, name=self.name)
 
         # Get the method attribute values (anum, xi_flow)
         R = f"Name:<{self.name}>, Class:<{self.class_name}>, Domain:<{self.domain_name}>"
         Relation.restrict(db=mmdb, relation='Method', restriction=R)
-        method_i = Relation.rename(db=mmdb, names={"Anum":"Activity"}, svar_name=self.method_rvname)
+        method_i = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=self.method_rvname)
         if not method_i.body:
             msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
             _logger.error(msg)
@@ -61,7 +65,7 @@ class Method(Activity):
         flow_ids_r = Relation.project(db=mmdb, attributes=("ID",))
         self.flows = {t["ID"]: None for t in flow_ids_r.body}
 
-        super().__init__(domain=domain_name, anum=anum, parameters=parameters)
+        super().__init__(xe=xe, domain=domain_name, anum=anum, parameters=parameters)
 
         self.execute()
 
@@ -69,7 +73,7 @@ class Method(Activity):
         # Set the values of all initial flows
 
         # Convert identifier to a restriction phrase
-        R = ", ".join(f"{k}:<{v}>" for k,v in self.instance.items())
+        R = ", ".join(f"{k}:<{v}>" for k, v in self.instance.items())
         # Set a relation variable name for the xi flow value
         xi_flow_value = RVN.name(db=self.domain_alias, name="xi_flow_value")
         Relation.restrict(db=self.domain_alias, relation=self.class_name, restriction=R)

@@ -16,7 +16,6 @@ from mx.rvname import RVN
 
 _logger = logging.getLogger(__name__)
 
-
 class XE:
     """
     This class represents the overall model execution environment.

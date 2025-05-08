@@ -1,11 +1,17 @@
 """ action.py -- manages Action execution """
 
+# System
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mx.method import Method  # TOOD: Replace with Activity after refactoring State/Assigner Activities
 
 class Action:
 
-    def __init__(self, anum: str, action_id: str):
+    def __init__(self, activity: "Method", anum: str, action_id: str):
         self.anum = anum
         self.action_id = action_id
+        self.activity = activity
 
     def execute(self):
         pass

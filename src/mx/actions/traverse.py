@@ -19,28 +19,37 @@ class Traverse(Action):
 
     def __init__(self, action_id: str, activity: "Method"):
         """
+        Perform the Traverse Action on a domain model.
 
-        :param action_id:
-        :param activity:
+        Note: For now we are only handling Methods, but State Activities will be incorporated eventually.
+
+        :param action_id:  The ACTN<n> value identifying each Action instance
+        :param activity: The A<n> Activity ID (for Method and State Activities)
         """
-        super().__init__(anum=activity.anum, action_id=action_id)
+        super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
-        # hop methods
-        execute_hop: dict[str, Callable[..., None]] = {
-            "straight": self.straight_hop
+        # We define a distinct method to trace each subclass of Hop
+        execute_hop: dict[str, Callable[..., None]] = {  # The only type hint that seems to work with PyCharm
+            "straight": self.straight_hop,
+            "to association class": self.to_association_class_hop,
         }
 
-        self.activity = activity  # TODO: Move this into superclass eventually
-        # All traverse actions in activity
+        self.domdb = self.activity.domain_alias  # Easy access to the name of our domain's database
+
+        # Lookup the Action instance
+        # Start with all Traverse actions in this Activity
         Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Traverse_Action")
-        # Find just my action
+        # Narrow it down to this Traverse Action instance
         R = f"ID:<{action_id}>"
-        traverse_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name="traverse_action_r")
+        traverse_action_rv = RVN.name(db=mmdb, name="traverse_action")
+        traverse_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name=traverse_action_rv)
+        if self.activity.xe.debug:
+            Relation.print(db=mmdb, variable_name=traverse_action_rv)
+
+        # Extract
         self.source_flow_name = traverse_action_t.body[0]["Source_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]
         self.dest_flow_name = traverse_action_t.body[0]["Destination_flow"]
-        self.domdb = self.activity.domain_alias
-        Relation.print(db=mmdb, table_name="traverse action")
 
         # Now get all of the hops in the path
 
@@ -77,6 +86,19 @@ class Traverse(Action):
 
         # R = f"Phrase:<{phrase}>, Domain:<{cls.domain}>"
         # result = Relation.restrict(db=db, relation='Perspective', restriction=R)
+
+    def to_association_class_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str):
+        """
+
+        :param hop_t: Hop tuple as a dictionary
+        :param hop_rv: The relational variable for the hop
+        :param hop_from_rv: The relational variable of the instance set we are hopping from
+        """
+        # Get the referential attributes, source and target classes
+        hop_attr_refs = Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
+                                          attrs={"Domain": "Domain", "Class_step": "From_class", "Rnum": "Rnum"})
+        Relation.print(db=mmdb, table_name="hop_attr_refs")
+        pass
 
     def straight_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str):
         """
