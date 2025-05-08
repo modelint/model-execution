@@ -13,6 +13,7 @@ from pyral.relation import Relation
 from mx.db_names import mmdb
 from mx.actions.action import Action
 from mx.rvname import RVN
+from mx.method import ActiveFlow
 
 
 class Traverse(Action):
@@ -52,6 +53,8 @@ class Traverse(Action):
         self.hop_from_class = self.source_flow.flowtype  # Starts at source class and updates on each hop
         # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
         self.dest_flow_name = traverse_action_t.body[0]["Destination_flow"]
+        # And the output of the Traversal will be placed in the Activity flow dictionary
+        # upon completion of this Action
 
         # Now gather all of the Hops in the Path
         all_hops_rv = RVN.name(db=self.domdb, name="all_hops")
@@ -83,6 +86,8 @@ class Traverse(Action):
 
             # Execute the hop and set input to next hop as output from this hop
             hop_from_rv = execute_hop[hop_type](hop_t=h, hop_rv=hop_rv, hop_from_rv=hop_from_rv)
+
+        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=hop_from_rv, flowtype=self.hop_from_class)
 
 
         pass  # All hops completed
@@ -120,6 +125,7 @@ class Traverse(Action):
         if self.activity.xe.debug:
             print("\nTo Association Class Hop output")
             Relation.print(db=self.domdb, variable_name=hopped_rv)
+        self.hop_from_class = hop_to_class # TODO: Check
         return hopped_rv
 
     def straight_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
