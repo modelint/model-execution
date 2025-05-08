@@ -29,7 +29,7 @@ class Traverse(Action):
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
         # We define a distinct method to trace each subclass of Hop
-        execute_hop: dict[str, Callable[..., None]] = {  # The only type hint that seems to work with PyCharm
+        execute_hop: dict[str, Callable[..., str]] = {  # The only type hint that seems to work with PyCharm
             "straight": self.straight_hop,
             "to association class": self.to_association_class_hop,
         }
@@ -49,6 +49,7 @@ class Traverse(Action):
         # Extract input and output flows required by the Traversal Action
         self.source_flow_name = traverse_action_t.body[0]["Source_flow"]  # Name like F1, F2, etc
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        self.hop_from_class = self.source_flow.flowtype  # Starts at source class and updates on each hop
         # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
         self.dest_flow_name = traverse_action_t.body[0]["Destination_flow"]
 
@@ -87,24 +88,44 @@ class Traverse(Action):
         pass  # All hops completed
 
 
-    def to_association_class_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str):
+    def to_association_class_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
         """
+        Traverse a To Association Class Hop - (from participating to association class)
 
         :param hop_t: Hop tuple as a dictionary
         :param hop_rv: The relational variable for the hop
         :param hop_from_rv: The relational variable of the instance set we are hopping from
+        :return: The output instance set as a relational variable name
         """
         # Get the referential attributes, source and target classes
-        hop_attr_refs = Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
+        Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
                                           attrs={"Domain": "Domain", "Class_step": "From_class", "Rnum": "Rnum"})
+        # Select out the To_class matching Class_step for this hop
+        R = f"To_class:<{self.hop_from_class}>"
+        hop_attr_refs_r = Relation.restrict(db=mmdb, restriction=R)
+
         if self.activity.xe.debug:
             print("\nExecuting a To Association Class Hop")
             Relation.print(db=mmdb, table_name="hop_attr_refs")
+
+
         pass
+
+        # Convert each attribute reference to a join pair
+        join_pairs = {aref["From_attribute"]: aref["To_attribute"] for aref in hop_attr_refs_r.body}
+
+        hopped_rv = RVN.name(db=self.domdb, name=f"hop_number_{hop_t["Number"]}")
+        hop_to_class = hop_t["Class_step"].replace(' ', '_')
+        Relation.semijoin(db=self.domdb, rname1=hop_from_rv, rname2=hop_to_class,
+                          attrs=join_pairs, svar_name=hopped_rv)
+        if self.activity.xe.debug:
+            print("\nStraight Hop output")
+            Relation.print(db=self.domdb, variable_name=hopped_rv)
+        return hopped_rv
 
     def straight_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
         """
-        Traverse a Straight Hop
+        Traverse a Straight Hop - (from class to class across non-associative binary association)
 
         :param hop_t: Hop tuple as a dictionary
         :param hop_rv: The relational variable for the hop
@@ -130,6 +151,7 @@ class Traverse(Action):
         if self.activity.xe.debug:
             print("\nStraight Hop output")
             Relation.print(db=self.domdb, variable_name=hopped_rv)
+        self.hop_from_class = hop_to_class
         return hopped_rv
 
     def find_hop_type(self, hop_rv: str) -> str:
