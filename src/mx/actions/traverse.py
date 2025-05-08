@@ -1,7 +1,7 @@
 """ traverse.py  -- execute a traverse action """
 
 # System
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from mx.method import Method  # TOOD: Replace with Activity after refactoring State/Assigner Activities
@@ -24,6 +24,11 @@ class Traverse(Action):
         :param activity:
         """
         super().__init__(anum=activity.anum, action_id=action_id)
+
+        # hop methods
+        execute_hop: dict[str, Callable[..., None]] = {
+            "straight": self.straight_hop
+        }
 
         self.activity = activity  # TODO: Move this into superclass eventually
         # All traverse actions in activity
@@ -48,34 +53,21 @@ class Traverse(Action):
         hops.sort(key=lambda d: int(d['Number']))  # Sorts in place
         # TODO: First hop is from F1 relation variable
 
-        from_hop_rv = self.source_flow.value
-        Relation.print(db=self.domdb, variable_name=from_hop_rv)
+        hop_from_rv = self.source_flow.value
+        Relation.print(db=self.domdb, variable_name=hop_from_rv)
         for h in hops:
-            pass
             # Create relation variable for this hop
             R = f"Number:<{h["Number"]}>"
-            this_hop_rv = RVN.name(db=mmdb, name="this_hop")
-            Relation.restrict(db=mmdb, relation=all_hops_rv, restriction=R, svar_name=this_hop_rv)
-            Relation.print(db=mmdb, variable_name=this_hop_rv)
+            hop_rv = RVN.name(db=mmdb, name="this_hop")
+            Relation.restrict(db=mmdb, relation=all_hops_rv, restriction=R, svar_name=hop_rv)
+            Relation.print(db=mmdb, variable_name=hop_rv)
 
             # Determine its type
-            hop_type = self.find_hop_type(hop_rv=this_hop_rv)
+            hop_type = self.find_hop_type(hop_rv=hop_rv)
 
-            if hop_type == "straight":
-                # Get the referential attributes, source and target classes
-                hop_attr_refs = Relation.semijoin(db=mmdb, rname1=this_hop_rv, rname2="Attribute_Reference",
-                                       attrs={"Domain": "Domain",  "Class_step": "To_class", "Rnum": "Rnum"})
-                Relation.print(db=mmdb)
+            execute_hop[hop_type](hop_t=h, hop_rv=hop_rv, hop_from_rv=hop_from_rv)
+            pass
 
-                # Compose a semijoin on the domain with the source flow ## step class on Ref attrs
-                # Create attrs_ref
-                ref_dict = {aref["From_attribute"]: aref["To_attribute"] for aref in hop_attr_refs.body}
-                pass
-                hopped_rv = RVN.name(db=self.domdb, name=f"hop_number_{h["Number"]}")
-                hop_to_class = h["Class_step"].replace(' ', '_')
-                Relation.semijoin(db=self.domdb, rname1=from_hop_rv, rname2=hop_to_class,
-                                  attrs=ref_dict, svar_name=hopped_rv)
-                Relation.print(db=self.domdb, variable_name=hopped_rv)
         pass
 
         # perform a series of semi-joins following the path
@@ -86,8 +78,27 @@ class Traverse(Action):
         # R = f"Phrase:<{phrase}>, Domain:<{cls.domain}>"
         # result = Relation.restrict(db=db, relation='Perspective', restriction=R)
 
-    def straight_hop(self):
-        pass
+    def straight_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str):
+        """
+
+        :param hop_t: Hop tuple as a dictionary
+        :param hop_rv: The relational variable for the hop
+        :param hop_from_rv: The relational variable of the instance set we are hopping from
+        """
+        # Get the referential attributes, source and target classes
+        hop_attr_refs = Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
+                                          attrs={"Domain": "Domain", "Class_step": "To_class", "Rnum": "Rnum"})
+        Relation.print(db=mmdb, table_name="hop_attr_refs")
+
+        # Compose a semijoin on the domain with the source flow ## step class on Ref attrs
+        # Create attrs_ref
+        ref_dict = {aref["From_attribute"]: aref["To_attribute"] for aref in hop_attr_refs.body}
+
+        hopped_rv = RVN.name(db=self.domdb, name=f"hop_number_{hop_t["Number"]}")
+        hop_to_class = hop_t["Class_step"].replace(' ', '_')
+        Relation.semijoin(db=self.domdb, rname1=hop_from_rv, rname2=hop_to_class,
+                          attrs=ref_dict, svar_name=hopped_rv)
+        Relation.print(db=self.domdb, variable_name=hopped_rv)
 
     def find_hop_type(self, hop_rv: str) -> str:
         """
