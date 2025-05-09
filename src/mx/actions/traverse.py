@@ -33,6 +33,7 @@ class Traverse(Action):
         execute_hop: dict[str, Callable[..., str]] = {  # The only type hint that seems to work with PyCharm
             "straight": self.straight_hop,
             "to association class": self.to_association_class_hop,
+            "from asymmetric assocation": self.from_asymmetric_association_class_hop,
         }
 
 
@@ -91,7 +92,40 @@ class Traverse(Action):
 
         pass  # All hops completed
 
+    def from_asymmetric_association_class_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
+        """
+        Traverse a From Assymetric Association Class Hop - (from association to participating class)
 
+        :param hop_t: Hop tuple as a dictionary
+        :param hop_rv: The relational variable for the hop
+        :param hop_from_rv: The relational variable of the instance set we are hopping from
+        :return: The output instance set as a relational variable name
+        """
+        # Get the referential attributes, source and target classes
+        Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
+                          attrs={"Domain": "Domain", "Class_step": "From_class", "Rnum": "Rnum"})
+        # Select out the To_class matching Class_step for this hop
+        R = f"To_class:<{self.hop_from_class}>"
+        hop_attr_refs_r = Relation.restrict(db=mmdb, restriction=R)
+
+        if self.activity.xe.debug:
+            print("\nExecuting a To Association Class Hop")
+            Relation.print(db=mmdb, table_name="hop_attr_refs")
+
+
+
+        # Convert each attribute reference to a join pair
+        join_pairs = {aref["To_attribute"]: aref["From_attribute"] for aref in hop_attr_refs_r.body}
+
+        hopped_rv = RVN.name(db=self.domdb, name=f"hop_number_{hop_t["Number"]}")
+        hop_to_class = hop_t["Class_step"].replace(' ', '_')
+        Relation.semijoin(db=self.domdb, rname2=hop_to_class, rname1=hop_from_rv,
+                          attrs=join_pairs, svar_name=hopped_rv)
+        if self.activity.xe.debug:
+            print("\nTo Association Class Hop output")
+            Relation.print(db=self.domdb, variable_name=hopped_rv)
+        self.hop_from_class = hop_to_class # TODO: Check
+        return hopped_rv
     def to_association_class_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
         """
         Traverse a To Association Class Hop - (from participating to association class)
