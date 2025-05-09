@@ -13,7 +13,7 @@ from pyral.relation import Relation
 from mx.db_names import mmdb
 from mx.actions.action import Action
 from mx.rvname import RVN
-from mx.method import ActiveFlow
+from mx.actions.flow import ActiveFlow
 
 
 class Traverse(Action):

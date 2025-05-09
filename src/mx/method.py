@@ -11,7 +11,8 @@ if TYPE_CHECKING:
 from pyral.relation import Relation
 
 # MX
-from mx.activity import Activity, ActiveFlow
+from mx.actions.flow import ActiveFlow
+from mx.activity import Activity
 from mx.bridge import NamedValues
 from db_names import mmdb
 from exceptions import *

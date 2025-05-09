@@ -9,16 +9,13 @@ if TYPE_CHECKING:
 # MX
 from mx.bridge import NamedValues
 from mx.actions.traverse import Traverse
-
-class ActiveFlow(NamedTuple):
-    value: Any
-    flowtype: str
+from mx.actions.rename import Rename
 
 class Activity:
 
     execute_action: dict[str, Callable[..., None]] = {
         "traverse": Traverse,
-        # "rename" : Rename
+        "rename" : Rename
     }
 
     def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):
