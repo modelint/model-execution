@@ -131,5 +131,6 @@ class Method(Activity):
             # We do this by instantiating the class defined for the action_type
             # Using the Activity's action execution dispatch dictionary
             current_x_action = Method.execute_action[action_type](activity=self, action_id=action)
+            pass
 
         pass

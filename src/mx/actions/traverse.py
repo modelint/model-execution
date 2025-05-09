@@ -35,7 +35,6 @@ class Traverse(Action):
             "to association class": self.to_association_class_hop,
         }
 
-        self.domdb = self.activity.domain_alias  # Easy access to the name of our domain's database
 
         # Lookup the Action instance
         # Start with all Traverse actions in this Activity

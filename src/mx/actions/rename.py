@@ -29,5 +29,19 @@ class Rename(Action):
         """
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
+        # Lookup the Action instance
+        # Start with all Rename actions in this Activity
+        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Rename_Action")
+        # Narrow it down to this Rename Action instance
+        R = f"ID:<{action_id}>"
+        Relation.restrict(db=mmdb, restriction=R)
+        # Join it with teh Table Action superclass to get the input / output flows
+        rename_table_action_rv = RVN.name(db=mmdb, name="rename_table_action")
+        rename_table_action_t = Relation.join(db=mmdb, rname2="Table_Action", svar_name=rename_table_action_rv)
+        if self.activity.xe.debug:
+            Relation.print(db=mmdb, variable_name=rename_table_action_rv)
+
+        # Join with Table Action
+
         pass
 

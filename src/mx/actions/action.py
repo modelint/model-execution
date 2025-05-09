@@ -12,7 +12,7 @@ class Action:
         self.anum = anum
         self.action_id = action_id
         self.activity = activity
-        # self.domdb = self.activity.domain_alias  # Easy access to the name of our domain's database
+        self.domdb = self.activity.domain_alias  # Easy access to the name of our domain's database
 
     def execute(self):
         pass
