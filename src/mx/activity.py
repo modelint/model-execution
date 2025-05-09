@@ -1,19 +1,25 @@
 """ activity.py -- A metamodel Activity """
 
 # System
-from typing import TYPE_CHECKING, NamedTuple, Optional, Any
+from typing import TYPE_CHECKING, NamedTuple, Callable, Any
 
 if TYPE_CHECKING:
     from mx.xe import XE
 
 # MX
 from mx.bridge import NamedValues
+from mx.actions.traverse import Traverse
 
 class ActiveFlow(NamedTuple):
     value: Any
     flowtype: str
 
 class Activity:
+
+    execute_action: dict[str, Callable[..., None]] = {
+        "traverse": Traverse,
+        # "rename" : Rename
+    }
 
     def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):
         """

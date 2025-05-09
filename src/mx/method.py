@@ -2,7 +2,7 @@
 
 # System
 import logging
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from mx.xe import XE
@@ -12,7 +12,6 @@ from pyral.relation import Relation
 
 # MX
 from mx.activity import Activity, ActiveFlow
-from mx.actions.traverse import Traverse
 from mx.bridge import NamedValues
 from db_names import mmdb
 from exceptions import *
@@ -127,8 +126,9 @@ class Method(Activity):
             atype_r = Relation.project(db=mmdb, attributes=("Type",))
             action_type = atype_r.body[0]["Type"]
 
-            if action_type == "traverse":
-                Traverse(activity=self, action_id=action)  # The only action type we handling right now
-            else:
-                pass  # TODO: replace this if-then with dictionary based function invocation
+            # Execute the appropriate action
+            # We do this by instantiating the class defined for the action_type
+            # Using the Activity's action execution dispatch dictionary
+            current_x_action = Method.execute_action[action_type](activity=self, action_id=action)
+
         pass
