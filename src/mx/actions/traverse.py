@@ -33,7 +33,7 @@ class Traverse(Action):
         execute_hop: dict[str, Callable[..., str]] = {  # The only type hint that seems to work with PyCharm
             "straight": self.straight_hop,
             "to association class": self.to_association_class_hop,
-            "from asymmetric assocation": self.from_asymmetric_association_class_hop,
+            "from asymmetric association class": self.from_asymmetric_association_class_hop,
         }
 
 
@@ -109,10 +109,8 @@ class Traverse(Action):
         hop_attr_refs_r = Relation.restrict(db=mmdb, restriction=R)
 
         if self.activity.xe.debug:
-            print("\nExecuting a To Association Class Hop")
+            print("\nExecuting a From Association Class Hop")
             Relation.print(db=mmdb, table_name="hop_attr_refs")
-
-
 
         # Convert each attribute reference to a join pair
         join_pairs = {aref["To_attribute"]: aref["From_attribute"] for aref in hop_attr_refs_r.body}
@@ -126,6 +124,7 @@ class Traverse(Action):
             Relation.print(db=self.domdb, variable_name=hopped_rv)
         self.hop_from_class = hop_to_class # TODO: Check
         return hopped_rv
+
     def to_association_class_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
         """
         Traverse a To Association Class Hop - (from participating to association class)
@@ -170,6 +169,9 @@ class Traverse(Action):
         :param hop_from_rv: The relational variable of the instance set we are hopping from
         :return: The output instance set as a relational variable name
         """
+        # TODO: I'm not handling the straight hop correctly when there are multiple attributes in the referende
+        # TODO: Need to convert input flow (Shaft ID) to the full instances first (Shaft, Trav, Current floor)
+        # TODO: And THEN do the semijoin
         # Get the referential attributes, source and target classes
         hop_attr_refs_r = Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
                                             attrs={"Domain": "Domain", "Class_step": "To_class", "Rnum": "Rnum"})
@@ -177,14 +179,18 @@ class Traverse(Action):
             print("\nExecuting a Straight Hop")
             Relation.print(db=mmdb, table_name="hop_attr_refs")
 
-        # Compose a semijoin on the domain with the source flow ## step class on Ref attrs
-
         # Convert each attribute reference to a join pair
         join_pairs = {aref["From_attribute"]: aref["To_attribute"] for aref in hop_attr_refs_r.body}
 
+        source_inst_rv = RVN.name(db=self.domdb, name=f"source_inst_{self.hop_from_class}")
+        Relation.join(db=self.domdb, rname1=hop_from_rv, rname2=self.hop_from_class, svar_name=source_inst_rv)
+        if self.activity.xe.debug:
+            print("\nHopping from instances:")
+            Relation.print(db=self.domdb, variable_name=source_inst_rv)
+
         hopped_rv = RVN.name(db=self.domdb, name=f"hop_number_{hop_t["Number"]}")
-        hop_to_class = hop_t["Class_step"].replace(' ', '_')
-        Relation.semijoin(db=self.domdb, rname1=hop_from_rv, rname2=hop_to_class,
+        hop_to_class = hop_t["Class_step"]
+        Relation.semijoin(db=self.domdb, rname1=source_inst_rv, rname2=hop_to_class,
                           attrs=join_pairs, svar_name=hopped_rv)
         if self.activity.xe.debug:
             print("\nStraight Hop output")
@@ -216,13 +222,13 @@ class Traverse(Action):
             return "straight"
 
         # Now it's either an Association Class or Circular Hop
-        result = Relation.join(db=mmdb, rname1=hop_rv, rname2="Association_Class_Hop")
+        result = Relation.join(db=mmdb, rname1=hop_rv, rname2="Association_Class_Hop", svar_name="assoc_class_hop")
         if result.body:
             # It's an Association Class Hop, but which direction?
             result = Relation.join(db=mmdb, rname2="To_Association_Class_Hop")
             if result.body:
                 return "to association class"
-            result = Relation.join(db=mmdb, rname2="From_Asymmetric_Associaton_Class_Hop")
+            result = Relation.join(db=mmdb, rname1="assoc_class_hop", rname2="From_Asymmetric_Association_Class_Hop")
             if result.body:
                 return "from asymmetric association class"
             else:
