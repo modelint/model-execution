@@ -102,27 +102,24 @@ class Traverse(Action):
         :return: The output instance set as a relational variable name
         """
         # Get the referential attributes, source and target classes
-        Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
-                          attrs={"Domain": "Domain", "Class_step": "From_class", "Rnum": "Rnum"})
-        # Select out the To_class matching Class_step for this hop
-        R = f"To_class:<{self.hop_from_class}>"
-        hop_attr_refs_r = Relation.restrict(db=mmdb, restriction=R)
+        hop_attr_refs_r = Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
+                          attrs={"Domain": "Domain", "Class_step": "To_class", "Rnum": "Rnum"})
 
         if self.activity.xe.debug:
-            print("\nExecuting a From Association Class Hop")
+            print("\nExecuting a From Asymmetric Association Class Hop")
             Relation.print(db=mmdb, table_name="hop_attr_refs")
 
         # Convert each attribute reference to a join pair
-        join_pairs = {aref["To_attribute"]: aref["From_attribute"] for aref in hop_attr_refs_r.body}
+        join_pairs = {aref["From_attribute"]: aref["To_attribute"] for aref in hop_attr_refs_r.body}
 
         hopped_rv = RVN.name(db=self.domdb, name=f"hop_number_{hop_t["Number"]}")
-        hop_to_class = hop_t["Class_step"].replace(' ', '_')
+        hop_to_class = hop_t["Class_step"]
         Relation.semijoin(db=self.domdb, rname2=hop_to_class, rname1=hop_from_rv,
                           attrs=join_pairs, svar_name=hopped_rv)
         if self.activity.xe.debug:
-            print("\nTo Association Class Hop output")
+            print("\nFrom Asymmetric Association Class Hop output")
             Relation.print(db=self.domdb, variable_name=hopped_rv)
-        self.hop_from_class = hop_to_class # TODO: Check
+        self.hop_from_class = hop_to_class
         return hopped_rv
 
     def to_association_class_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
@@ -157,7 +154,7 @@ class Traverse(Action):
         if self.activity.xe.debug:
             print("\nTo Association Class Hop output")
             Relation.print(db=self.domdb, variable_name=hopped_rv)
-        self.hop_from_class = hop_to_class # TODO: Check
+        self.hop_from_class = hop_to_class
         return hopped_rv
 
     def straight_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
