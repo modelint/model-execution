@@ -20,7 +20,7 @@ class ScalarSwitch(Action):
 
     def __init__(self, action_id: str, activity: "Method"):
         """
-        Perform the Traverse Action on a domain model.
+        Perform the Scalar Switch Action on a domain model.
 
         Note: For now we are only handling Methods, but State Activities will be incorporated eventually.
 
@@ -44,4 +44,20 @@ class ScalarSwitch(Action):
 
         self.source_flow_name = scalar_switch_action_t.body[0]["Scalar_input"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+
+        cases_rv = RVN.name(db=mmdb, name="cases")
+        cases_r = Relation.semijoin(db=mmdb, rname1=this_scalar_switch_action_rv, rname2="Case",
+                                    attrs={"ID": "Switch_action", "Activity": "Activity", "Domain": "Domain"},
+                                    svar_name=cases_rv)
+        mvals_rv = RVN.name(db=mmdb, name="mvals")
+        mvals_r = Relation.semijoin(db=mmdb, rname1=cases_rv, rname2="Match Value",
+                                    attrs={"Flow": "Case_flow", "Activity": "Activity", "Domain": "Domain"},
+                                    svar_name=mvals_rv)
+        R = f"Value:<{self.source_flow.value}>"
+        selected_case_r = Relation.restrict(db=mmdb, relation=mvals_rv, restriction=R)
+        scase_tuple = selected_case_r.body[0]
+        self.activity.flows[scase_tuple["Case_flow"]] = ActiveFlow(value=scase_tuple["Value"], flowtype=self.source_flow.flowtype)
+
+
+
         pass

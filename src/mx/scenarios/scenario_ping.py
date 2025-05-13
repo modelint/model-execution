@@ -31,7 +31,7 @@ s = [
     # We simply call the cabin ping method
     MXInteraction(source=None, dest='EVMAN', delay=0,
                   action=MXCallMethod(ee=None, source=None, method='Ping',
-                                      class_name='Cabin', params={'dir': '.up'},
+                                      class_name='Cabin', params={'dir': 'up'},
                                       instance={'Shaft': 'S1'})
                   ),
 ]
