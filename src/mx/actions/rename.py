@@ -35,7 +35,7 @@ class Rename(Action):
         # Narrow it down to this Rename Action instance
         R = f"ID:<{action_id}>"
         Relation.restrict(db=mmdb, restriction=R)
-        # Join it with teh Table Action superclass to get the input / output flows
+        # Join it with the Table Action superclass to get the input / output flows
         rename_table_action_rv = RVN.name(db=mmdb, name="rename_table_action")
         rename_table_action_t = Relation.join(db=mmdb, rname2="Table_Action", svar_name=rename_table_action_rv)
         if self.activity.xe.debug:

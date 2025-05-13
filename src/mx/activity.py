@@ -10,12 +10,15 @@ if TYPE_CHECKING:
 from mx.bridge import NamedValues
 from mx.actions.traverse import Traverse
 from mx.actions.rename import Rename
+from mx.actions.scalar_switch import ScalarSwitch
 
 class Activity:
 
+    # This is a dispatch table mapping action names to the python classes that execute these actions
     execute_action: dict[str, Callable[..., None]] = {
         "traverse": Traverse,
-        "rename" : Rename
+        "rename": Rename,
+        "scalar switch": ScalarSwitch,
     }
 
     def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):
