@@ -31,7 +31,7 @@ class Action:
         # instnace id value is the conatenation of each identifier attribute value
         instance_id_value = '_'.join(v for v in self.activity.instance.values())
         # relation variable prefix (rvp) is the full concatenation
-        self.rvp = f"{self.activity.anum}_{action_id}_{instance_id_value}__"
+        self.rvp = f"{self.activity.anum}_{action_id}_{instance_id_value}"
         # This value is then prepended to a descriptive name to create a relational variable name
         # used to access a relation stored inside the TclRAL db
 
