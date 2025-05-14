@@ -29,13 +29,16 @@ class ScalarSwitch(Action):
         """
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
+        # TODO: 25-5-13 replace RVN with new declare/free PyRAL service
+
         # Lookup the Action instance
         # Start with all Switch actions in this Activity
-        activity_scalar_switch_actions_rv = RVN.name(db=mmdb, name="activity_scalar_switch_actions")
+        # activity_scalar_switch_actions_rv = Relation.declare(self.rvp, "activity_scalar_switch_actions")
+        activity_scalar_switch_actions_rv = f"{self.rvp}activity_scalar_switch_actions"
         Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Scalar Switch Action",
                           svar_name=activity_scalar_switch_actions_rv)
         # Narrow it down to this Switch Action instance
-        this_scalar_switch_action_rv = RVN.name(db=mmdb, name="this_scalar_switch_action")
+        this_scalar_switch_action_rv = f"{self.rvp}this_scalar_switch_action"
         R = f"ID:<{action_id}>"
         scalar_switch_action_t = Relation.restrict(db=mmdb, relation=activity_scalar_switch_actions_rv, restriction=R,
                           svar_name=this_scalar_switch_action_rv)
@@ -57,6 +60,8 @@ class ScalarSwitch(Action):
         selected_case_r = Relation.restrict(db=mmdb, relation=mvals_rv, restriction=R)
         scase_tuple = selected_case_r.body[0]
         self.activity.flows[scase_tuple["Case_flow"]] = ActiveFlow(value=scase_tuple["Value"], flowtype=self.source_flow.flowtype)
+
+        # Relation.unset(self.rvp)
 
 
 
