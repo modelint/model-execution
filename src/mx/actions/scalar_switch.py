@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from mx.method import Method  # TOOD: Replace with Activity after refactoring State/Assigner Activities
+    from mx.method import Method  # TODO: Replace with Activity after refactoring State/Assigner Activities
 
 # Model Integration
 from pyral.relation import Relation
@@ -13,7 +13,7 @@ from pyral.relation import Relation
 from mx.db_names import mmdb
 from mx.actions.action import Action
 from mx.actions.flow import ActiveFlow
-from mx.rvname import RVN, declare_rvs
+from mx.rvname import declare_rvs
 
 # For each python string variable that will hold the name of a temporary TclRAL relation used in this module,
 # a corresponding attribute is defined. An instance of this tuple is generated with each attribute holding

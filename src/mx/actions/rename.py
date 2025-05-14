@@ -20,7 +20,7 @@ class Rename(Action):
 
     def __init__(self, action_id: str, activity: "Method"):
         """
-        Perform the Traverse Action on a domain model.
+        Perform the Rename Action on a domain model.
 
         Note: For now we are only handling Methods, but State Activities will be incorporated eventually.
 

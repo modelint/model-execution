@@ -11,6 +11,7 @@ from mx.bridge import NamedValues
 from mx.actions.traverse import Traverse
 from mx.actions.rename import Rename
 from mx.actions.scalar_switch import ScalarSwitch
+from mx.actions.read import Read
 
 class Activity:
 
@@ -19,6 +20,7 @@ class Activity:
         "traverse": Traverse,
         "rename": Rename,
         "scalar switch": ScalarSwitch,
+        "read": Read
     }
 
     def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):
