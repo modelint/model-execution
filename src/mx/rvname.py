@@ -1,13 +1,13 @@
 """ rvname.py -- Relation variable name assigner """
 
 # System
-from typing import NamedTuple
+from typing import Any
 from collections import namedtuple
 
 # Model Integration
 from pyral.relation import Relation
 
-def declare_rvs(db: str, owner: str, *names: str) -> NamedTuple:
+def declare_rvs(db: str, owner: str, *names: str) -> Any:
     """
     Declare multiple relation variables and return them as a dynamically named NamedTuple.
     The field names will be the declared names with '_rv' appended.
@@ -21,7 +21,8 @@ def declare_rvs(db: str, owner: str, *names: str) -> NamedTuple:
 
 class RVN:
     """
-    Relational Variable Name
+    DEPRECATED: Relational Variable Name
+    Should use declare_rvs above instead
     """
 
     _db_counter : dict[str, int] = {}

@@ -15,18 +15,24 @@ from mx.actions.action import Action
 from mx.actions.flow import ActiveFlow
 from mx.rvname import RVN, declare_rvs
 
+# For each python string variable that will hold the name of a temporary TclRAL relation used in this module,
+# a corresponding attribute is defined. An instance of this tuple is generated with each attribute holding
+# a string naming some temporary TclRAL relation variable.
+# Each such variable can then be supplied in the svar_name argument
+# to create the TclRAL relation. Later that same variable can be used to supply a relation argument to other
+# PyRAL methods.
 class RVs(NamedTuple):
     activity_scalar_switch_actions: str
     this_scalar_switch_action: str
     cases: str
     mvals: str
 
-# def declare_rvs(db: str, owner: str, *names: str) -> RVs:
-#     rv_map = {
-#         f"{name}": Relation.declare_rv(db=db, owner=owner, name=name)
-#         for name in names
-#     }
-#     return RVs(**rv_map)
+
+# This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
+# variables above as a member.
+def declare_my_module_rvs(db: str, owner: str) -> RVs:
+    rvs = declare_rvs(db, owner, "activity_scalar_switch_actions", "this_scalar_switch_action", "cases", "mvals")
+    return RVs(*rvs)
 
 class ScalarSwitch(Action):
 
@@ -41,19 +47,14 @@ class ScalarSwitch(Action):
         """
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
-        rv = declare_rvs(mmdb, self.rvp, "activity_scalar_switch_actions",
-                         "this_scalar_switch_action", "cases", "mvals")
+        # Get a NamedTuple with a field for each relation variable name
+        rv = declare_my_module_rvs(db=mmdb, owner=self.rvp)
 
         # Lookup the Action instance
         # Start with all Switch actions in this Activity
-        # activity_scalar_switch_actions_rv = f"{self.rvp}activity_scalar_switch_actions"
-        # activity_scalar_switch_actions_rv = Relation.declare_rv(db=mmdb, owner=self.rvp,
-        #                                                         name="activity_scalar_switch_actions")
         Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Scalar Switch Action",
                           svar_name=rv.activity_scalar_switch_actions)
         # Narrow it down to this Switch Action instance
-        # this_scalar_switch_action_rv = Relation.declare_rv(db=mmdb, owner=self.rvp,
-        #                                                    name="this_scalar_switch_action")
         R = f"ID:<{action_id}>"
         scalar_switch_action_t = Relation.restrict(db=mmdb, relation=rv.activity_scalar_switch_actions, restriction=R,
                                                    svar_name=rv.this_scalar_switch_action)
@@ -63,11 +64,9 @@ class ScalarSwitch(Action):
         self.source_flow_name = scalar_switch_action_t.body[0]["Scalar_input"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
 
-        # cases_rv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="cases")
         cases_r = Relation.semijoin(db=mmdb, rname1=rv.this_scalar_switch_action, rname2="Case",
                                     attrs={"ID": "Switch_action", "Activity": "Activity", "Domain": "Domain"},
                                     svar_name=rv.cases)
-        # mvals_rv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="mvals")
         mvals_r = Relation.semijoin(db=mmdb, rname1=rv.cases, rname2="Match Value",
                                     attrs={"Flow": "Case_flow", "Activity": "Activity", "Domain": "Domain"},
                                     svar_name=rv.mvals)
