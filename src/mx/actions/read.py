@@ -71,4 +71,3 @@ class Read(Action):
                                           relation=self.source_flow.value)
             attr_value = attr_value_t.body[0][access["Attribute"]]
             self.activity.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
-        pass

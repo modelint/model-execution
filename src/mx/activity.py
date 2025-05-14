@@ -12,6 +12,7 @@ from mx.actions.traverse import Traverse
 from mx.actions.rename import Rename
 from mx.actions.scalar_switch import ScalarSwitch
 from mx.actions.read import Read
+from mx.actions.select import Select
 
 class Activity:
 
@@ -20,7 +21,8 @@ class Activity:
         "traverse": Traverse,
         "rename": Rename,
         "scalar switch": ScalarSwitch,
-        "read": Read
+        "read": Read,
+        "select": Select,
     }
 
     def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):
@@ -36,4 +38,9 @@ class Activity:
         self.domain = domain
 
     def execute(self):
+        """
+        Each type of Activity (Method, State) overrides this method
+        :return:
+        """
+        # TODO: Look for commonality to promote
         pass
