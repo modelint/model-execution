@@ -15,6 +15,7 @@ from mx.actions.action import Action
 from mx.actions.flow import ActiveFlow
 from mx.rvname import declare_rvs
 
+
 # See comment in scalar_switch.py
 class RVs(NamedTuple):
     activity_select_actions: str
@@ -23,13 +24,16 @@ class RVs(NamedTuple):
     my_eq_criteria: str
     my_ranking_criteria: str
     my_comparison_criteria: str
+    selection_result: str
+
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_my_module_rvs(db: str, owner: str) -> RVs:
     rvs = declare_rvs(db, owner, "activity_select_actions", "this_select_action", "my_criteria",
-                      "my_eq_criteria", "my_ranking_criteria", "my_comparison_criteria")
+                      "my_eq_criteria", "my_ranking_criteria", "my_comparison_criteria", "selection_result", )
     return RVs(*rvs)
+
 
 def str_to_bool(s: str) -> bool:
     """
@@ -43,6 +47,7 @@ def str_to_bool(s: str) -> bool:
         return False
     else:
         raise ValueError(f"Invalid boolean string: {s}")
+
 
 class Select(Action):
 
@@ -66,7 +71,7 @@ class Select(Action):
         # Narrow it down to this Select Action instance
         R = f"ID:<{action_id}>"
         select_action_t = Relation.restrict(db=mmdb, relation=rv.activity_select_actions, restriction=R,
-                                          svar_name=rv.this_select_action)
+                                            svar_name=rv.this_select_action)
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=rv.this_select_action)
 
@@ -76,9 +81,15 @@ class Select(Action):
             Relation.print(db=self.domdb, variable_name=self.source_flow.value)
         pass
 
+        # Get the destinatin flow name
+        subclass_r = Relation.semijoin(db=mmdb, rname1=rv.this_select_action, rname2="Single_Select")
+        if not subclass_r.body:
+            subclass_r = Relation.semijoin(db=mmdb, rname1=rv.this_select_action, rname2="Many_Select")
+        self.dest_flow_name = subclass_r.body[0]["Output_flow"]
+
         # Get all Criteria
         my_criteria_r = Relation.semijoin(db=mmdb, rname1=rv.this_select_action, rname2="Criterion",
-                                          attrs={"ID": "Action", "Activity": "Activity", "Domain":"Domain"},
+                                          attrs={"ID": "Action", "Activity": "Activity", "Domain": "Domain"},
                                           svar_name=rv.my_criteria)
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=rv.my_criteria)
@@ -89,20 +100,27 @@ class Select(Action):
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=rv.my_eq_criteria)
 
+        criteria_rphrases: list[str] = []
+
         for c in my_eq_criteria_r.body:
             attr = c['Attribute'].replace(' ', '_')
             value = bool(c['Value'])
             # PyRAL specifies boolean values using ptyhon bool type, not strings
             value = str_to_bool(c['Value']) if c['Scalar'] == "Boolean" else value
 
-            R = f"{attr}:<{value}>"
-            result = Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R)
+            phrase = f"{attr}:<{value}>"
+            criteria_rphrases.append(phrase)
 
-            pass
+        # TODO: Add the other two Criterion subclasses
+        # TODO: incorporate and/or/not logic
 
+        # Perform the selection
+        R = ', '.join(criteria_rphrases)  # For now we will just and them all together using commas
+        Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
+                          svar_name=rv.selection_result)
 
-
-
-
+        # Assign result to output flow
+        # For a select action, the source and dest flow types must match
+        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=rv.selection_result,
+                                                              flowtype=self.source_flow.flowtype)
         pass
-
