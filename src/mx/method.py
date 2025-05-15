@@ -2,7 +2,7 @@
 
 # System
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, NamedTuple
 
 if TYPE_CHECKING:
     from mx.xe import XE
@@ -15,11 +15,20 @@ from mx.actions.flow import ActiveFlow
 from mx.activity import Activity
 from mx.bridge import NamedValues
 from db_names import mmdb
+from mx.rvname import declare_rvs
 from exceptions import *
-from mx.rvname import RVN
 
 _logger = logging.getLogger(__name__)
 
+class RVs(NamedTuple):
+    method_name: str
+    xi_flow_value: str
+
+# This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
+# variables above as a member.
+def declare_my_module_rvs(db: str, owner: str) -> RVs:
+    rvs = declare_rvs(db, owner, "method_name", "xi_flow_value", )
+    return RVs(*rvs)
 
 class Method(Activity):
 
@@ -46,7 +55,11 @@ class Method(Activity):
         self.wave_action_ids = None
         self.flows: dict[str, Optional[ActiveFlow]] = {}
 
-        self.method_rvname = RVN.name(db=mmdb, name=self.name)
+        instance_id_value = '_'.join(v for v in self.instance.values())
+        self.rv = declare_my_module_rvs(db=mmdb, owner=f"{class_name}_{name}_{instance_id_value}")
+        rv = self.rv
+
+        self.method_rvname = rv.method_name
 
         # Get the method attribute values (anum, xi_flow)
         R = f"Name:<{self.name}>, Class:<{self.class_name}>, Domain:<{self.domain_name}>"
@@ -71,18 +84,18 @@ class Method(Activity):
 
     def enable_initial_flows(self):
         # Set the values of all initial flows
+        rv = self.rv
 
         # Convert identifier to a restriction phrase
         R = ", ".join(f"{k}:<{v}>" for k, v in self.instance.items())
         # Set a relation variable name for the xi flow value
-        xi_flow_value = RVN.name(db=self.domain_alias, name="xi_flow_value")
         Relation.restrict(db=self.domain_alias, relation=self.class_name, restriction=R)
         id_attr_names = tuple(k for k in self.instance.keys())
-        Relation.project(db=self.domain_alias, attributes=id_attr_names, svar_name=xi_flow_value)
-        Relation.print(db=self.domain_alias, variable_name=xi_flow_value)
+        Relation.project(db=self.domain_alias, attributes=id_attr_names, svar_name=rv.xi_flow_value)
+        Relation.print(db=self.domain_alias, variable_name=rv.xi_flow_value)
 
         # Set the xi flow value to a relation variable holding a single instance reference for the executing instance
-        self.flows[self.xi_flow] = ActiveFlow(value=xi_flow_value, flowtype=self.class_name)
+        self.flows[self.xi_flow] = ActiveFlow(value=rv.xi_flow_value, flowtype=self.class_name)
 
         # Set the input parameter flows
         Relation.rename(db=mmdb, relation="Parameter", names={"Name": "Pname"})
