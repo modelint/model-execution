@@ -35,6 +35,3 @@ class Action:
         # This value is then prepended to a descriptive name to create a relational variable name
         # used to access a relation stored inside the TclRAL db
 
-
-    def execute(self):
-        pass
