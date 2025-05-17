@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.relation import Database  # Diagnostic
 
 # MX
 from mx.db_names import mmdb
@@ -75,6 +76,11 @@ class ScalarSwitch(Action):
         scase_tuple = selected_case_r.body[0]
         self.activity.flows[scase_tuple["Case_flow"]] = ActiveFlow(value=scase_tuple["Value"], flowtype=self.source_flow.flowtype)
 
+        # We don't need our mmdb relation variables
         Relation.free_rvs(db=mmdb, owner=self.rvp)
+        # And since we are outputing a scalar flow, there is no domain rv output to preserve
+        # In fact, we didn't define any domain rv's at all, so there are none to free
 
-        pass
+        # Diagnostic verification
+        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
+        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
