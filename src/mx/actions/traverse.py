@@ -37,7 +37,7 @@ class DomRVs(NamedTuple):
     hopped: str
 
 def declare_dom_rvs(db: str, owner: str) -> DomRVs:
-    rvs = declare_rvs(db, owner, "hopped", "source_inst")
+    rvs = declare_rvs(db, owner, "source_inst", "hopped")
     return DomRVs(*rvs)
 
 class Traverse(Action):
@@ -208,11 +208,10 @@ class Traverse(Action):
         :param hop_from_rv: The relational variable of the instance set we are hopping from
         :return: The output instance set as a relational variable name
         """
-        mrv = self.mmrv
+        # Shorter names
+        mmrv = self.mmrv
         drv = self.domrv
-        # TODO: I'm not handling the straight hop correctly when there are multiple attributes in the referende
-        # TODO: Need to convert input flow (Shaft ID) to the full instances first (Shaft, Trav, Current floor)
-        # TODO: And THEN do the semijoin
+
         # Get the referential attributes, source and target classes
         hop_attr_refs_r = Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
                                             attrs={"Domain": "Domain", "Class_step": "To_class", "Rnum": "Rnum"})
