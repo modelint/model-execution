@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.database import Database
 
 # MX
 from mx.actions.flow import ActiveFlow
@@ -56,7 +57,8 @@ class Method(Activity):
         self.flows: dict[str, Optional[ActiveFlow]] = {}
 
         instance_id_value = '_'.join(v for v in self.instance.values())
-        self.rv = declare_my_module_rvs(db=mmdb, owner=f"{class_name}_{name}_{instance_id_value}")
+        self.owner_name = f"{class_name}_{name}_{instance_id_value}"
+        self.rv = declare_my_module_rvs(db=mmdb, owner=self.owner_name)
         rv = self.rv
 
         self.method_rvname = rv.method_name
@@ -81,6 +83,12 @@ class Method(Activity):
         super().__init__(xe=xe, domain=domain_name, anum=anum, parameters=parameters)
 
         self.execute()
+        _db = Database.get_rv_names(db=mmdb)
+
+        # TODO: Step through below statement to verify it is correct
+        Relation.free_rvs(db=mmdb, owner=self.owner_name)
+        _db = Database.get_rv_names(db=mmdb)
+        pass
 
     def enable_initial_flows(self):
         # Set the values of all initial flows
@@ -125,6 +133,8 @@ class Method(Activity):
                 return
             wave_actions_r = Relation.project(db=mmdb, attributes=("Action",))
             self.wave_action_ids = [a['Action'] for a in wave_actions_r.body]
+            _dbm = Database.get_rv_names(db=mmdb)
+            _dbd = Database.get_rv_names(db=self.domain_alias)
             self.process_wave()
             self.current_wave += 1
 
