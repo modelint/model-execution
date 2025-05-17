@@ -175,11 +175,16 @@ class Traverse(Action):
         drv = self.domrv
         mrv = self.mmrv
         # Get the referential attributes, source and target classes
+        ref_attrs_rv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="ref_attrs")
         Relation.semijoin(db=mmdb, rname1=mrv.this_hop, rname2="Attribute_Reference",
-                                          attrs={"Domain": "Domain", "Class_step": "From_class", "Rnum": "Rnum"})
+                                          attrs={"Domain": "Domain", "Class_step": "From_class", "Rnum": "Rnum"},
+                          svar_name=ref_attrs_rv)
+        if self.activity.xe.debug:
+            print("\nRef attrs for this hop")
+            Relation.print(db=mmdb, variable_name=ref_attrs_rv)
         # Select out the To_class matching Class_step for this hop
         R = f"To_class:<{self.hop_from_class}>"
-        hop_attr_refs_r = Relation.restrict(db=mmdb, restriction=R)
+        hop_attr_refs_r = Relation.restrict(db=mmdb, relation=ref_attrs_rv, restriction=R)
 
         if self.activity.xe.debug:
             print("\nExecuting a To Association Class Hop")
@@ -190,13 +195,14 @@ class Traverse(Action):
         # Convert each attribute reference to a join pair
         join_pairs = {aref["To_attribute"]: aref["From_attribute"] for aref in hop_attr_refs_r.body}
 
-        hop_to_class = hop_t["Class_step"].replace(' ', '_')
+        hop_to_class = hop_t["Class_step"]
         Relation.semijoin(db=self.domdb, rname2=hop_to_class, rname1=hop_from_rv,
                           attrs=join_pairs, svar_name=drv.hopped)
         if self.activity.xe.debug:
             print("\nTo Association Class Hop output")
             Relation.print(db=self.domdb, variable_name=drv.hopped)
         self.hop_from_class = hop_to_class
+        Relation.free_rvs(db=mmdb, owner=self.rvp, names=("ref_attrs",))
         return drv.hopped
 
     def straight_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
