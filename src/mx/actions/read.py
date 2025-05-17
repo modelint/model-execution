@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.database import Database  # Diagnostics
 
 # MX
 from mx.db_names import mmdb
@@ -68,6 +69,14 @@ class Read(Action):
 
         for access in attribute_read_accesses_r.body:
             attr_value_t = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
-                                          relation=self.source_flow.value)
+                                            relation=self.source_flow.value)
             attr_value = attr_value_t.body[0][access["Attribute"]]
             self.activity.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
+
+        # This action's mmdb rvs are no longer needed)
+        Relation.free_rvs(db=mmdb, owner=self.rvp)
+        # And since we are outputing a scalar flow, there is no domain rv output to preserve
+        # In fact, we didn't define any domain rv's at all, so there are none to free
+
+        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
+        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
