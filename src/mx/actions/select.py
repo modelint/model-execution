@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.database import Database  # Diagnostics
 
 # MX
 from mx.db_names import mmdb
@@ -22,16 +23,13 @@ class RVs(NamedTuple):
     this_select_action: str
     my_criteria: str
     my_eq_criteria: str
-    my_ranking_criteria: str
-    my_comparison_criteria: str
-    selection_result: str
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_my_module_rvs(db: str, owner: str) -> RVs:
     rvs = declare_rvs(db, owner, "activity_select_actions", "this_select_action", "my_criteria",
-                      "my_eq_criteria", "my_ranking_criteria", "my_comparison_criteria", "selection_result", )
+                      "my_eq_criteria")
     return RVs(*rvs)
 
 
@@ -115,12 +113,18 @@ class Select(Action):
         # TODO: incorporate and/or/not logic
 
         # Perform the selection
+        selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
         R = ', '.join(criteria_rphrases)  # For now we will just and them all together using commas
         Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
-                          svar_name=rv.selection_result)
+                          svar_name=selection_output_rv)
 
         # Assign result to output flow
         # For a select action, the source and dest flow types must match
-        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=rv.selection_result,
+        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=selection_output_rv,
                                                               flowtype=self.source_flow.flowtype)
+
+        # This action's mmdb rvs are no longer needed)
+        Relation.free_rvs(db=mmdb, owner=self.rvp)
+        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
+        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
         pass
