@@ -19,14 +19,16 @@ from mx.rvname import declare_rvs
 
 # Tuple generator and rv class for Metamodel Database (mmdb)
 class MMRVs(NamedTuple):
-    traverse_action: str
+    activity_traverse_actions: str  # All traverse actions defined in this activity
+    this_traverse_action: str # This traverse action
     all_hops: str
     this_hop: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
-    rvs = declare_rvs(mmdb, owner, "traverse_action", "all_hops", "this_hop")
+    rvs = declare_rvs(mmdb, owner, "activity_traverse_actions", "this_traverse_action",
+                      "all_hops", "this_hop")
     return MMRVs(*rvs)
 
 # Tuple generator and rv class for Domain Database (dom)
@@ -67,39 +69,44 @@ class Traverse(Action):
             "straight": self.straight_hop,
             "to association class": self.to_association_class_hop,
             "from asymmetric association class": self.from_asymmetric_association_class_hop,
+            # TODO: Several more to come (generalization, ordinal, etc)
         }
 
-
-        # Lookup the Action instance
+        # Lookup this Action instance
         # Start with all Traverse actions in this Activity
-        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Traverse_Action")
+        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Traverse_Action",
+                          svar_name=mmrv.activity_traverse_actions)
         # Narrow it down to this Traverse Action instance
         R = f"ID:<{action_id}>"
-        traverse_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name=mmrv.traverse_action)
+        traverse_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name=mmrv.this_traverse_action)
         if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.traverse_action)
+            Relation.print(db=mmdb, variable_name=mmrv.this_traverse_action)
 
         # Extract input and output flows required by the Traversal Action
-        self.source_flow_name = traverse_action_t.body[0]["Source_flow"]  # Name like F1, F2, etc
-        self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
-        self.hop_from_class = self.source_flow.flowtype  # Starts at source class and updates on each hop
-        # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
+        # ---
+        # Get the name of the input flow (F1, F2, etc)
+        self.source_flow_name = traverse_action_t.body[0]["Source_flow"]
+        # Save the content of that flow (value, type)
+        self.source_flow = self.activity.flows[self.source_flow_name]
+        # The name of the class we are currently hopping from, we will update as we hop
+        # Initialize it on the class (type) of the source flow
+        self.hop_from_class = self.source_flow.flowtype
+        # Save the name of the currently empty output (destination) flow
+        # We'll set its value after we complete all hops in this traversal
         self.dest_flow_name = traverse_action_t.body[0]["Destination_flow"]
-        # And the output of the Traversal will be placed in the Activity flow dictionary
-        # upon completion of this Action
 
-        # Now gather all of the Hops in the Path
-        hops_r = Relation.semijoin(db=mmdb, rname1=mmrv.traverse_action, rname2="Hop", svar_name=mmrv.all_hops)
+        # Join our Traverse Action to the Hop class to gather all of the Hops in the Path
+        hops_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_traverse_action, rname2="Hop", svar_name=mmrv.all_hops)
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.all_hops)
-
-        # Sort them by hop number so that we proceed 1, 2, ...
+        # For traversal we need to order these in the numbered hop sequence, 1, 2, ...
         hops = hops_r.body
         hops.sort(key=lambda d: int(d['Number']))  # Sorts in place
 
         # Initial hop starts at the source flow instance set
         hop_from_rv = self.source_flow.value
 
+        # Execute each hop in sequence until we reach the end of the traversal
         for h in hops:
             # Create relation variable for this hop
             R = f"Number:<{h["Number"]}>"
@@ -122,8 +129,6 @@ class Traverse(Action):
         Relation.free_rvs(db=self.domdb, owner=self.rvp, names=("hopped",), exclude=True)
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
-        pass
-
 
         pass  # All hops completed
 

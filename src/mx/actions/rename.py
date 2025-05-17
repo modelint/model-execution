@@ -8,24 +8,12 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.database import Database  # Diagnostics
 
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
 from mx.actions.flow import ActiveFlow
-from mx.rvname import declare_rvs
-
-# See comment in scalar_switch.py
-class RVs(NamedTuple):
-    rename_table_action: str
-    rename_output: str
-
-# This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
-# variables above as a member.
-def declare_my_module_rvs(db: str, owner: str) -> RVs:
-    rvs = declare_rvs(db, owner, "rename_table_action", "rename_output", )
-    return RVs(*rvs)
-
 
 class Rename(Action):
 
@@ -40,19 +28,22 @@ class Rename(Action):
         """
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
-        # Get a NamedTuple with a field for each relation variable name
-        rv = declare_my_module_rvs(db=mmdb, owner=self.rvp)
-
         # Lookup the Action instance
         # Start with all Rename actions in this Activity
-        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Rename_Action")
+        activity_rename_actions_mrv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="activity_rename_action")
+        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Rename_Action",
+                          svar_name=activity_rename_actions_mrv)
+
         # Narrow it down to this Rename Action instance
         R = f"ID:<{action_id}>"
-        Relation.restrict(db=mmdb, restriction=R)
+        this_rename_action_mrv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="this_rename_action")
+        Relation.restrict(db=mmdb, relation=activity_rename_actions_mrv, restriction=R, svar_name=this_rename_action_mrv)
         # Join it with the Table Action superclass to get the input / output flows
-        rename_table_action_t = Relation.join(db=mmdb, rname2="Table_Action", svar_name=rv.rename_table_action)
+        rename_table_action_mrv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="rename_table_action")
+        rename_table_action_t = Relation.join(db=mmdb, rname1=this_rename_action_mrv, rname2="Table_Action",
+                                              svar_name=rename_table_action_mrv)
         if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=rv.rename_table_action)
+            Relation.print(db=mmdb, variable_name=rename_table_action_mrv)
 
         # Extract input and output flows required by the Traversal Action
         rename_values = rename_table_action_t.body[0]  # convenient abbreviation of the rename table action tuple body
@@ -64,10 +55,18 @@ class Rename(Action):
         # upon completion of this Action
 
         # Rename
+        rename_output_drv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="rename_output")
         Relation.rename(db=self.domdb, names={rename_values["From_attribute"]: rename_values["To_attribute"]},
-                        relation=self.source_flow.flowtype, svar_name=rv.rename_output)
+                        relation=self.source_flow.flowtype, svar_name=rename_output_drv)
         if self.activity.xe.debug:
-            Relation.print(db=self.domdb, variable_name=rv.rename_output)
+            Relation.print(db=self.domdb, variable_name=rename_output_drv)
 
-        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=rv.rename_output, flowtype=rename_values["To_table"])
+        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=rename_output_drv, flowtype=rename_values["To_table"])
+        # The domain rv above is retained since it is an output flow, so we don't free it until the Activity completes
 
+        # This action's mmdb rvs are no longer needed)
+        Relation.free_rvs(db=mmdb, owner=self.rvp)
+
+        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
+        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
+        pass
