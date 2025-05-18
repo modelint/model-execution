@@ -118,6 +118,10 @@ class Select(Action):
         Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
                           svar_name=selection_output_rv)
 
+        if self.activity.xe.debug:
+            Relation.print(db=self.domdb, variable_name=selection_output_rv)
+
+
         # Assign result to output flow
         # For a select action, the source and dest flow types must match
         self.activity.flows[self.dest_flow_name] = ActiveFlow(value=selection_output_rv,
