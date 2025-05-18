@@ -60,18 +60,19 @@ class Select(Action):
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
         # Get a NamedTuple with a field for each relation variable name
-        rv = declare_my_module_rvs(db=mmdb, owner=self.rvp)
+        self.mmrv = declare_my_module_rvs(db=mmdb, owner=self.rvp)
+        mmrv = self.mmrv  # For brevity
 
         # Lookup the Action instance
         # Start with all Select actions in this Activity
         Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Select_Action",
-                          svar_name=rv.activity_select_actions)
+                          svar_name=mmrv.activity_select_actions)
         # Narrow it down to this Select Action instance
         R = f"ID:<{action_id}>"
-        select_action_t = Relation.restrict(db=mmdb, relation=rv.activity_select_actions, restriction=R,
-                                            svar_name=rv.this_select_action)
+        select_action_t = Relation.restrict(db=mmdb, relation=mmrv.activity_select_actions, restriction=R,
+                                            svar_name=mmrv.this_select_action)
         if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=rv.this_select_action)
+            Relation.print(db=mmdb, variable_name=mmrv.this_select_action)
 
         self.source_flow_name = select_action_t.body[0]["Input_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
@@ -80,37 +81,28 @@ class Select(Action):
         pass
 
         # Get the destinatin flow name
-        subclass_r = Relation.semijoin(db=mmdb, rname1=rv.this_select_action, rname2="Single_Select")
+        subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Single_Select")
         if not subclass_r.body:
-            subclass_r = Relation.semijoin(db=mmdb, rname1=rv.this_select_action, rname2="Many_Select")
+            subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Many_Select")
         self.dest_flow_name = subclass_r.body[0]["Output_flow"]
 
         # Get all Criteria
-        my_criteria_r = Relation.semijoin(db=mmdb, rname1=rv.this_select_action, rname2="Criterion",
+        my_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Criterion",
                                           attrs={"ID": "Action", "Activity": "Activity", "Domain": "Domain"},
-                                          svar_name=rv.my_criteria)
+                                          svar_name=mmrv.my_criteria)
         if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=rv.my_criteria)
+            Relation.print(db=mmdb, variable_name=mmrv.my_criteria)
 
-        # Equivalence criteria
-        my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=rv.my_criteria, rname2="Equivalence_Criterion",
-                                             svar_name=rv.my_eq_criteria)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=rv.my_eq_criteria)
 
-        criteria_rphrases: list[str] = []
-
-        for c in my_eq_criteria_r.body:
-            attr = c['Attribute'].replace(' ', '_')
-            value = bool(c['Value'])
-            # PyRAL specifies boolean values using ptyhon bool type, not strings
-            value = str_to_bool(c['Value']) if c['Scalar'] == "Boolean" else value
-
-            phrase = f"{attr}:<{value}>"
-            criteria_rphrases.append(phrase)
-
+        # Make a phrase for each criterion
+        # TODO: ACTN5 uses a Comparison Criterion / Factor out processing of each kind of Criterion
         # TODO: Add the other two Criterion subclasses
         # TODO: incorporate and/or/not logic
+
+        # Equivalence criteria
+        eq_phrases = self.make_eq_phrases()
+
+        criteria_rphrases = eq_phrases
 
         # Perform the selection
         selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
@@ -132,3 +124,30 @@ class Select(Action):
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
         pass
+
+    def make_eq_phrases(self) -> list[str]:
+        """
+
+        :return:
+        """
+        mmrv = self.mmrv
+        # Look up the equivalence critiera, if any
+        my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Equivalence_Criterion",
+                                             svar_name=mmrv.my_eq_criteria)
+
+        if self.activity.xe.debug:
+            Relation.print(db=mmdb, variable_name=mmrv.my_eq_criteria)
+
+        criteria_rphrases: list[str] = []
+
+        for c in my_eq_criteria_r.body:
+            attr = c['Attribute'].replace(' ', '_')
+            value = bool(c['Value'])
+            # PyRAL specifies boolean values using ptyhon bool type, not strings
+            value = str_to_bool(c['Value']) if c['Scalar'] == "Boolean" else value
+
+            phrase = f"{attr}:<{value}>"
+            criteria_rphrases.append(phrase)
+
+        return criteria_rphrases
+
