@@ -53,7 +53,6 @@ class Traverse(Action):
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
         _rv_before_mmdb = Database.get_rv_names(db=mmdb)
         _rv_before_dom = Database.get_rv_names(db=self.domdb)
-        pass
 
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(owner=self.rvp)

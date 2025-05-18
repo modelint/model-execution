@@ -13,6 +13,7 @@ from mx.actions.rename import Rename
 from mx.actions.scalar_switch import ScalarSwitch
 from mx.actions.read import Read
 from mx.actions.select import Select
+from mx.actions.project import Project
 
 class Activity:
 
@@ -23,6 +24,7 @@ class Activity:
         "scalar switch": ScalarSwitch,
         "read": Read,
         "select": Select,
+        "project": Project,
     }
 
     def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):

@@ -45,23 +45,23 @@ class Rename(Action):
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=rename_table_action_mrv)
 
-        # Extract input and output flows required by the Traversal Action
-        rename_values = rename_table_action_t.body[0]  # convenient abbreviation of the rename table action tuple body
-        self.source_flow_name = rename_values["Input_a_flow"]  # Name like F1, F2, etc
+        # Extract input and output flows required by the Rename Action
+        rename_table_values = rename_table_action_t.body[0]  # convenient abbreviation of the rename table action tuple body
+        self.source_flow_name = rename_table_values["Input_a_flow"]  # Name like F1, F2, etc
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
         # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
-        self.dest_flow_name = rename_values["Output_flow"]
+        self.dest_flow_name = rename_table_values["Output_flow"]
         # And the output of the Rename will be placed in the Activity flow dictionary
         # upon completion of this Action
 
         # Rename
         rename_output_drv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="rename_output")
-        Relation.rename(db=self.domdb, names={rename_values["From_attribute"]: rename_values["To_attribute"]},
+        Relation.rename(db=self.domdb, names={rename_table_values["From_attribute"]: rename_table_values["To_attribute"]},
                         relation=self.source_flow.flowtype, svar_name=rename_output_drv)
         if self.activity.xe.debug:
             Relation.print(db=self.domdb, variable_name=rename_output_drv)
 
-        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=rename_output_drv, flowtype=rename_values["To_table"])
+        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=rename_output_drv, flowtype=rename_table_values["To_table"])
         # The domain rv above is retained since it is an output flow, so we don't free it until the Activity completes
 
         # This action's mmdb rvs are no longer needed)
