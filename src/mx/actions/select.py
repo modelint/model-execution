@@ -21,15 +21,17 @@ from mx.rvname import declare_rvs
 class RVs(NamedTuple):
     activity_select_actions: str
     this_select_action: str
+    restriction_condition: str
     my_criteria: str
     my_eq_criteria: str
+    my_comp_criteria: str
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_my_module_rvs(db: str, owner: str) -> RVs:
-    rvs = declare_rvs(db, owner, "activity_select_actions", "this_select_action", "my_criteria",
-                      "my_eq_criteria")
+    rvs = declare_rvs(db, owner, "activity_select_actions", "this_select_action",
+                      "restriction_condition", "my_criteria", "my_eq_criteria", "my_comp_criteria")
     return RVs(*rvs)
 
 
@@ -80,27 +82,34 @@ class Select(Action):
             Relation.print(db=self.domdb, variable_name=self.source_flow.value)
         pass
 
-        # Get the destinatin flow name
+        # Get the destination flow name
         subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Single_Select")
         if not subclass_r.body:
             subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Many_Select")
         self.dest_flow_name = subclass_r.body[0]["Output_flow"]
 
+        # Get the Restriction Condition
+        rcond_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Restriction Condition",
+                                    attrs={"ID": "Action", "Activity": "Activity", "Domain": "Domain"},
+                                    svar_name=mmrv.restriction_condition)
+        if self.activity.xe.debug:
+            Relation.print(db=mmdb, variable_name=mmrv.restriction_condition)
+
+        # The supplied expression helps us define any complex boolean logic
+        # in the restriction phrase to be created.
+        predicate_str = rcond_r.body[0]["Expression"]  # TODO: Use this when we have a more interesting example
+
         # Get all Criteria
-        my_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Criterion",
-                                          attrs={"ID": "Action", "Activity": "Activity", "Domain": "Domain"},
-                                          svar_name=mmrv.my_criteria)
+        Relation.semijoin(db=mmdb, rname1=mmrv.restriction_condition, rname2="Criterion", svar_name=mmrv.my_criteria)
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.my_criteria)
 
-
         # Make a phrase for each criterion
-        # TODO: ACTN5 uses a Comparison Criterion / Factor out processing of each kind of Criterion
-        # TODO: Add the other two Criterion subclasses
         # TODO: incorporate and/or/not logic
 
         # Equivalence criteria
         eq_phrases = self.make_eq_phrases()
+        comp_phrases = self.make_comparison_phrases()
 
         criteria_rphrases = eq_phrases
 
@@ -150,4 +159,24 @@ class Select(Action):
             criteria_rphrases.append(phrase)
 
         return criteria_rphrases
+
+    def make_comparison_phrases(self) -> list[str]:
+        """
+
+        :return:
+        """
+        # TODO: This method under construction
+        mmrv = self.mmrv
+        # Look up the comparison critiera, if any
+        my_comp_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Comparison_Criterion",
+                                               svar_name=mmrv.my_comp_criteria)
+
+        if self.activity.xe.debug:
+            Relation.print(db=mmdb, variable_name=mmrv.my_comp_criteria)
+
+        criteria_rphrases: list[str] = []
+
+        for c in my_comp_criteria_r.body:
+            pass
+        return [""]  # TODO: temp response to avoid error
 
