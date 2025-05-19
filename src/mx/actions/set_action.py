@@ -61,11 +61,36 @@ class SetAction(Action):
             Relation.print(db=mmdb, variable_name=mmrv.set_table_action)
 
         # Extract input and output flows required by the Union Action
-        union_table_values = union_table_action_t.body[0]  # convenient abbreviation of the rename table action tuple body
-        self.source_flow_name = union_table_values["Input_a_flow"]  # Name like F1, F2, etc
-        self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        set_table_action_values = set_table_action_t.body[0]  # convenient abbreviation of the rename table action tuple body
+        self.source_A_name = set_table_action_values["Input_a_flow"]  # Name like F1, F2, etc
+        self.source_B_name = set_table_action_values["Input_b_flow"]
+        self.source_A_flow = self.activity.flows[self.source_A_name]  # The active content of source flow (value, type)
+        self.source_B_flow = self.activity.flows[self.source_B_name]  # The active content of source flow (value, type)
         # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
-        self.dest_flow_name = union_table_values["Output_flow"]
-        # And the output of the Union will be placed in the Activity flow dictionary
+        self.dest_flow_name = set_table_action_values["Output_flow"]
+        # And the output of the Set Action will be placed in the Activity flow dictionary
         # upon completion of this Action
+
+        set_action_name = set_table_action_t.body[0]["Operation"]
+        if set_action_name == "UNION":
+            set_action_output_drv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="set_action_output")
+            Relation.union(db=self.domdb, relations=(self.source_A_flow.value, self.source_B_flow.value), svar_name=set_action_output_drv)
+            if self.activity.xe.debug:
+                Relation.print(db=self.domdb, variable_name=set_action_output_drv)
+            pass
+        else:
+            pass  # TODO: JOIN, SUBTRACT, ...
+        pass
+
+        # Assign result to output flow
+        # For a select action, the source and dest flow types must match
+        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=set_action_output_drv,
+                                                              flowtype=self.source_A_flow.flowtype)
+
+        # This action's mmdb rvs are no longer needed)
+        Relation.free_rvs(db=mmdb, owner=self.rvp)
+
+        # Built the project phrase
+        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
+        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
 
