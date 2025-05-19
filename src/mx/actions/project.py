@@ -67,7 +67,7 @@ class Project(Action):
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
         # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
         self.dest_flow_name = project_table_values["Output_flow"]
-        # And the output of the Rename will be placed in the Activity flow dictionary
+        # And the output of the Union will be placed in the Activity flow dictionary
         # upon completion of this Action
 
         # Get the attributes to project
