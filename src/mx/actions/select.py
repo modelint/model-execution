@@ -110,12 +110,13 @@ class Select(Action):
         # Equivalence criteria
         eq_phrases = self.make_eq_phrases()
         comp_phrases = self.make_comparison_phrases()
+        criteria_phrases = eq_phrases + comp_phrases
 
-        criteria_rphrases = eq_phrases
+
 
         # Perform the selection
         selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
-        R = ', '.join(criteria_rphrases)  # For now we will just and them all together using commas
+        R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
         Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
                           svar_name=selection_output_rv)
 
@@ -177,6 +178,18 @@ class Select(Action):
         criteria_rphrases: list[str] = []
 
         for c in my_comp_criteria_r.body:
-            pass
-        return [""]  # TODO: temp response to avoid error
+            attr = c['Attribute'].replace(' ', '_')
+            scalar_flow_name = c['Value']
+            value = self.activity.flows[scalar_flow_name].value
+            relop = c['Comparison']
+            pyral_op = ':' if relop == '==' and isinstance(value, str) else relop
+            # PyRAL specifies boolean values using ptyhon bool type, not strings
+            # PyRAL uses ":" for string matches and "==" for numeric matches, so we need to determine the type
+            # of the value
+
+
+
+            phrase = f"{attr}{pyral_op}<{value}>"
+            criteria_rphrases.append(phrase)
+        return criteria_rphrases
 
