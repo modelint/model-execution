@@ -15,6 +15,7 @@ from mx.actions.read import Read
 from mx.actions.select import Select
 from mx.actions.project import Project
 from mx.actions.set_action import SetAction
+from mx.actions.restrict import Restrict
 
 class Activity:
 
@@ -27,6 +28,7 @@ class Activity:
         "select": Select,
         "project": Project,
         "set": SetAction,
+        "restrict": Restrict,
     }
 
     def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):
