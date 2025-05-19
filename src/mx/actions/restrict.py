@@ -21,6 +21,7 @@ from mx.rvname import declare_rvs
 class MMRVs(NamedTuple):
     activity_restrict_actions: str
     this_restrict_action: str
+    restrict_table_action: str
     restriction_condition: str
     my_criteria: str
     my_eq_criteria: str
@@ -30,7 +31,8 @@ class MMRVs(NamedTuple):
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(db: str, owner: str) -> MMRVs:
-    rvs = declare_rvs(db, owner, "activity_restrict_actions", "this_select_action",
+    rvs = declare_rvs(db, owner, "activity_restrict_actions", "this_restrict_action",
+                      "restrict_table_action",
                       "restriction_condition", "my_criteria", "my_eq_criteria", "my_comp_criteria")
     return MMRVs(*rvs)
 
@@ -76,20 +78,21 @@ class Restrict(Action):
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.this_restrict_action)
 
-        self.source_flow_name = restrict_action_t.body[0]["Input_flow"]
-        self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        # Join it with the Table Action superclass to get the input / output flows
+        restrict_table_action_t = Relation.join(db=mmdb, rname1=mmrv.this_restrict_action, rname2="Table_Action",
+                                                svar_name=mmrv.restrict_table_action)
         if self.activity.xe.debug:
-            Relation.print(db=self.domdb, variable_name=self.source_flow.value)
-        pass
+            Relation.print(db=mmdb, variable_name=mmrv.restrict_table_action)
 
-        # Get the destination flow name
-        subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Single_Select")
-        if not subclass_r.body:
-            subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Many_Select")
-        self.dest_flow_name = subclass_r.body[0]["Output_flow"]
+        self.source_flow_name = restrict_table_action_t.body[0]["Input_a_flow"]
+        self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
+        self.dest_flow_name = restrict_table_action_t.body[0]["Output_flow"]
+        # And the output of the Restrict Action will be placed in the Activity flow dictionary
+        # upon completion of this Action
 
         # Get the Restriction Condition
-        rcond_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Restriction Condition",
+        rcond_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_restrict_action, rname2="Restriction Condition",
                                     attrs={"ID": "Action", "Activity": "Activity", "Domain": "Domain"},
                                     svar_name=mmrv.restriction_condition)
         if self.activity.xe.debug:
@@ -112,8 +115,6 @@ class Restrict(Action):
         comp_phrases = self.make_comparison_phrases()
         criteria_phrases = eq_phrases + comp_phrases
 
-
-
         # Perform the selection
         selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
         R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
@@ -122,7 +123,6 @@ class Restrict(Action):
 
         if self.activity.xe.debug:
             Relation.print(db=self.domdb, variable_name=selection_output_rv)
-
 
         # Assign result to output flow
         # For a select action, the source and dest flow types must match
@@ -187,9 +187,6 @@ class Restrict(Action):
             # PyRAL uses ":" for string matches and "==" for numeric matches, so we need to determine the type
             # of the value
 
-
-
             phrase = f"{attr}{pyral_op}<{value}>"
             criteria_rphrases.append(phrase)
         return criteria_rphrases
-
