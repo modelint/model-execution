@@ -72,15 +72,18 @@ class SetAction(Action):
         # upon completion of this Action
 
         set_action_name = set_table_action_t.body[0]["Operation"]
+        set_action_output_drv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="set_action_output")
         if set_action_name == "UNION":
-            set_action_output_drv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="set_action_output")
-            Relation.union(db=self.domdb, relations=(self.source_A_flow.value, self.source_B_flow.value), svar_name=set_action_output_drv)
-            if self.activity.xe.debug:
-                Relation.print(db=self.domdb, variable_name=set_action_output_drv)
-            pass
+            Relation.union(db=self.domdb, relations=(self.source_A_flow.value, self.source_B_flow.value),
+                           svar_name=set_action_output_drv)
+        elif set_action_name == "JOIN":
+            Relation.join(db=self.domdb, rname1=self.source_A_flow.value, rname2=self.source_B_flow.value,
+                          svar_name=set_action_output_drv)
         else:
-            pass  # TODO: JOIN, SUBTRACT, ...
+            pass  # TODO: SUBTRACT, ...
         pass
+        if self.activity.xe.debug:
+            Relation.print(db=self.domdb, variable_name=set_action_output_drv)
 
         # Assign result to output flow
         # For a select action, the source and dest flow types must match
