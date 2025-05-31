@@ -1,8 +1,7 @@
-""" restrict.py -- executes the Restrict Action """
+""" rank_restrict.py -- executes the Rank Restrict Action """
 
 # System
 from typing import TYPE_CHECKING, NamedTuple
-import re
 
 if TYPE_CHECKING:
     from mx.method import Method
@@ -51,17 +50,18 @@ def str_to_bool(s: str) -> bool:
     else:
         raise ValueError(f"Invalid boolean string: {s}")
 
-class Restrict(Action):
+# TODO: Copy paste from Restrict - redo for Rank Restrict
+class RankRestrict(Action):
 
     def __init__(self, action_id: str, activity: "Method"):
         """
-        Perform the Restrict Action on a domain model.
+        Perform the Rank Restrict Action on a domain model.
 
         :param action_id: ACTN<n> value identifying each Action instance
         :param activity: A<n> Activity ID (for Method and State Activities)
         """
+
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
-        self.criteria : dict[int, str] = {}
 
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(db=mmdb, owner=self.rvp)
@@ -100,7 +100,7 @@ class Restrict(Action):
 
         # The supplied expression helps us define any complex boolean logic
         # in the restriction phrase to be created.
-        self.predicate_str = rcond_r.body[0]["Expression"]  # TODO: Use this when we have a more interesting example
+        predicate_str = rcond_r.body[0]["Expression"]  # TODO: Use this when we have a more interesting example
 
         # Get all Criteria
         Relation.semijoin(db=mmdb, rname1=mmrv.restriction_condition, rname2="Criterion", svar_name=mmrv.my_criteria)
@@ -111,13 +111,14 @@ class Restrict(Action):
         # TODO: incorporate and/or/not logic
 
         # Equivalence criteria
-        self.make_eq_phrases()
-        self.make_comparison_phrases()
+        eq_phrases = self.make_eq_phrases()
+        comp_phrases = self.make_comparison_phrases()
+        ranking_phrases = self.make_ranking_phrases()
+        criteria_phrases = eq_phrases + comp_phrases + ranking_phrases
 
         # Perform the selection
         selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
-        R = self.make_rphrase()
-
+        R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
         Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
                           svar_name=selection_output_rv)
 
@@ -135,29 +136,10 @@ class Restrict(Action):
         _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
         pass
 
-    def make_eq_phrases(self):
+    def make_ranking_phrases(self) -> list[str]:
         """
-        """
-        mmrv = self.mmrv
-        # Look up the equivalence critiera, if any
-        my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Equivalence_Criterion",
-                                             svar_name=mmrv.my_eq_criteria)
 
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.my_eq_criteria)
-
-        for c in my_eq_criteria_r.body:
-            cid = int(c["ID"])
-            attr = c['Attribute'].replace(' ', '_')
-            value = bool(c['Value'])
-            # PyRAL specifies boolean values using ptyhon bool type, not strings
-            value = str_to_bool(c['Value']) if c['Scalar'] == "Boolean" else value
-
-            phrase = f"{attr}:<{value}>"
-            self.criteria[cid] = phrase
-
-    def make_comparison_phrases(self):
-        """
+        :return:
         """
         mmrv = self.mmrv
         # Look up the comparison critiera, if any
@@ -167,8 +149,9 @@ class Restrict(Action):
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.my_comp_criteria)
 
+        criteria_rphrases: list[str] = []
+
         for c in my_comp_criteria_r.body:
-            cid = int(c["ID"])
             attr = c['Attribute'].replace(' ', '_')
             scalar_flow_name = c['Value']
             value = self.activity.flows[scalar_flow_name].value
@@ -179,15 +162,60 @@ class Restrict(Action):
             # of the value
 
             phrase = f"{attr}{pyral_op}<{value}>"
-            self.criteria[cid] = phrase
-        pass
+            criteria_rphrases.append(phrase)
+        return criteria_rphrases
 
-    def make_rphrase(self) -> str:
-        def replace_match(match):
-            key = int(match.group())
-            try:
-                return f"{self.criteria[key]}"
-            except KeyError:
-                raise ValueError(f"No replacement found for key: {key}")
+    def make_eq_phrases(self) -> list[str]:
+        """
 
-        return re.sub(r'\b\d+\b', replace_match, self.predicate_str)
+        :return:
+        """
+        mmrv = self.mmrv
+        # Look up the equivalence critiera, if any
+        my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Equivalence_Criterion",
+                                             svar_name=mmrv.my_eq_criteria)
+
+        if self.activity.xe.debug:
+            Relation.print(db=mmdb, variable_name=mmrv.my_eq_criteria)
+
+        criteria_rphrases: list[str] = []
+
+        for c in my_eq_criteria_r.body:
+            attr = c['Attribute'].replace(' ', '_')
+            value = bool(c['Value'])
+            # PyRAL specifies boolean values using ptyhon bool type, not strings
+            value = str_to_bool(c['Value']) if c['Scalar'] == "Boolean" else value
+
+            phrase = f"{attr}:<{value}>"
+            criteria_rphrases.append(phrase)
+
+        return criteria_rphrases
+
+    def make_comparison_phrases(self) -> list[str]:
+        """
+
+        :return:
+        """
+        mmrv = self.mmrv
+        # Look up the comparison critiera, if any
+        my_comp_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Comparison_Criterion",
+                                               svar_name=mmrv.my_comp_criteria)
+
+        if self.activity.xe.debug:
+            Relation.print(db=mmdb, variable_name=mmrv.my_comp_criteria)
+
+        criteria_rphrases: list[str] = []
+
+        for c in my_comp_criteria_r.body:
+            attr = c['Attribute'].replace(' ', '_')
+            scalar_flow_name = c['Value']
+            value = self.activity.flows[scalar_flow_name].value
+            relop = c['Comparison']
+            pyral_op = ':' if relop == '==' and isinstance(value, str) else relop
+            # PyRAL specifies boolean values using ptyhon bool type, not strings
+            # PyRAL uses ":" for string matches and "==" for numeric matches, so we need to determine the type
+            # of the value
+
+            phrase = f"{attr}{pyral_op}<{value}>"
+            criteria_rphrases.append(phrase)
+        return criteria_rphrases
