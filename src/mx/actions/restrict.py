@@ -152,8 +152,9 @@ class Restrict(Action):
             value = bool(c['Value'])
             # PyRAL specifies boolean values using ptyhon bool type, not strings
             value = str_to_bool(c['Value']) if c['Scalar'] == "Boolean" else value
+            value = f"<{value}>" if ' ' in value else value
 
-            phrase = f"{attr}:<{value}>"
+            phrase = f"{attr}:{value}"
             self.criteria[cid] = phrase
 
     def make_comparison_phrases(self):
@@ -177,8 +178,9 @@ class Restrict(Action):
             # PyRAL specifies boolean values using ptyhon bool type, not strings
             # PyRAL uses ":" for string matches and "==" for numeric matches, so we need to determine the type
             # of the value
+            value = f"<{value}>" if ' ' in value else value
 
-            phrase = f"{attr}{pyral_op}<{value}>"
+            phrase = f"{attr}{pyral_op}{value}"
             self.criteria[cid] = phrase
         pass
 
