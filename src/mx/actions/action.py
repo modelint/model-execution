@@ -6,6 +6,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from mx.method import Method  # TOOD: Replace with Activity after refactoring State/Assigner Activities
 
+# Model Integration
+from pyral.relation import Relation
+
+# MX
+from mx.db_names import mmdb
+
 class Action:
 
     def __init__(self, activity: "Method", anum: str, action_id: str):
@@ -18,6 +24,18 @@ class Action:
         self.anum = anum
         self.action_id = action_id
         self.activity = activity
+
+        # Do not execute this action unless ALL input flows have been enabled.
+        # The preceding Wave should have enabled all required inputs, unless some upstream condition
+        # evaluated as false. If so, this action must be skipped.
+
+        # Check the Flow Dependency class for all required input Flow names
+        R = f"To_action:<{action_id}>, Activity:<{activity.anum}>, Domain:<{activity.domain}>"
+        dependencies_r = Relation.restrict(db=mmdb, relation="Flow Dependency", restriction=R)
+        required_flow_names = [d["Flow"] for d in dependencies_r.body]
+        # Check our dictionary of active flows and disable if any required input flows were not set
+        self.disabled = any(activity.flows[f] is None for f in required_flow_names)
+        # Each subclass action should verify the disable status before attempting to execute
 
         # The domain alias is also the name of the TclRAL domain database session
         self.domdb = self.activity.domain_alias  # Abbreviated access since we use it alot
