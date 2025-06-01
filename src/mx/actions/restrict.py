@@ -62,9 +62,14 @@ class Restrict(Action):
         """
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
-        #
-
-
+        # Do not execute this action unless ALL input flows have been enabled.
+        # The preceding Wave should have enabled all required inputs, unless some upstream condition
+        # evaluated as false. If so, this action must be skipped.
+        R = f"To_action:<{action_id}>, Activity:<{activity.anum}>, Domain:<{activity.domain}>"
+        dependencies_r = Relation.restrict(db=mmdb, relation="Flow Dependency", restriction=R)
+        required_flow_names = [d["Flow"] for d in dependencies_r.body]
+        if any(activity.flows[f] is None for f in required_flow_names):
+            return
 
         self.criteria : dict[int, str] = {}
 
