@@ -144,7 +144,7 @@ class Restrict(Action):
         """
         """
         mmrv = self.mmrv
-        # Look up the equivalence critiera, if any
+        # Look up the equivalence criteria, if any
         my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Equivalence_Criterion",
                                              svar_name=mmrv.my_eq_criteria)
 

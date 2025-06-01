@@ -39,6 +39,11 @@ class SetAction(Action):
         :param activity: The A<n> Activity ID (for Method and State Activities)
         """
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
+
+        # Do not execute this Action if it is not enabled, see comment in Action class
+        if self.disabled:
+            return
+
         _rv_before_mmdb = Database.get_rv_names(db=mmdb)
         _rv_before_dom = Database.get_rv_names(db=self.domdb)
 

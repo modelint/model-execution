@@ -28,6 +28,10 @@ class Rename(Action):
         """
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
+        # Do not execute this Action if it is not enabled, see comment in Action class
+        if self.disabled:
+            return
+
         # Lookup the Action instance
         # Start with all Rename actions in this Activity
         activity_rename_actions_mrv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="activity_rename_action")

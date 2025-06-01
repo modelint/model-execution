@@ -58,6 +58,10 @@ class RankRestrict(Action):
 
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
+        # Do not execute this Action if it is not enabled, see comment in Action class
+        if self.disabled:
+            return
+
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(db=mmdb, owner=self.rvp)
         mmrv = self.mmrv  # For brevity
