@@ -61,6 +61,11 @@ class Restrict(Action):
         :param activity: A<n> Activity ID (for Method and State Activities)
         """
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
+
+        #
+
+
+
         self.criteria : dict[int, str] = {}
 
         # Get a NamedTuple with a field for each relation variable name

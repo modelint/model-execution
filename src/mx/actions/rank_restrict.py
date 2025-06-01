@@ -19,21 +19,16 @@ from mx.rvname import declare_rvs
 
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
-    activity_restrict_actions: str
-    this_restrict_action: str
-    restrict_table_action: str
-    restriction_condition: str
-    my_criteria: str
-    my_eq_criteria: str
-    my_comp_criteria: str
+    activity_rank_restrict_actions: str
+    this_rank_restrict_action: str
+    rank_restrict_table_action: str
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(db: str, owner: str) -> MMRVs:
-    rvs = declare_rvs(db, owner, "activity_restrict_actions", "this_restrict_action",
-                      "restrict_table_action",
-                      "restriction_condition", "my_criteria", "my_eq_criteria", "my_comp_criteria")
+    rvs = declare_rvs(db, owner, "activity_rank_restrict_actions", "this_rank_restrict_action",
+                      "rank_restrict_table_action", )
     return MMRVs(*rvs)
 
 
@@ -69,58 +64,36 @@ class RankRestrict(Action):
 
         # Lookup the Action instance
         # Start with all Restrict actions in this Activity
-        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Restrict_Action",
-                          svar_name=mmrv.activity_restrict_actions)
+        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Rank_Restrict_Action",
+                          svar_name=mmrv.activity_rank_restrict_actions)
         # Narrow it down to this Restrict Action instance
         R = f"ID:<{action_id}>"
-        restrict_action_t = Relation.restrict(db=mmdb, relation=mmrv.activity_restrict_actions, restriction=R,
-                                              svar_name=mmrv.this_restrict_action)
+        rank_restrict_action_t = Relation.restrict(db=mmdb, relation=mmrv.activity_rank_restrict_actions,
+                                                   restriction=R, svar_name=mmrv.this_rank_restrict_action)
         if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.this_restrict_action)
+            Relation.print(db=mmdb, variable_name=mmrv.this_rank_restrict_action)
 
         # Join it with the Table Action superclass to get the input / output flows
-        restrict_table_action_t = Relation.join(db=mmdb, rname1=mmrv.this_restrict_action, rname2="Table_Action",
-                                                svar_name=mmrv.restrict_table_action)
+        rank_restrict_table_action_t = Relation.join(db=mmdb, rname1=mmrv.this_rank_restrict_action,
+                                                     rname2="Table_Action",
+                                                     svar_name=mmrv.rank_restrict_table_action
+                                                     )
         if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.restrict_table_action)
+            Relation.print(db=mmdb, variable_name=mmrv.rank_restrict_table_action)
 
-        self.source_flow_name = restrict_table_action_t.body[0]["Input_a_flow"]
+        self.source_flow_name = rank_restrict_table_action_t.body[0]["Input_a_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
         # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
-        self.dest_flow_name = restrict_table_action_t.body[0]["Output_flow"]
+        self.dest_flow_name = rank_restrict_table_action_t.body[0]["Output_flow"]
         # And the output of the Restrict Action will be placed in the Activity flow dictionary
         # upon completion of this Action
 
-        # Get the Restriction Condition
-        rcond_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_restrict_action, rname2="Restriction Condition",
-                                    attrs={"ID": "Action", "Activity": "Activity", "Domain": "Domain"},
-                                    svar_name=mmrv.restriction_condition)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.restriction_condition)
-
-        # The supplied expression helps us define any complex boolean logic
-        # in the restriction phrase to be created.
-        predicate_str = rcond_r.body[0]["Expression"]  # TODO: Use this when we have a more interesting example
-
-        # Get all Criteria
-        Relation.semijoin(db=mmdb, rname1=mmrv.restriction_condition, rname2="Criterion", svar_name=mmrv.my_criteria)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.my_criteria)
-
-        # Make a phrase for each criterion
-        # TODO: incorporate and/or/not logic
-
-        # Equivalence criteria
-        eq_phrases = self.make_eq_phrases()
-        comp_phrases = self.make_comparison_phrases()
-        ranking_phrases = self.make_ranking_phrases()
-        criteria_phrases = eq_phrases + comp_phrases + ranking_phrases
-
+        pass
         # Perform the selection
-        selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
-        R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
-        Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
-                          svar_name=selection_output_rv)
+        # selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
+        # R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
+        # Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
+        #                   svar_name=selection_output_rv)
 
         if self.activity.xe.debug:
             Relation.print(db=self.domdb, variable_name=selection_output_rv)
