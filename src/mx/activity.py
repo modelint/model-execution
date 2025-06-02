@@ -12,6 +12,7 @@ from mx.actions.traverse import Traverse
 from mx.actions.rename import Rename
 from mx.actions.scalar_switch import ScalarSwitch
 from mx.actions.read import Read
+from mx.actions.extract import Extract
 from mx.actions.select import Select
 from mx.actions.project import Project
 from mx.actions.set_action import SetAction
@@ -31,6 +32,7 @@ class Activity:
         "set": SetAction,
         "restrict": Restrict,
         "rank restrict": RankRestrict,
+        "extract": Extract,
     }
 
     def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):
