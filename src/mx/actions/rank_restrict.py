@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 # Model Integration
 from pyral.relation import Relation
 from pyral.database import Database  # Diagnostics
+from pyral.rtypes import Extent, Card
 
 # MX
 from mx.db_names import mmdb
@@ -72,46 +73,47 @@ class RankRestrict(Action):
                           svar_name=mmrv.activity_rank_restrict_actions)
         # Narrow it down to this Restrict Action instance
         R = f"ID:<{action_id}>"
-        rank_restrict_action_t = Relation.restrict(db=mmdb, relation=mmrv.activity_rank_restrict_actions,
+        rank_restrict_action_r = Relation.restrict(db=mmdb, relation=mmrv.activity_rank_restrict_actions,
                                                    restriction=R, svar_name=mmrv.this_rank_restrict_action)
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.this_rank_restrict_action)
 
         # Join it with the Table Action superclass to get the input / output flows
-        rank_restrict_table_action_t = Relation.join(db=mmdb, rname1=mmrv.this_rank_restrict_action,
+        rank_restrict_table_action_r = Relation.join(db=mmdb, rname1=mmrv.this_rank_restrict_action,
                                                      rname2="Table_Action",
                                                      svar_name=mmrv.rank_restrict_table_action
                                                      )
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.rank_restrict_table_action)
 
-        self.source_flow_name = rank_restrict_table_action_t.body[0]["Input_a_flow"]
+        self.source_flow_name = rank_restrict_table_action_r.body[0]["Input_a_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
         # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
-        self.dest_flow_name = rank_restrict_table_action_t.body[0]["Output_flow"]
+        self.dest_flow_name = rank_restrict_table_action_r.body[0]["Output_flow"]
         # And the output of the Restrict Action will be placed in the Activity flow dictionary
         # upon completion of this Action
 
-        pass
-        # Perform the selection
-        # selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
-        # R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
-        # Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
-        #                   svar_name=selection_output_rv)
 
+        pass
+        rank_restrict_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="rank_restrict_output")
+        rank_restrict_action_t = rank_restrict_action_r.body[0]
+        rank_attr = rank_restrict_action_t["Attribute"]
+        rank_extent = Extent(rank_restrict_action_t["Extent"])
+        rank_card = Card(rank_restrict_action_t["Selection_cardinality"].lower())
+        Relation.rank_restrict(db=self.domdb, relation=self.source_flow.value, attr_name=rank_attr,extent=rank_extent,
+                               card=rank_card, svar_name=rank_restrict_output_rv)
         if self.activity.xe.debug:
-            Relation.print(db=self.domdb, variable_name=selection_output_rv)
+            Relation.print(db=self.domdb, variable_name=rank_restrict_output_rv)
 
         # Assign result to output flow
         # For a select action, the source and dest flow types must match
-        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=selection_output_rv,
+        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=rank_restrict_output_rv,
                                                               flowtype=self.source_flow.flowtype)
 
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
-        pass
 
     def make_ranking_phrases(self) -> list[str]:
         """
