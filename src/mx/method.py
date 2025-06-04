@@ -44,6 +44,7 @@ class Method(Activity):
         self.current_wave = 1
         self.wave_action_ids = None
         self.flows: dict[str, Optional[ActiveFlow]] = {}
+        self.executed_actions : list[str] = []  # List of action names executed in sequence so rvs can be freed later
 
         instance_id_value = '_'.join(v for v in self.instance.values())
         self.owner_name = f"{class_name}_{name}_{instance_id_value}"
@@ -71,14 +72,20 @@ class Method(Activity):
         super().__init__(xe=xe, domain=domain_name, anum=anum, parameters=parameters)
 
         self.execute()
+
+        # Diagnostic check for in use database variables
         _rv_before_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_before_dom_free = Database.get_rv_names(db=self.domain_alias)
 
         Relation.free_rvs(db=mmdb, owner=self.owner_name)
         Relation.free_rvs(db=domain_alias, owner=self.owner_name)
+        for a in self.executed_actions:
+            action_owner = f"{self.anum}_{a}_{instance_id_value}"
+            Relation.free_rvs(db=domain_alias, owner=action_owner)
+
+        # Diagnostic check to ensure all db variables freed up (returning empty sets)
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_after_dom_free = Database.get_rv_names(db=self.domain_alias)
-        pass
 
     def enable_initial_flows(self):
         # Set the values of all initial flows

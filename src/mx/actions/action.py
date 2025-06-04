@@ -12,6 +12,10 @@ from pyral.relation import Relation
 # MX
 from mx.db_names import mmdb
 
+# These actions do not output a non-scalar flow and, thus, do not declare
+# an output database variable to be freed up upon activity completion
+no_nsflow_output_actions = {"scalarswitch", "gate", "read", "extract"}
+
 class Action:
 
     def __init__(self, activity: "Method", anum: str, action_id: str):
@@ -39,6 +43,16 @@ class Action:
             self.disabled = all(activity.flows[f] is None for f in required_flow_names)
         else:
             self.disabled = any(activity.flows[f] is None for f in required_flow_names)
+
+        if not self.disabled and self.action_type not in no_nsflow_output_actions:
+            # Since this Action will be executed, it may produce one or more non scalar flow
+            # (relation) outputs, and thus set a database variable for each. These rv variables
+            # will be freed up upon completion of the Activity.
+            # We can't free them up earlier since any flow content in an rv must be available while the activity
+            # executes.  (Strictly speaking, we could free them up piecemeal once there are no more consumers, but
+            # it's easier and less error prone to just free them all up after the activity completes.
+            self.activity.executed_actions.append(self.action_id)
+
         # Each subclass action should verify the disable status before attempting to execute
 
         # The domain alias is also the name of the TclRAL domain database session
