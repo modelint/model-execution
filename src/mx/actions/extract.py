@@ -54,27 +54,23 @@ class Extract(Action):
                           svar_name=rv.activity_extract_switch_actions)
         # Narrow it down to this Extract Action instance
         R = f"ID:<{action_id}>"
-        extract_action_t = Relation.restrict(db=mmdb, relation=rv.activity_extract_switch_actions, restriction=R,
-                                          svar_name=rv.this_extract_action)
+        extract_action_r = Relation.restrict(db=mmdb, relation=rv.activity_extract_switch_actions, restriction=R,
+                                             svar_name=rv.this_extract_action)
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=rv.this_extract_action)
 
-        self.source_flow_name = extract_action_t.body[0]["Instance_flow"]
+        self.source_flow_name = extract_action_r.body[0]["Input_tuple"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        self.dest_flow_name = extract_action_r.body[0]["Output_scalar"]
 
-        attribute_extract_accesses_r = Relation.semijoin(db=mmdb, rname1=rv.this_extract_action,
-                                                      rname2="Attribute Extract Access",
-                                                      attrs={"ID": "Extract_action",
-                                                             "Activity": "Activity", "Domain": "Domain"},
-                                                      svar_name=rv.attr_extract_accesses)
+        self.attr = extract_action_r.body[0]["Attribute"]
+        input_tuple_r = Relation.project(db=self.domdb, relation=self.source_flow.value, attributes=(self.attr,))
+        extracted_value = input_tuple_r.body[0][self.attr]
+
+        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=extracted_value, flowtype="scalar")
+
         if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=rv.attr_extract_accesses)
-
-        for access in attribute_extract_accesses_r.body:
-            attr_value_t = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
-                                            relation=self.source_flow.value)
-            attr_value = attr_value_t.body[0][access["Attribute"]]
-            self.activity.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
+            print(f"\nScalar value: {extracted_value} output on Flow: {self.dest_flow_name}")
 
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
