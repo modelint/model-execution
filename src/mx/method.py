@@ -16,20 +16,9 @@ from mx.actions.flow import ActiveFlow
 from mx.activity import Activity
 from mx.bridge import NamedValues
 from db_names import mmdb
-from mx.rvname import declare_rvs
 from exceptions import *
 
 _logger = logging.getLogger(__name__)
-
-class RVs(NamedTuple):
-    method_name: str
-    xi_flow_value: str
-
-# This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
-# variables above as a member.
-def declare_my_module_rvs(db: str, owner: str) -> RVs:
-    rvs = declare_rvs(db, owner, "method_name", "xi_flow_value", )
-    return RVs(*rvs)
 
 class Method(Activity):
 
@@ -58,14 +47,13 @@ class Method(Activity):
 
         instance_id_value = '_'.join(v for v in self.instance.values())
         self.owner_name = f"{class_name}_{name}_{instance_id_value}"
-        self.rv = declare_my_module_rvs(db=mmdb, owner=self.owner_name)
-        rv = self.rv
 
-        self.method_rvname = rv.method_name
+        self.method_rvname = Relation.declare_rv(db=mmdb, owner=self.owner_name, name="method_name")
 
         # Get the method attribute values (anum, xi_flow)
         R = f"Name:<{self.name}>, Class:<{self.class_name}>, Domain:<{self.domain_name}>"
         Relation.restrict(db=mmdb, relation='Method', restriction=R)
+
         method_i = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=self.method_rvname)
         if not method_i.body:
             msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
@@ -83,27 +71,28 @@ class Method(Activity):
         super().__init__(xe=xe, domain=domain_name, anum=anum, parameters=parameters)
 
         self.execute()
-        _db = Database.get_rv_names(db=mmdb)
+        _rv_before_mmdb_free = Database.get_rv_names(db=mmdb)
+        _rv_before_dom_free = Database.get_rv_names(db=self.domain_alias)
 
-        # TODO: Step through below statement to verify it is correct
         Relation.free_rvs(db=mmdb, owner=self.owner_name)
-        _db = Database.get_rv_names(db=mmdb)
+        Relation.free_rvs(db=domain_alias, owner=self.owner_name)
+        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
+        _rv_after_dom_free = Database.get_rv_names(db=self.domain_alias)
         pass
 
     def enable_initial_flows(self):
         # Set the values of all initial flows
-        rv = self.rv
-
+        xi_flow_value_rv = Relation.declare_rv(db=self.domain_alias, owner=self.owner_name, name="xi_flow_value")
         # Convert identifier to a restriction phrase
         R = ", ".join(f"{k}:<{v}>" for k, v in self.instance.items())
         # Set a relation variable name for the xi flow value
         Relation.restrict(db=self.domain_alias, relation=self.class_name, restriction=R)
         id_attr_names = tuple(k for k in self.instance.keys())
-        Relation.project(db=self.domain_alias, attributes=id_attr_names, svar_name=rv.xi_flow_value)
-        Relation.print(db=self.domain_alias, variable_name=rv.xi_flow_value)
+        Relation.project(db=self.domain_alias, attributes=id_attr_names, svar_name=xi_flow_value_rv)
+        Relation.print(db=self.domain_alias, variable_name=xi_flow_value_rv)
 
         # Set the xi flow value to a relation variable holding a single instance reference for the executing instance
-        self.flows[self.xi_flow] = ActiveFlow(value=rv.xi_flow_value, flowtype=self.class_name)
+        self.flows[self.xi_flow] = ActiveFlow(value=xi_flow_value_rv, flowtype=self.class_name)
 
         # Set the input parameter flows
         Relation.rename(db=mmdb, relation="Parameter", names={"Name": "Pname"})

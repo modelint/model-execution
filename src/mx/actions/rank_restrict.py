@@ -93,8 +93,6 @@ class RankRestrict(Action):
         # And the output of the Restrict Action will be placed in the Activity flow dictionary
         # upon completion of this Action
 
-
-        pass
         rank_restrict_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="rank_restrict_output")
         rank_restrict_action_t = rank_restrict_action_r.body[0]
         rank_attr = rank_restrict_action_t["Attribute"]
@@ -114,87 +112,3 @@ class RankRestrict(Action):
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
-
-    def make_ranking_phrases(self) -> list[str]:
-        """
-
-        :return:
-        """
-        mmrv = self.mmrv
-        # Look up the comparison critiera, if any
-        my_comp_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Comparison_Criterion",
-                                               svar_name=mmrv.my_comp_criteria)
-
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.my_comp_criteria)
-
-        criteria_rphrases: list[str] = []
-
-        for c in my_comp_criteria_r.body:
-            attr = c['Attribute'].replace(' ', '_')
-            scalar_flow_name = c['Value']
-            value = self.activity.flows[scalar_flow_name].value
-            relop = c['Comparison']
-            pyral_op = ':' if relop == '==' and isinstance(value, str) else relop
-            # PyRAL specifies boolean values using ptyhon bool type, not strings
-            # PyRAL uses ":" for string matches and "==" for numeric matches, so we need to determine the type
-            # of the value
-
-            phrase = f"{attr}{pyral_op}<{value}>"
-            criteria_rphrases.append(phrase)
-        return criteria_rphrases
-
-    def make_eq_phrases(self) -> list[str]:
-        """
-
-        :return:
-        """
-        mmrv = self.mmrv
-        # Look up the equivalence critiera, if any
-        my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Equivalence_Criterion",
-                                             svar_name=mmrv.my_eq_criteria)
-
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.my_eq_criteria)
-
-        criteria_rphrases: list[str] = []
-
-        for c in my_eq_criteria_r.body:
-            attr = c['Attribute'].replace(' ', '_')
-            value = bool(c['Value'])
-            # PyRAL specifies boolean values using ptyhon bool type, not strings
-            value = str_to_bool(c['Value']) if c['Scalar'] == "Boolean" else value
-
-            phrase = f"{attr}:<{value}>"
-            criteria_rphrases.append(phrase)
-
-        return criteria_rphrases
-
-    def make_comparison_phrases(self) -> list[str]:
-        """
-
-        :return:
-        """
-        mmrv = self.mmrv
-        # Look up the comparison critiera, if any
-        my_comp_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Comparison_Criterion",
-                                               svar_name=mmrv.my_comp_criteria)
-
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.my_comp_criteria)
-
-        criteria_rphrases: list[str] = []
-
-        for c in my_comp_criteria_r.body:
-            attr = c['Attribute'].replace(' ', '_')
-            scalar_flow_name = c['Value']
-            value = self.activity.flows[scalar_flow_name].value
-            relop = c['Comparison']
-            pyral_op = ':' if relop == '==' and isinstance(value, str) else relop
-            # PyRAL specifies boolean values using ptyhon bool type, not strings
-            # PyRAL uses ":" for string matches and "==" for numeric matches, so we need to determine the type
-            # of the value
-
-            phrase = f"{attr}{pyral_op}<{value}>"
-            criteria_rphrases.append(phrase)
-        return criteria_rphrases
