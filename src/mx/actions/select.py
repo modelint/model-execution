@@ -82,7 +82,7 @@ class Select(Action):
 
         self.source_flow_name = select_action_t.body[0]["Input_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
-        if self.activity.xe.debug:
+        if self.activity.xe.debug and self.source_flow.value:
             Relation.print(db=self.domdb, variable_name=self.source_flow.value)
         pass
 

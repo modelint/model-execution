@@ -117,7 +117,7 @@ class Method(Activity):
         Relation.join(db=mmdb, rname2="Class_Accessor")
         ca_flows_r = Relation.project(db=mmdb, attributes=("Class", "Output_flow",))
         for t in ca_flows_r.body:
-            self.flows[t["Output_flow"]] = ActiveFlow(value=None, flowtype=t["Class"])
+            self.flows[t["Output_flow"]] = ActiveFlow(value=t["Class"], flowtype=t["Class"])
 
     def execute(self):
         """
