@@ -24,7 +24,7 @@ class Action:
         self.anum = anum
         self.action_id = action_id
         self.activity = activity
-        self.disabled = False
+        self.action_type = type(self).__name__.lower()
 
         # Do not execute this action unless ALL input flows have been enabled.
         # The preceding Wave should have enabled all required inputs, unless some upstream condition
@@ -35,21 +35,10 @@ class Action:
         dependencies_r = Relation.restrict(db=mmdb, relation="Flow Dependency", restriction=R)
         required_flow_names = [d["Flow"] for d in dependencies_r.body]
         # Check our dictionary of active flows and disable if any required input flows were not set
-        # self.disabled = any(activity.flows[f] is None for f in required_flow_names)
-        # Make a list of required inputs with no content set
-        un_enabled_inputs = [f for f in required_flow_names if activity.flows[f] is None]
-        for empty_flow in un_enabled_inputs[:]:  # Iterate over a copy since list will be mutated
-            # Is it the output side of a Switched Data Flow?  If so, we need to propagate the content through the switch
-            R = f"Input_flow:<{empty_flow}>, Activity:<{self.anum}>, Domain:<{self.activity.domain}>"
-            result = Relation.restrict(db=mmdb, relation='Switched Data Flow', restriction=R)
-            if not result.body:
-                continue
-            # Help: Assign switched_input_flow_name to the current empty_flow value
-            un_enabled_inputs.remove(empty_flow)  # Remove from the original list
-            switched_output_flow_name = empty_flow
-            pass
-        self.disabled = any(activity.flows[f] is None for f in required_flow_names)
-
+        if self.action_type == "gate":
+            self.disabled = all(activity.flows[f] is None for f in required_flow_names)
+        else:
+            self.disabled = any(activity.flows[f] is None for f in required_flow_names)
         # Each subclass action should verify the disable status before attempting to execute
 
         # The domain alias is also the name of the TclRAL domain database session

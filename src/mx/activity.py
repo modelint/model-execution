@@ -17,6 +17,7 @@ from mx.actions.select import Select
 from mx.actions.project import Project
 from mx.actions.set_action import SetAction
 from mx.actions.restrict import Restrict
+from mx.actions.gate import Gate
 from mx.actions.rank_restrict import RankRestrict
 
 class Activity:
@@ -33,6 +34,7 @@ class Activity:
         "restrict": Restrict,
         "rank restrict": RankRestrict,
         "extract": Extract,
+        "gate": Gate
     }
 
     def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):
