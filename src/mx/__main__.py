@@ -72,7 +72,7 @@ def main():
                       scenario_path=Path(args.scenario), verbose=args.verbose, debug=args.debug)
 
     logger.info("No problemo")  # We didn't die on an exception, basically
-    if args.verbose:
+    if args.verbose or args.debug:
         print("\nNo problemo")
 
 

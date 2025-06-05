@@ -55,7 +55,7 @@ class Scenario:
                            domain_name=self.xe.system.domains[i.dest].name, domain_alias=i.dest,
                            instance_id=i.action.instance, parameters=i.action.params)
                 pass
-            if isinstance(i.action, MXSignalEvent):
+            elif isinstance(i.action, MXSignalEvent):
                 print("signal event")
                 DispatchedEvent(signal=i.action)
                 pass
