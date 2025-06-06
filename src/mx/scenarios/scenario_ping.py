@@ -46,7 +46,15 @@ class Scenario:
 
         :return:
         """
-        for i in s:
+        for i in self.xe.scenario['interactions']:
+            if i.get('stimulate', None):
+                if i['stimulate']["type"] == "model operation":
+                    if i['stimulate']["name"] == "call method":
+                        # TODO: Populate method
+                        pass
+                    pass
+                pass
+            pass
             if i.delay:
                 _logger.info(f"Processing: {i.delay} sec...")
                 time.sleep(i.delay)

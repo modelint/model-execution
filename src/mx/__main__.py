@@ -36,7 +36,7 @@ def parse(cl_input):
     parser.add_argument('-c', '--context', action='store',
                         help='Name of the context directory specifying the initialized domain dbs and a *.sip file')
     parser.add_argument('-x', '--scenario', action='store',
-                        help='Name of the scenario *.scn file to run against the populated system')
+                        help='Name of the scenario *.yaml file to run against the populated system')
     parser.add_argument('-D', '--debug', action='store_true',
                         help='Debug mode'),
     parser.add_argument('-L', '--log', action='store_true',

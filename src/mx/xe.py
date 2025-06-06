@@ -2,7 +2,9 @@
 
 # System
 import logging
+import yaml
 from pathlib import Path
+from typing import Any
 
 # Model Integration
 from pyral.database import Database
@@ -15,6 +17,12 @@ from mx.db_names import mmdb
 from mx.rvname import RVN
 
 _logger = logging.getLogger(__name__)
+
+
+def load_scenario(path: str | Path) -> dict[str, Any]:
+    with open(path, 'r', encoding='utf-8') as f:
+        return yaml.safe_load(f)
+
 
 class XE:
     """
@@ -37,7 +45,7 @@ class XE:
 
         self.mmdb_path = None
         self.context_dir = None
-        self.scenario_path = None
+        self.scenario = None
         self.system = None
         self.debug = False
         self.verbose = False
@@ -56,9 +64,12 @@ class XE:
         """
         self.mmdb_path = mmdb_path
         self.context_dir = context_dir
-        self.scenario_path = scenario_path  # TODO: Define scn syntax, for now we hand code it
         self.verbose = verbose  # Print db schemas, etc to console
         self.debug = debug  # Print intermediate tables and values to console
+
+        # Load the scenario
+        self.scenario = load_scenario(path=scenario_path)
+
 
         # Load a metamodel file populated with the system as one or more modeled domains
         _logger.info(f"Loading the metamodel database from: [{self.mmdb_path}]")
@@ -85,6 +96,6 @@ class XE:
         s = Scenario(xe=self)
         s.run()
 
-
         # Run the scenario (sequence of interactions)
         # Scenario.run(sys_domains=self.system.domains)
+
