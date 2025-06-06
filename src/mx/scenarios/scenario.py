@@ -1,115 +1,99 @@
-# """ scenario.py -- Runs a scenario """
-#
-# # System
-# import logging
-# from typing import NamedTuple
-# import time
-#
-# # MX
-# from mx.dispatched_event import DispatchedEvent
-# from mx.method import Method
-# from mx.bridge import *
-#
-# _logger = logging.getLogger(__name__)
-#
-# # Interaction
-# MXInteraction = NamedTuple('MXInteraction', source=str, dest=str, delay=float,
-#                            action=ModeledOperation | BridgeableCondition)
-#
-# s = [
-#     # UI requests floor going up
-#     MXInteraction(source='UI', dest='EVMAN', delay=0,
-#                   action=MXCallMethod(op='BLEV', source=None, method='Floor request',
-#                                       class_name='Bank Level', domain='EVMAN',
-#                                       params={'dir': '.up'},
-#                                       instance={'Bank': 'Lower Floors', 'Floor': 'L'})
-#                   ),
-#     # MXInteraction(source='UI', dest='EVMAN', delay=0,
-#     #               action=MXSignalEvent(op='BLEV', source=None, event_spec='Floor request',
-#     #                                    state_model='Bank Level', domain='EVMAN',
-#     #                                    params={'dir': '.up'},
-#     #                                    instance={'Bank': 'Lower Floors', 'Floor': 'L'})
-#     #               ),
-#     # Cabin starts opening door
-#     MXInteraction(source='EVMAN', dest='TRANS', delay=0,
-#                   action=MXLifecycleStateEntered(instance={'Shaft': 'S1'}, state='OPENING',
-#                                                  state_model='Door', domain='EVMAN')
-#                   ),
-#     # Trans reports door opened
-#     MXInteraction(source='TRANS', dest='EVMAN', delay=2.0,
-#                   action=MXSignalEvent(op='DOOR', source=None, event_spec='Door opened',
-#                                        state_model='Door', domain='EVMAN',
-#                                        params={},
-#                                        instance={'Shaft': 'S1'})
-#                   ),
-#     # UI updates door status
-#     MXInteraction(source='EVMAN', dest='UI', delay=0,
-#                   action=MXLifecycleStateEntered(instance={'Shaft': 'S1'}, state='OPEN',
-#                                                  state_model='Door', domain='EVMAN')
-#                   ),
-#     # UI button press floor 3
-#     MXInteraction(source='UI', dest='EVMAN', delay=1.5,
-#                   action=MXSignalEvent(op='SLEV', source=None, event_spec='Stop request',
-#                                        state_model='Accessible Shaft Level', domain='EVMAN',
-#                                        params={},
-#                                        instance={'Floor': '3', 'Shaft': 'S1'})
-#                   ),
-#     # Cabin starts closing door
-#     MXInteraction(source='EVMAN', dest='TRANS', delay=0,
-#                   action=MXLifecycleStateEntered(instance={'Shaft': 'S1'}, state='CLOSING',
-#                                                  state_model='Door', domain='EVMAN')
-#                   ),
-#     # Trans reports door closed
-#     MXInteraction(source='TRANS', dest='EVMAN', delay=2.0,
-#                   action=MXSignalEvent(op='DOOR', source=None, event_spec='Door closed',
-#                                        state_model='Door', domain='EVMAN',
-#                                        params={},
-#                                        instance={'Shaft': 'S1'})
-#                   ),
-#     # UI updates door status
-#     MXInteraction(source='EVMAN', dest='UI', delay=0,
-#                   action=MXLifecycleStateEntered(instance={'Shaft': 'S1'}, state='CLOSED',
-#                                                  state_model='Door', domain='EVMAN')
-#                   ),
-#     # Cabin requests transit
-#     MXInteraction(source='EVMAN', dest='TRANS', delay=0,
-#                   action=MXLifecycleStateEntered(instance={'Shaft': 'S1'}, state='Requesting transport',
-#                                                  state_model='Cabin', domain='EVMAN')
-#                   ),
-#     # Tranport accepts request
-#     MXInteraction(source='TRANS', dest='EVMAN', delay=0.0,
-#                   action=MXSignalEvent(op='CABIN', source=None, event_spec='Transport in progress',
-#                                        state_model='Cabin', domain='EVMAN',
-#                                        params={},
-#                                        instance={'Shaft': 'S1'})
-#                   ),
-#     # Transport complete
-#     MXInteraction(source='TRANS', dest='EVMAN', delay=4.0,
-#                   action=MXSignalEvent(op='CABIN', source=None, event_spec='Arrived at floor',
-#                                        state_model='Cabin', domain='EVMAN',
-#                                        params={},
-#                                        instance={'Shaft': 'S1'})
-#                   ),
-# ]
-#
-#
-# class Scenario:
-#
-#     @classmethod
-#     def run(cls):
-#         for i in s:
-#             if i.delay:
-#                 _logger.info(f"Processing: {i.delay} sec...")
-#                 time.sleep(i.delay)
-#             if isinstance(i.action, MXCallMethod):
-#                 pass
-#             if isinstance(i.action, MXSignalEvent):
-#                 print("signal event")
-#                 DispatchedEvent(signal=i.action)
-#                 pass
-#
-#             elif isinstance(i.action, MXLifecycleStateEntered):
-#                 print("state entered")
-#             else:
-#                 print("Unknown interaction type")
-#         pass
+""" scenario_ping.py -- Calls the ping method """
+
+# This file will be generated from a scenario script, but its handcoded for now
+
+# System
+import logging
+from typing import NamedTuple, TYPE_CHECKING
+import time
+
+if TYPE_CHECKING:
+    from mx.xe import XE
+
+# MX
+from mx.dispatched_event import DispatchedEvent
+from mx.method import Method
+from mx.domain import Domain
+from mx.bridge import *
+
+_logger = logging.getLogger(__name__)
+
+
+# Interaction
+class MXInteraction(NamedTuple):
+    source: str | None  # Source domain
+    dest: str  # Destination domain
+    delay: float  # Wait this long until triggering the interaction
+    action: ModeledOperation | BridgeableCondition
+
+
+s = [
+    # We simply call the cabin ping method
+    MXInteraction(source=None, dest='EVMAN', delay=0,
+                  action=MXCallMethod(ee=None, source=None, method='Ping',
+                                      class_name='Cabin', params={'dir': 'up'},
+                                      instance={'Shaft': 'S1'})
+                  ),
+]
+class Scenario:
+
+    def __init__(self, xe: "XE"):
+        self.xe = xe
+        pass
+
+    def run(self):
+        """
+
+        :return:
+        """
+        for i in self.xe.scenario['interactions']:
+            # Is the interaction a stimulus or an inspection?  The only two we have right now
+            if i.get('stimulate', None):
+                self.inject_stimulus(i['stimulate'])
+            elif i.get('look', None):
+                self.look(i['look'])
+            elif i.get('delay', None):
+                self.process_delay(i['delay'])
+            else:
+                print("Unknown interaction type")
+        pass
+
+    def inject_stimulus(self, stimulus):
+        if stimulus["type"] == "model operation":
+            self.package_model_op(stimulus)
+            pass
+        elif isinstance(stimulus.action, MXSignalEvent):
+            print("signal event")
+            DispatchedEvent(signal=stimulus.action)
+            pass
+
+        elif isinstance(stimulus.action, MXLifecycleStateEntered):
+            print("state entered")
+        pass
+
+    def package_model_op(self, operation):
+        if operation["name"] == "call method":
+            self.process_method_call(operation)
+
+    def process_method_call(self, m):
+        name = m["method name"]
+        class_name = m["class name"]
+        domain_alias = m["dest"]
+        instance_id = m["instance"]
+        params = m["parameters"]
+
+        m = Method(xe=self.xe, name=name, class_name=class_name,
+                   domain_name=self.xe.system.domains[domain_alias].name, domain_alias=domain_alias,
+                   instance_id=instance_id, parameters=params)
+        pass
+
+    def process_signal(self):
+        pass
+
+    def look(self):
+        pass
+
+    def process_delay(self, delay):
+        _logger.info(f"Processing: {delay} sec...")
+        time.sleep(delay)
+        pass
