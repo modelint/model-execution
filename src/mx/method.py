@@ -2,7 +2,7 @@
 
 # System
 import logging
-from typing import TYPE_CHECKING, Optional, NamedTuple
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from mx.xe import XE
@@ -14,7 +14,7 @@ from pyral.database import Database
 # MX
 from mx.actions.flow import ActiveFlow
 from mx.activity import Activity
-from mx.bridge import NamedValues
+from mx.deprecated.bridge import NamedValues
 from db_names import mmdb
 from exceptions import *
 

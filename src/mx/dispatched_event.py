@@ -4,10 +4,9 @@
 from datetime import datetime
 
 # Model Integration
-from pyral.relation import Relation
 
 # MX
-from mx.bridge import *
+from mx.deprecated.bridge import *
 
 class DispatchedEvent:
 

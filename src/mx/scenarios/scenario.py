@@ -4,7 +4,7 @@
 
 # System
 import logging
-from typing import NamedTuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import time
 
 if TYPE_CHECKING:
@@ -13,28 +13,9 @@ if TYPE_CHECKING:
 # MX
 from mx.dispatched_event import DispatchedEvent
 from mx.method import Method
-from mx.domain import Domain
-from mx.bridge import *
 
 _logger = logging.getLogger(__name__)
 
-
-# Interaction
-class MXInteraction(NamedTuple):
-    source: str | None  # Source domain
-    dest: str  # Destination domain
-    delay: float  # Wait this long until triggering the interaction
-    action: ModeledOperation | BridgeableCondition
-
-
-s = [
-    # We simply call the cabin ping method
-    MXInteraction(source=None, dest='EVMAN', delay=0,
-                  action=MXCallMethod(ee=None, source=None, method='Ping',
-                                      class_name='Cabin', params={'dir': 'up'},
-                                      instance={'Shaft': 'S1'})
-                  ),
-]
 class Scenario:
 
     def __init__(self, xe: "XE"):
@@ -66,10 +47,10 @@ class Scenario:
             print("signal event")
             DispatchedEvent(signal=stimulus.action)
             pass
-
         elif isinstance(stimulus.action, MXLifecycleStateEntered):
             print("state entered")
-        pass
+        else:
+            print("Unknown stimulus type")
 
     def package_model_op(self, operation):
         if operation["name"] == "call method":
@@ -85,12 +66,11 @@ class Scenario:
         m = Method(xe=self.xe, name=name, class_name=class_name,
                    domain_name=self.xe.system.domains[domain_alias].name, domain_alias=domain_alias,
                    instance_id=instance_id, parameters=params)
-        pass
 
     def process_signal(self):
         pass
 
-    def look(self):
+    def look(self, model_element):
         pass
 
     def process_delay(self, delay):
