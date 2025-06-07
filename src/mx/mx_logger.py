@@ -2,10 +2,15 @@
 
 # System
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 # Model Integration
 from pyral.relation import Relation
+
+# MX
+from mx.actions.flow import label, FlowDir
+if TYPE_CHECKING:
+    from mx.activity import Activity
 
 class MXLogger:
 
@@ -30,6 +35,12 @@ class MXLogger:
         t = Relation.print(db=db, variable_name=rv_name, printout=False)
         self.file.write(t)
         self.file.write("\n")
+
+    def log_nsflow(self, flow_name: str, flow_dir: FlowDir, flow_type: str, activity: "Activity", db: str, rv_name: str):
+        flow_label = label(name=flow_name, activity=activity)
+        show_label = f"<{flow_label}>" if flow_label else ""
+        indir, outdir = ("->", "") if flow_dir == FlowDir.IN else ("", "->")
+        self.log_table(message=f"{indir} {flow_name} {show_label} {outdir} :: {flow_type}", db=db, rv_name=rv_name)
 
     def close(self):
         self.file.close()

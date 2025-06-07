@@ -1,6 +1,7 @@
 """ flow.py -- Active Flow type """
 
 # System
+from enum import Enum
 from typing import TYPE_CHECKING, NamedTuple, Any
 
 # Model Integration
@@ -15,6 +16,10 @@ if TYPE_CHECKING:
 class ActiveFlow(NamedTuple):
     value: Any
     flowtype: str
+
+class FlowDir(Enum):
+    IN = "in"
+    OUT = "out"
 
 def label(name: str, activity: "Activity") -> str:
     R = f"ID:<{name}>, Activity:<{activity.anum}>, Domain:<{activity.domain}>"
