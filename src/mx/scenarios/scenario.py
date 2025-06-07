@@ -63,6 +63,7 @@ class Scenario:
         instance_id = m["instance"]
         params = m["parameters"]
 
+        self.xe.mxlog.log(f"Calling {domain_alias}:{class_name}.{name}({params}) on instance {instance_id}")
         m = Method(xe=self.xe, name=name, class_name=class_name,
                    domain_name=self.xe.system.domains[domain_alias].name, domain_alias=domain_alias,
                    instance_id=instance_id, parameters=params)

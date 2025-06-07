@@ -50,6 +50,7 @@ class XE:
         self.system = None
         self.debug = False
         self.verbose = False
+        self.mxlog = None
 
     def initialize(self, mmdb_path: Path, context_dir: Path, scenario_path: Path, verbose:bool, debug: bool):
         """
@@ -70,6 +71,11 @@ class XE:
 
         # Load the scenario
         self.scenario = load_scenario(path=scenario_path)
+
+        # Initialize model execution logger for scenario specific output
+        log_file_name = self.scenario["scenario"].get("name", "unnamed_scenario")
+        self.mxlog = MXLogger(scenario_name=log_file_name)
+        pass
 
 
         # Load a metamodel file populated with the system as one or more modeled domains
@@ -96,6 +102,9 @@ class XE:
         # Run the scenario
         s = Scenario(xe=self)
         s.run()
+
+        # Close the mx logger
+        self.mxlog.close()
 
         # Run the scenario (sequence of interactions)
         # Scenario.run(sys_domains=self.system.domains)

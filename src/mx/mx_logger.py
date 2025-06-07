@@ -6,12 +6,16 @@ from typing import Optional
 
 class MXLogger:
 
-    def __init__(self, path: str | Path, mode: str = 'w', include_timestamps: bool = False):
-        self.path = Path(path)
-        self.file = self.path.open(mode, encoding='utf-8')
+    def __init__(self, scenario_name: str, mode: str = 'w', include_timestamps: bool = False):
+        self.scenario = scenario_name
+        self.path = Path(f"{scenario_name.replace(' ', '_')}.log")
+        self.file = self.path.open(mode=mode, encoding='utf-8')
         self.include_timestamps = include_timestamps
+        self.header()
 
     def header(self):
+        self.file.write(f"Executing scenario: {self.scenario}\n")
+        self.file.write("---\n")
 
     def log(self, message: str, label: Optional[str] = None):
         if label:
