@@ -4,6 +4,9 @@
 from pathlib import Path
 from typing import Optional
 
+# Model Integration
+from pyral.relation import Relation
+
 class MXLogger:
 
     def __init__(self, scenario_name: str, mode: str = 'w', include_timestamps: bool = False):
@@ -21,6 +24,12 @@ class MXLogger:
         if label:
             self.file.write(f"\n-- {label} --\n")
         self.file.write(message + "\n")
+
+    def log_table(self, message: str, db: str, rv_name: str):
+        self.file.write(f"{message}\n")
+        t = Relation.print(db=db, variable_name=rv_name, printout=False)
+        self.file.write(t)
+        self.file.write("\n")
 
     def close(self):
         self.file.close()

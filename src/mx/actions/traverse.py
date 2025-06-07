@@ -15,6 +15,7 @@ from mx.db_names import mmdb
 from mx.actions.action import Action
 from mx.actions.flow import ActiveFlow
 from mx.rvname import declare_rvs
+from mx.actions.flow import label
 
 
 # Tuple generator and rv class for Metamodel Database (mmdb)
@@ -80,22 +81,29 @@ class Traverse(Action):
                           svar_name=mmrv.activity_traverse_actions)
         # Narrow it down to this Traverse Action instance
         R = f"ID:<{action_id}>"
-        traverse_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name=mmrv.this_traverse_action)
+        traverse_action_r = Relation.restrict(db=mmdb, restriction=R, svar_name=mmrv.this_traverse_action)
+        traverse_action_t = traverse_action_r.body[0]
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.this_traverse_action)
+        self.activity.xe.mxlog.log(message=f" - Path: {traverse_action_t["Path"]}")
+        self.activity.xe.mxlog.log(message="Flows")
 
         # Extract input and output flows required by the Traversal Action
         # ---
         # Get the name of the input flow (F1, F2, etc)
-        self.source_flow_name = traverse_action_t.body[0]["Source_flow"]
+        self.source_flow_name = traverse_action_t["Source_flow"]
         # Save the content of that flow (value, type)
         self.source_flow = self.activity.flows[self.source_flow_name]
+        flow_label = label(name=self.source_flow_name, activity=self.activity)
+        show_label = f"<{flow_label}>" if flow_label else ""
+        self.activity.xe.mxlog.log_table(message=f"-> {self.source_flow_name} {show_label} :: {self.source_flow.flowtype}",
+                                         db=self.domdb, rv_name=self.source_flow.value)
         # The name of the class we are currently hopping from, we will update as we hop
         # Initialize it on the class (type) of the source flow
         self.hop_from_class = self.source_flow.flowtype
         # Save the name of the currently empty output (destination) flow
         # We'll set its value after we complete all hops in this traversal
-        self.dest_flow_name = traverse_action_t.body[0]["Destination_flow"]
+        self.dest_flow_name = traverse_action_t["Destination_flow"]
 
         # Join our Traverse Action to the Hop class to gather all of the Hops in the Path
         hops_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_traverse_action, rname2="Hop", svar_name=mmrv.all_hops)
@@ -120,13 +128,22 @@ class Traverse(Action):
                 print("\nHop from this input flow:")
                 Relation.print(db=self.domdb, variable_name=hop_from_rv)
 
+
             # Determine its type
             hop_type = self.find_hop_type(hop_rv=mmrv.this_hop)
 
             # Execute the hop and set input to next hop as output from this hop
             hop_from_rv = execute_hop[hop_type](hop_t=h, hop_rv=mmrv.this_hop, hop_from_rv=hop_from_rv)
 
-        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=hop_from_rv, flowtype=self.hop_from_class)
+        if self.activity.xe.debug:
+            Relation.print(db=self.domdb, variable_name=hop_from_rv)
+
+        output_flow_content = ActiveFlow(value=hop_from_rv, flowtype=self.hop_from_class)
+        flow_label = label(name=self.dest_flow_name, activity=self.activity)
+        show_label = f"<{flow_label}>" if flow_label else ""
+        self.activity.flows[self.dest_flow_name] = output_flow_content
+        self.activity.xe.mxlog.log_table(message=f"{self.dest_flow_name} {show_label} -> :: {self.hop_from_class}",
+                                         db=self.domdb, rv_name=hop_from_rv)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
