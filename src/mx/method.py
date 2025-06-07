@@ -126,11 +126,15 @@ class Method(Activity):
             R = f"Activity:<{self.anum}>, Wave:<{self.current_wave}>, Domain:<{self.domain}>"
             wave_assignment_i = Relation.restrict(db=mmdb, relation='Wave_Assignment', restriction=R)
             if not wave_assignment_i.body:
+                self.xe.mxlog.log(f"---")
                 return
             wave_actions_r = Relation.project(db=mmdb, attributes=("Action",))
             self.wave_action_ids = [a['Action'] for a in wave_actions_r.body]
             _dbm = Database.get_rv_names(db=mmdb)
             _dbd = Database.get_rv_names(db=self.domain_alias)
+            self.xe.mxlog.log(f"---")
+            self.xe.mxlog.log(f"Wave: {self.current_wave}")
+            self.xe.mxlog.log(f"---")
             self.process_wave()
             self.current_wave += 1
 
@@ -145,6 +149,8 @@ class Method(Activity):
             # Get the action type
             atype_r = Relation.project(db=mmdb, attributes=("Type",))
             action_type = atype_r.body[0]["Type"]
+
+            self.xe.mxlog.log(f"{action} : {action_type}")
 
             # Execute the appropriate action
             # We do this by instantiating the class defined for the action_type
