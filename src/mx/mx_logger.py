@@ -42,5 +42,11 @@ class MXLogger:
         indir, outdir = ("->", "") if flow_dir == FlowDir.IN else ("", "->")
         self.log_table(message=f"{indir} {flow_name} {show_label} {outdir} :: {flow_type}", db=db, rv_name=rv_name)
 
+    def log_sflow(self, flow_name: str, flow_dir: FlowDir, flow_type: str, activity: "Activity"):
+        flow_label = label(name=flow_name, activity=activity)
+        show_label = f"<{flow_label}>" if flow_label else ""
+        indir, outdir = ("->", "") if flow_dir == FlowDir.IN else ("", "->")
+        self.log(message=f"{indir} {flow_name} {show_label} {outdir} :: {flow_type}")
+
     def close(self):
         self.file.close()

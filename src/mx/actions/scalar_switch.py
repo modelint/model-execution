@@ -13,7 +13,7 @@ from pyral.relation import Database  # Diagnostic
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
-from mx.actions.flow import ActiveFlow
+from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 
 # For each python string variable that will hold the name of a temporary TclRAL relation used in this module,
@@ -80,6 +80,10 @@ class ScalarSwitch(Action):
         scase_tuple = selected_case_r.body[0]
         self.activity.flows[scase_tuple["Case_flow"]] = ActiveFlow(value=scase_tuple["Value"], flowtype=self.source_flow.flowtype)
 
+        self.activity.xe.mxlog.log(message="Flows")
+        self.activity.xe.mxlog.log_sflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                         flow_type=self.source_flow.flowtype, activity=self.activity)
+        self.activity.xe.mxlog.log(message=f"Scalar value: {scase_tuple['Value']}")
         # We don't need our mmdb relation variables
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         # And since we are outputing a scalar flow, there is no domain rv output to preserve
