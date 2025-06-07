@@ -150,7 +150,7 @@ class Method(Activity):
             atype_r = Relation.project(db=mmdb, attributes=("Type",))
             action_type = atype_r.body[0]["Type"]
 
-            self.xe.mxlog.log(f"{action}")
+            self.xe.mxlog.log(f"{action} - {action_type.title()}")
 
             # Execute the appropriate action
             # We do this by instantiating the class defined for the action_type
