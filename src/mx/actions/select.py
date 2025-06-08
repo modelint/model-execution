@@ -13,7 +13,7 @@ from pyral.database import Database  # Diagnostics
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
-from mx.actions.flow import ActiveFlow
+from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 
 
@@ -75,12 +75,13 @@ class Select(Action):
                           svar_name=mmrv.activity_select_actions)
         # Narrow it down to this Select Action instance
         R = f"ID:<{action_id}>"
-        select_action_t = Relation.restrict(db=mmdb, relation=mmrv.activity_select_actions, restriction=R,
+        select_action_r = Relation.restrict(db=mmdb, relation=mmrv.activity_select_actions, restriction=R,
                                             svar_name=mmrv.this_select_action)
+        select_action_t = select_action_r.body[0]
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.this_select_action)
 
-        self.source_flow_name = select_action_t.body[0]["Input_flow"]
+        self.source_flow_name = select_action_t["Input_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
         if self.activity.xe.debug and self.source_flow.value:
             Relation.print(db=self.domdb, variable_name=self.source_flow.value)
@@ -98,6 +99,7 @@ class Select(Action):
                                     svar_name=mmrv.restriction_condition)
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.restriction_condition)
+        self.activity.xe.mxlog.log(message=f"- Card: {rcond_r.body[0]["Selection_cardinality"]}")
 
         # The supplied expression helps us define any complex boolean logic
         # in the restriction phrase to be created.
@@ -115,7 +117,12 @@ class Select(Action):
         eq_phrases = self.make_eq_phrases()
         comp_phrases = self.make_comparison_phrases()
         criteria_phrases = eq_phrases + comp_phrases
+        self.activity.xe.mxlog.log(message=f"- Criteria: {criteria_phrases}")
+        self.activity.xe.mxlog.log(message="Flows")
 
+        self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                          flow_type=self.source_flow.flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=self.source_flow.value)
 
 
         # Perform the selection
@@ -133,6 +140,9 @@ class Select(Action):
         self.activity.flows[self.dest_flow_name] = ActiveFlow(value=selection_output_rv,
                                                               flowtype=self.source_flow.flowtype)
 
+        self.activity.xe.mxlog.log_nsflow(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
+                                          flow_type=self.source_flow.flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=selection_output_rv)
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
