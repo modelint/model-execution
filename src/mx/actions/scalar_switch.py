@@ -84,6 +84,8 @@ class ScalarSwitch(Action):
         self.activity.xe.mxlog.log_sflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
                                          flow_type=self.source_flow.flowtype, activity=self.activity)
         self.activity.xe.mxlog.log(message=f"Scalar value: {scase_tuple['Value']}")
+        self.activity.xe.mxlog.log_sflow(flow_name=scase_tuple["Case_flow"], flow_dir=FlowDir.OUT,
+                                         flow_type=self.source_flow.flowtype, activity=self.activity)
         # We don't need our mmdb relation variables
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         # And since we are outputing a scalar flow, there is no domain rv output to preserve
