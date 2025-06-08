@@ -41,6 +41,7 @@ class Method(Activity):
         self.parameters = parameters
         self.class_name = class_name
         self.xi_flow = None
+        self.output_flow_name = None
         self.current_wave = 1
         self.wave_action_ids = None
         self.flows: dict[str, Optional[ActiveFlow]] = {}
@@ -64,6 +65,12 @@ class Method(Activity):
         anum = method_i.body[0]['Activity']
         self.xi_flow = method_i.body[0]['Executing_instance_flow']
 
+        # Get name of output flow if any
+        so_r = Relation.semijoin(db=mmdb, rname1=self.method_rvname, rname2="Synchronous Output",
+                                 attrs={"Activity": "Anum", "Domain": "Domain"})
+        if so_r.body:
+            self.output_flow_name = so_r.body[0]["Output_flow"]
+
         # Create all flows with empty content
         Relation.join(db=mmdb, rname1=self.method_rvname, rname2="Flow")
         flow_ids_r = Relation.project(db=mmdb, attributes=("ID",))
@@ -72,6 +79,11 @@ class Method(Activity):
         super().__init__(xe=xe, domain=domain_name, anum=anum, parameters=parameters)
 
         self.execute()
+        if self.output_flow_name:
+            self.xe.mxlog.log(f"Method {self.domain_name}:{self.class_name}.{self.name} returned value:\n")
+            self.xe.mxlog.log_table(message=f"{self.flows[self.output_flow_name].flowtype}", db=self.domain_alias,
+                                    rv_name=self.flows[self.output_flow_name].value)
+            pass
 
         # Diagnostic check for in use database variables
         _rv_before_mmdb_free = Database.get_rv_names(db=mmdb)
