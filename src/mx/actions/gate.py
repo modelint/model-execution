@@ -14,7 +14,7 @@ from pyral.rtypes import Extent, Card
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
-from mx.actions.flow import ActiveFlow
+from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 
 # See comment in scalar_switch.py
@@ -49,6 +49,7 @@ class Gate(Action):
         self.mmrv = declare_mm_rvs(db=mmdb, owner=self.rvp)
         mmrv = self.mmrv  # For brevity
 
+        self.activity.xe.mxlog.log(message="Flows")
         # Lookup the Action instance
         # Start with all Gate actions in this Activity
         Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Gate Action",
@@ -56,22 +57,23 @@ class Gate(Action):
 
         # Narrow it down to this Restrict Action instance
         R = f"ID:<{action_id}>"
-        gate_action_t = Relation.restrict(db=mmdb, relation=mmrv.activity_gate_actions, restriction=R,
-                                              svar_name=mmrv.this_gate_action)
+        gate_action_r = Relation.restrict(db=mmdb, relation=mmrv.activity_gate_actions, restriction=R,
+                                          svar_name=mmrv.this_gate_action)
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.this_gate_action)
 
         # Lookup the Action flow dependency
         flow_deps_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_gate_action, rname2="Flow Dependency",
-                                        attrs={"ID":"To_action", "Activity":"Activity", "Domain":"Domain"},
+                                        attrs={"ID": "To_action", "Activity": "Activity", "Domain": "Domain"},
                                         svar_name=mmrv.flow_deps)
 
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.flow_deps)
 
-        output_flow_name = gate_action_t.body[0]["Output_flow"]
+        gate_action_t = gate_action_r.body[0]
+        output_flow_name = gate_action_t["Output_flow"]
         input_flow_names = [t["Flow"] for t in flow_deps_r.body]
-        input_values = {n:activity.flows[n] for n in input_flow_names if activity.flows[n]}
+        input_values = {n: activity.flows[n] for n in input_flow_names if activity.flows[n]}
         if len(input_values) > 1:
             pass
         assert(len(input_values) == 1)
@@ -79,6 +81,13 @@ class Gate(Action):
         if self.activity.xe.debug:
             print(f"\nGate: {self.action_id} passing Flow: {input_flow_name} to Flow: {output_flow_name}")
             Relation.print(db=self.domdb, variable_name=activity.flows[output_flow_name].value)
+
+        self.activity.xe.mxlog.log_nsflow(flow_name=input_flow_name, flow_dir=FlowDir.IN,
+                                          flow_type=activity.flows[input_flow_name].flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=activity.flows[input_flow_name].value)
+        self.activity.xe.mxlog.log_nsflow(flow_name=output_flow_name, flow_dir=FlowDir.OUT,
+                                          flow_type=activity.flows[output_flow_name].flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=activity.flows[output_flow_name].value)
 
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
