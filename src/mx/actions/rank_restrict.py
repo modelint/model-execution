@@ -14,7 +14,7 @@ from pyral.rtypes import Extent, Card
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
-from mx.actions.flow import ActiveFlow
+from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 
 
@@ -86,10 +86,19 @@ class RankRestrict(Action):
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.rank_restrict_table_action)
 
-        self.source_flow_name = rank_restrict_table_action_r.body[0]["Input_a_flow"]
+        rank_restrict_table_action_t = rank_restrict_table_action_r.body[0]
+        self.activity.xe.mxlog.log(message=f"- Attribute: {rank_restrict_table_action_t["Attribute"]}")
+        self.activity.xe.mxlog.log(message=f"- Extent: {rank_restrict_table_action_t["Extent"]}")
+        self.activity.xe.mxlog.log(message=f"- Card: {rank_restrict_table_action_t["Selection_cardinality"]}")
+        self.activity.xe.mxlog.log(message="Flows")
+
+        self.source_flow_name = rank_restrict_table_action_t["Input_a_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                          flow_type=self.source_flow.flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=self.source_flow.value)
         # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
-        self.dest_flow_name = rank_restrict_table_action_r.body[0]["Output_flow"]
+        self.dest_flow_name = rank_restrict_table_action_t["Output_flow"]
         # And the output of the Restrict Action will be placed in the Activity flow dictionary
         # upon completion of this Action
 
@@ -108,6 +117,9 @@ class RankRestrict(Action):
         self.activity.flows[self.dest_flow_name] = ActiveFlow(value=rank_restrict_output_rv,
                                                               flowtype=self.source_flow.flowtype)
 
+        self.activity.xe.mxlog.log_nsflow(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
+                                          flow_type=self.source_flow.flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=rank_restrict_output_rv)
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
