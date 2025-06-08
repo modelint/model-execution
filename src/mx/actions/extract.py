@@ -13,18 +13,19 @@ from pyral.database import Database  # Diagnostics
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
-from mx.actions.flow import ActiveFlow
+from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 
 # See comment in scalar_switch.py
 class RVs(NamedTuple):
     activity_extract_switch_actions: str
     this_extract_action: str
+    attribute: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_my_module_rvs(db: str, owner: str) -> RVs:
-    rvs = declare_rvs(db, owner, "activity_extract_actions", "this_extract_action",
+    rvs = declare_rvs(db, owner, "activity_extract_actions", "this_extract_action", "attribute"
                       )
     return RVs(*rvs)
 
@@ -59,18 +60,34 @@ class Extract(Action):
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=rv.this_extract_action)
 
-        self.source_flow_name = extract_action_r.body[0]["Input_tuple"]
+        extract_action_t = extract_action_r.body[0]
+        self.source_flow_name = extract_action_t["Input_tuple"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
-        self.dest_flow_name = extract_action_r.body[0]["Output_scalar"]
+        self.dest_flow_name = extract_action_t["Output_scalar"]
 
-        self.attr = extract_action_r.body[0]["Attribute"]
+        self.attr = extract_action_t["Attribute"]
         input_tuple_r = Relation.project(db=self.domdb, relation=self.source_flow.value, attributes=(self.attr,))
         extracted_value = input_tuple_r.body[0][self.attr]
 
-        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=extracted_value, flowtype="scalar")
+        self.activity.xe.mxlog.log(message=f"- Attribute: {self.attr}")
+        self.activity.xe.mxlog.log(message="Flows")
+        self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                          flow_type=self.source_flow.flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=self.source_flow.value)
 
         if self.activity.xe.debug:
             print(f"\nScalar value: {extracted_value} output on Flow: {self.dest_flow_name}")
+
+        # Get attribute being read so we can look up its type
+        attr_r = Relation.semijoin(db=mmdb, rname1=rv.this_extract_action, rname2="Table Attribute",
+                                   attrs={"Attribute": "Name", "Table": "Table", "Domain": "Domain"},
+                                   svar_name=rv.attribute)
+        attr_t = attr_r.body[0]
+
+        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=extracted_value, flowtype="scalar")
+        self.activity.xe.mxlog.log_sflow(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
+                                         flow_type=attr_t["Scalar"], activity=self.activity)
+        self.activity.xe.mxlog.log(message=f"Scalar value: {extracted_value}")
 
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)

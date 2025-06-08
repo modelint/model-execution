@@ -14,7 +14,7 @@ from pyral.rtypes import Extent, Card
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
-from mx.actions.flow import ActiveFlow, FlowDir
+from mx.actions.flow import FlowDir
 from mx.rvname import declare_rvs
 
 # See comment in scalar_switch.py
