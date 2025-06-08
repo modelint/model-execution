@@ -14,7 +14,7 @@ from pyral.database import Database  # Diagnostics
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
-from mx.actions.flow import ActiveFlow
+from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 
 
@@ -112,6 +112,7 @@ class Restrict(Action):
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=mmrv.my_criteria)
 
+        self.activity.xe.mxlog.log(message=f"- Card: {rcond_r.body[0]["Selection_cardinality"]}")
         # Make a phrase for each criterion
         # TODO: incorporate and/or/not logic
 
@@ -126,14 +127,22 @@ class Restrict(Action):
         Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
                           svar_name=selection_output_rv)
 
+        self.activity.xe.mxlog.log(message=f"- Criteria: {R}")
+        self.activity.xe.mxlog.log(message="Flows")
         if self.activity.xe.debug:
             Relation.print(db=self.domdb, variable_name=selection_output_rv)
 
+        self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                          flow_type=self.source_flow.flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=self.source_flow.value)
         # Assign result to output flow
         # For a select action, the source and dest flow types must match
         self.activity.flows[self.dest_flow_name] = ActiveFlow(value=selection_output_rv,
                                                               flowtype=self.source_flow.flowtype)
 
+        self.activity.xe.mxlog.log_nsflow(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
+                                          flow_type=self.source_flow.flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=selection_output_rv)
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
@@ -187,7 +196,6 @@ class Restrict(Action):
 
             phrase = f"{attr}{pyral_op}{value}"
             self.criteria[cid] = phrase
-        pass
 
     def make_rphrase(self) -> str:
         def replace_match(match):
