@@ -13,7 +13,7 @@ from pyral.database import Database  # Diagnostics
 # MX
 from mx.db_names import mmdb
 from mx.actions.action import Action
-from mx.actions.flow import ActiveFlow
+from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 
 # See comment in scalar_switch.py
@@ -21,12 +21,13 @@ class RVs(NamedTuple):
     activity_read_switch_actions: str
     this_read_action: str
     attr_read_accesses: str
+    attributes: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_my_module_rvs(db: str, owner: str) -> RVs:
     rvs = declare_rvs(db, owner, "activity_read_switch_actions", "this_read_action",
-                      "attr_read_accesses",)
+                      "attr_read_accesses", "attributes")
     return RVs(*rvs)
 
 class Read(Action):
@@ -63,6 +64,10 @@ class Read(Action):
         self.source_flow_name = read_action_t.body[0]["Instance_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
 
+        self.activity.xe.mxlog.log(message="Flows")
+        self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                          flow_type=self.source_flow.flowtype, activity=self.activity,
+                                          db=self.domdb, rv_name=self.source_flow.value)
         attribute_read_accesses_r = Relation.semijoin(db=mmdb, rname1=rv.this_read_action,
                                                       rname2="Attribute Read Access",
                                                       attrs={"ID": "Read_action",
@@ -71,12 +76,22 @@ class Read(Action):
         if self.activity.xe.debug:
             Relation.print(db=mmdb, variable_name=rv.attr_read_accesses)
 
-        for access in attribute_read_accesses_r.body:
-            attr_value_t = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
-                                            relation=self.source_flow.value)
-            attr_value = attr_value_t.body[0][access["Attribute"]]
-            self.activity.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
+        # Get all attributes being read so we can look up each type
+        attr_r = Relation.semijoin(db=mmdb, rname1=rv.attr_read_accesses, rname2="Attribute",
+                                   attrs={"Attribute": "Name", "Class": "Class", "Domain": "Domain"},
+                                   svar_name=rv.attributes)
+        # Accessed attribute / type pairs
+        atypes = {t["Name"]: t["Scalar"] for t in attr_r.body}
 
+        for access in attribute_read_accesses_r.body:
+            attr_value_r = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
+                                            relation=self.source_flow.value)
+            attr_value = attr_value_r.body[0][access["Attribute"]]
+            self.activity.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
+            self.activity.xe.mxlog.log(message=f"- Attribute: {access["Attribute"]}")
+            self.activity.xe.mxlog.log_sflow(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT,
+                                             flow_type=atypes[access["Attribute"]], activity=self.activity)
+            self.activity.xe.mxlog.log(message=f"Scalar value: {attr_value}")
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         # And since we are outputing a scalar flow, there is no domain rv output to preserve
