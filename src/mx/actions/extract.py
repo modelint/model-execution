@@ -87,7 +87,7 @@ class Extract(Action):
         self.activity.flows[self.dest_flow_name] = ActiveFlow(value=extracted_value, flowtype="scalar")
         self.activity.xe.mxlog.log_sflow(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
                                          flow_type=attr_t["Scalar"], activity=self.activity)
-        self.activity.xe.mxlog.log(message=f"Scalar value: {extracted_value}")
+        self.activity.xe.mxlog.log(message=f"Scalar value: [{extracted_value}]")
 
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)

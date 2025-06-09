@@ -66,9 +66,6 @@ class Read(Action):
         self.source_flow_name = read_action_t.body[0]["Instance_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
 
-        # Expand irefs to instance set
-        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, class_name=self.source_flow.flowtype)
-
         self.activity.xe.mxlog.log(message="Flows")
         self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
                                           flow_type=self.source_flow.flowtype, activity=self.activity,
@@ -88,6 +85,9 @@ class Read(Action):
         # Accessed attribute / type pairs
         atypes = {t["Name"]: t["Scalar"] for t in attr_r.body}
 
+        # Expand irefs to instance set
+        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, class_name=self.source_flow.flowtype)
+
         for access in attribute_read_accesses_r.body:
             attr_value_r = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
                                             relation=self.source_flow.value)
@@ -96,7 +96,7 @@ class Read(Action):
             self.activity.xe.mxlog.log(message=f"- Attribute: {access["Attribute"]}")
             self.activity.xe.mxlog.log_sflow(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT,
                                              flow_type=atypes[access["Attribute"]], activity=self.activity)
-            self.activity.xe.mxlog.log(message=f"Scalar value: {attr_value}")
+            self.activity.xe.mxlog.log(message=f"Scalar value: [{attr_value}]")
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         # And since we are outputing a scalar flow, there is no domain rv output to preserve

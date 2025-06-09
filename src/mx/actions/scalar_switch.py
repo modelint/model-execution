@@ -83,7 +83,7 @@ class ScalarSwitch(Action):
         self.activity.xe.mxlog.log(message="Flows")
         self.activity.xe.mxlog.log_sflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
                                          flow_type=self.source_flow.flowtype, activity=self.activity)
-        self.activity.xe.mxlog.log(message=f"Scalar value: {scase_tuple['Value']}")
+        self.activity.xe.mxlog.log(message=f"Scalar value: [{scase_tuple['Value']}]")
         self.activity.xe.mxlog.log_sflow(flow_name=scase_tuple["Case_flow"], flow_dir=FlowDir.OUT,
                                          flow_type=self.source_flow.flowtype, activity=self.activity)
         # We don't need our mmdb relation variables
