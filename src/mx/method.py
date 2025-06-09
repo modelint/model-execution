@@ -15,6 +15,7 @@ from pyral.database import Database
 from mx.actions.flow import ActiveFlow
 from mx.activity import Activity
 from mx.deprecated.bridge import NamedValues
+from mx.instance_set import InstanceSet
 from db_names import mmdb
 from exceptions import *
 
@@ -124,7 +125,17 @@ class Method(Activity):
         Relation.join(db=mmdb, rname2="Class_Accessor")
         ca_flows_r = Relation.project(db=mmdb, attributes=("Class", "Output_flow",))
         for t in ca_flows_r.body:
-            self.flows[t["Output_flow"]] = ActiveFlow(value=t["Class"], flowtype=t["Class"])
+            class_name = t["Class"]  # Class accessor is defined on this class
+            # Declare an rv owned by the method to hold the class irefs
+            # Note that the rv cannot have any spaces in its name
+            ca_rv = Relation.declare_rv(db=self.domain_alias, owner=self.owner_name,
+                                        name=f"{class_name.replace(' ', '_')}_class_accessor")
+            # set it to an iref per instance in the class
+            InstanceSet.irefs(db=self.domain_alias, iset_rv=class_name, irefs_rv=ca_rv,
+                              class_name=class_name, domain_name=self.domain_name)
+            # Make it the value of the class accessor output flow
+            self.flows[t["Output_flow"]] = ActiveFlow(value=ca_rv, flowtype=class_name)
+        pass
 
     def execute(self):
         """

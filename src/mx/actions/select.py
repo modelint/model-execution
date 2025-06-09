@@ -86,7 +86,6 @@ class Select(Action):
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
         if self.activity.xe.debug and self.source_flow.value:
             Relation.print(db=self.domdb, variable_name=self.source_flow.value)
-        pass
 
         # Get the destination flow name
         subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_select_action, rname2="Single_Select")
@@ -127,6 +126,7 @@ class Select(Action):
 
         # Convert input irefs to instances and save in same rv
         InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, class_name=self.source_flow.flowtype)
+        Relation.print(db=self.domdb, variable_name=self.source_flow.value)
 
         # Perform the selection
         selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")

@@ -3,6 +3,8 @@
 # System
 from typing import TYPE_CHECKING, NamedTuple
 
+from mx.instance_set import InstanceSet
+
 if TYPE_CHECKING:
     from mx.method import Method  # TODO: Replace with Activity after refactoring State/Assigner Activities
 
@@ -63,6 +65,9 @@ class Read(Action):
 
         self.source_flow_name = read_action_t.body[0]["Instance_flow"]
         self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+
+        # Expand irefs to instance set
+        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, class_name=self.source_flow.flowtype)
 
         self.activity.xe.mxlog.log(message="Flows")
         self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
