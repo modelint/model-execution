@@ -1,0 +1,20 @@
+# stop_request.yaml – Request stop at some floor
+
+scenario:
+  name: stop request
+  description: >
+    Dispatch stop request event
+
+interactions:
+
+  - stimulate:
+      type: model operation
+      op: signal event
+      event name: Stop request
+      source: UI
+      domain: EVMAN
+      state model : Accessible Shaft Level
+      target instance:
+        Floor: 3
+        Shaft: S1
+
