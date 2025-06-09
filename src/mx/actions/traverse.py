@@ -15,7 +15,7 @@ from mx.db_names import mmdb
 from mx.actions.action import Action
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
-from mx.instance_set import extract_irefs
+from mx.instance_set import InstanceSet
 
 # Tuple generator and rv class for Metamodel Database (mmdb)
 class MMRVs(NamedTuple):
@@ -138,8 +138,8 @@ class Traverse(Action):
             Relation.print(db=self.domdb, variable_name=hop_from_rv)
 
         # Extract instance references
-        extract_irefs(db=self.domdb, rv_class=hop_from_rv, rv_irefs=domrv.output_irefs, class_name=self.hop_from_class,
-                      domain_name=self.activity.domain_name)
+        InstanceSet.irefs(db=self.domdb, iset_rv=hop_from_rv, irefs_rv=domrv.output_irefs,
+                          class_name=self.hop_from_class, domain_name=self.activity.domain_name)
 
         output_flow_content = ActiveFlow(value=domrv.output_irefs, flowtype=self.hop_from_class)
         self.activity.flows[self.dest_flow_name] = output_flow_content
