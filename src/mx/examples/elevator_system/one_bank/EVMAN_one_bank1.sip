@@ -8,20 +8,20 @@ L { [Lower Floors]     [4.0] [2.0] [25] [7.0] [9.0] }
 Cabin
 Shaft | Travel direction | Current floor
 --
-{ [S1] [.up]   [L]  } > PICKUP DROPOFF
-{ [S2] [.down] [3] } > PICKUP DROPOFF
+{ [S1] [up]   [L]  } > PICKUP DROPOFF
+{ [S2] [down] [3] } > PICKUP DROPOFF
 --
 Door
 Shaft | Close attempts | Lock requested | Held | Blocked | Emergency hold
 --
-{ [S1] [0] [false] [false] [false] [false] } > CLOSED
-{ [S2] [0] [false] [false] [false] [false] } > CLOSED
+{ [S1] [0] [False] [False] [False] [False] } > CLOSED
+{ [S2] [0] [False] [False] [False] [False] } > CLOSED
 --
 Shaft
 ID | In service | R1>Bank
 --
-{ [S1] [true] @L } R53> NO TRANSFER > IDLE
-{ [S2] [true] @L } R53> NO TRANSFER > IDLE
+{ [S1] [True] @L } R53> NO TRANSFER > IDLE
+{ [S2] [True] @L } R53> NO TRANSFER > IDLE
 --
 Floor
 Name | Height
@@ -46,20 +46,20 @@ LFL  { [Lower Floors] [L] }
 Top Bank Level
 R38>Bank Level | Calling down
 --
-{ @LF5 [false] }
+{ @LF5 [False] }
 --
 Bottom Bank Level
 R38>Bank Level | Calling up
 --
-{ @LFL [false] }
+{ @LFL [False] }
 --
 Middle Bank Level
 R38>Bank Level | Calling down | Calling up
 --
-{ @LF4  [false] [false] }
-{ @LF3  [false] [false] }
-{ @LF2  [true] [false] }
-{ @LF1  [false] [false] }
+{ @LF4  [False] [False] }
+{ @LF3  [False] [False] }
+{ @LF2  [True] [False] }
+{ @LF1  [False] [False] }
 --
 Building
 Name | Average floor gap
@@ -85,16 +85,16 @@ Shaft | Floor
 Accessible Shaft Level
 Shaft | Floor | Bank | Stop requested
 --
-{ [S2] [5]  [Lower Floors] [false] } > NOT REQUESTED
-{ [S2] [4]  [Lower Floors] [false] } > NOT REQUESTED
-{ [S2] [3]  [Lower Floors] [false] } > NOT REQUESTED
-{ [S2] [2]  [Lower Floors] [false] } > NOT REQUESTED
-{ [S2] [1]  [Lower Floors] [false] } > NOT REQUESTED
-{ [S2] [L]  [Lower Floors] [false] } > NOT REQUESTED
-{ [S1] [5]  [Lower Floors] [true] } > REQUESTED
-{ [S1] [4]  [Lower Floors] [false] } > NOT REQUESTED
-{ [S1] [3]  [Lower Floors] [true] } > REQUESTED
-{ [S1] [2]  [Lower Floors] [false] } > NOT REQUESTED
-{ [S1] [1]  [Lower Floors] [false] } > NOT REQUESTED
-{ [S1] [L]  [Lower Floors] [false] } > NOT REQUESTED
+{ [S2] [5]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S2] [4]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S2] [3]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S2] [2]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S2] [1]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S2] [L]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S1] [5]  [Lower Floors] [True] } > REQUESTED
+{ [S1] [4]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S1] [3]  [Lower Floors] [True] } > REQUESTED
+{ [S1] [2]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S1] [1]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S1] [L]  [Lower Floors] [False] } > NOT REQUESTED
 --

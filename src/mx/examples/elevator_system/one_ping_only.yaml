@@ -1,0 +1,19 @@
+# one_ping_only.yaml – Ping Scenario
+
+scenario:
+  name: one ping only
+  description: >
+    Invoke the Cabin's ping method once and check the result
+
+interactions:
+
+  - stimulate:
+      type: model operation
+      name: call method
+      dest: EVMAN
+      class name: Cabin
+      method name: Ping
+      parameters:
+        dir: up
+      instance:
+        Shaft: S1
