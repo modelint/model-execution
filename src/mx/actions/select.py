@@ -15,6 +15,7 @@ from mx.db_names import mmdb
 from mx.actions.action import Action
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
+from mx.instance_set import extract_irefs
 
 
 # See comment in scalar_switch.py
@@ -124,12 +125,23 @@ class Select(Action):
                                           flow_type=self.source_flow.flowtype, activity=self.activity,
                                           db=self.domdb, rv_name=self.source_flow.value)
 
+        # Convert input irefs to instances and save in same rv
+        Relation.join(db=self.domdb, rname1=self.source_flow.value, rname2=self.source_flow.flowtype,
+                      svar_name=self.source_flow.value)
 
         # Perform the selection
         selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
         R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
         Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
                           svar_name=selection_output_rv)
+
+        if self.activity.xe.debug:
+            Relation.print(db=self.domdb, variable_name=selection_output_rv)
+
+        # Extract irefs for output
+        extract_irefs(db=self.domdb, rv_class=selection_output_rv, rv_irefs=selection_output_rv,
+                      class_name=self.source_flow.flowtype,
+                      domain_name=self.activity.domain_name)
 
         if self.activity.xe.debug:
             Relation.print(db=self.domdb, variable_name=selection_output_rv)
