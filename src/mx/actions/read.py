@@ -86,11 +86,13 @@ class Read(Action):
         atypes = {t["Name"]: t["Scalar"] for t in attr_r.body}
 
         # Expand irefs to instance set
-        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, class_name=self.source_flow.flowtype)
+        input_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="read_input")
+        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=input_iset_rv,
+                              class_name=self.source_flow.flowtype)
 
         for access in attribute_read_accesses_r.body:
             attr_value_r = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
-                                            relation=self.source_flow.value)
+                                            relation=input_iset_rv)
             attr_value = attr_value_r.body[0][access["Attribute"]]
             self.activity.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
             self.activity.xe.mxlog.log(message=f"- Attribute: {access["Attribute"]}")

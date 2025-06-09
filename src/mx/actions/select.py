@@ -125,13 +125,14 @@ class Select(Action):
                                           db=self.domdb, rv_name=self.source_flow.value)
 
         # Convert input irefs to instances and save in same rv
-        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, class_name=self.source_flow.flowtype)
-        Relation.print(db=self.domdb, variable_name=self.source_flow.value)
+        input_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_input")
+        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=input_iset_rv,
+                              class_name=self.source_flow.flowtype)
 
         # Perform the selection
         selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
         R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
-        Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
+        Relation.restrict(db=self.domdb, relation=input_iset_rv, restriction=R.strip(),
                           svar_name=selection_output_rv)
 
         if self.activity.xe.debug:

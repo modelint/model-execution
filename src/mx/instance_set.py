@@ -33,13 +33,14 @@ class InstanceSet:
         Relation.project(db=db, relation=iset_rv, attributes=id_attrs, svar_name=irefs_rv)
 
     @staticmethod
-    def instances(db: str, irefs_rv: str, class_name: str):
+    def instances(db: str, irefs_rv: str, iset_rv: str, class_name: str):
         """
         Given a set of instance references as a relation variable, update that variable to
         the value of the correpsonding instance set.
 
         :param db: The domain database
         :param irefs_rv: The input set of instance references to be converted to corresponding instances
+        :param iset_rv: Relation variable with the input instance set
         :param class_name: The irefs refer to instances of this class
         """
-        Relation.join(db=db, rname1=irefs_rv, rname2=class_name, svar_name=irefs_rv)
+        Relation.join(db=db, rname1=irefs_rv, rname2=class_name, svar_name=iset_rv)
