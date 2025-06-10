@@ -12,7 +12,7 @@ from pyral.relvar import Relvar
 
 # MX
 from mx.system import System
-from mx.scenarios.scenario import Scenario
+from mx.scenario import Scenario
 from mx.db_names import mmdb
 from mx.rvname import RVN
 from mx.mx_logger import MXLogger

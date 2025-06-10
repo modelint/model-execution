@@ -29,4 +29,6 @@ build/
 
 # Ignore working directory
 working/
+
+# Ignore log files
 *.log

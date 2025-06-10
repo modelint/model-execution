@@ -20,13 +20,13 @@ class Scenario:
 
     def __init__(self, xe: "XE"):
         self.xe = xe
-        pass
 
     def run(self):
         """
 
         :return:
         """
+        # Process each interaction in the scenario
         for i in self.xe.scenario['interactions']:
             # Is the interaction a stimulus or an inspection?  The only two we have right now
             if i.get('stimulate', None):
@@ -53,8 +53,16 @@ class Scenario:
             print("Unknown stimulus type")
 
     def package_model_op(self, operation):
-        if operation["name"] == "call method":
-            self.process_method_call(operation)
+        op_name = operation.get("name", None)
+        if not op_name:
+            pass
+        match op_name:
+            case "signal event":
+                self.process_signal(operation)
+            case "call method":
+                self.process_method_call(operation)
+            case _:
+                pass
 
     def process_method_call(self, m):
         name = m["method name"]
@@ -72,7 +80,7 @@ class Scenario:
                    domain_name=self.xe.system.domains[domain_alias].name, domain_alias=domain_alias,
                    instance_id=instance_id, parameters=params)
 
-    def process_signal(self):
+    def process_signal(self, s):
         pass
 
     def look(self, model_element):

@@ -9,9 +9,8 @@ interactions:
 
   - stimulate:
       type: model operation
-      op: signal event
-      event name: Stop request
-      source: UI
+      name: signal event
+      event: Stop request
       domain: EVMAN
       state model : Accessible Shaft Level
       target instance:
