@@ -1,27 +1,21 @@
-""" starting_context.py -- Populate the schema """
+""" initial_states.py -- Extract initial states for all lifecycles and assigners from scenario (.sip) file """
 
 # System
 from pathlib import Path
 from collections import namedtuple
 import logging
-from typing import TYPE_CHECKING, NamedTuple
+from typing import NamedTuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from mx.domain_model_db import DomainModelDB
+    from mx.domain import Domain
 
 # Model Integration
 from sip_parser.parser import SIParser
-from pyral.relation import Relation
-from pyral.relvar import Relvar
-from pyral.transaction import Transaction
 
 # Model Execution
-from mx.db_names import mmdb
 from mx.exceptions import *
 
-AttrRef = NamedTuple('AttrRef', from_attr=str, to_attr=str, to_class=str, alias=str)
 MultipleAssignerInitialState = NamedTuple('MultipleAssignerInitialState', pclass=str, state=str)
-# AttrRef = namedtuple('AttrRef', 'from_attr to_attr to_class alias')
 
 _logger = logging.getLogger(__name__)
 
@@ -29,9 +23,9 @@ tcl_to_python = { 'string': str, 'boolean': bool, 'double': float, 'int': int }
 
 pop_scenario = 'pop'  # Name of transaction that loads the schema
 
-class Context:
+class InitialStateContext:
 
-    def __init__(self, domaindb: 'DomainModelDB'):
+    def __init__(self, domain: "Domain"):
         """
         We see that there is an R1 ref.  We need to find the target attributes and class
         The metamodel gives us Shaft.Bank -> Bank.Name
@@ -43,23 +37,20 @@ class Context:
         And, at this point, we are building the relation.create command
         When we get all the values, we commit and move on to the next instance
 
-        :param sip_file:  The path to the *.sip file providing the intial instance population
         :param domain:  The subject matter domain being populated
-        :param dbtypes: The actual TclRAL db_types used to represent user model db_types
         """
-        self.domaindb = domaindb
         self.lifecycle_istates: dict[str, str] = {}
         self.ma_istates: dict[str, MultipleAssignerInitialState] = {}
 
-        db_dir = self.domaindb.system.system_dir / self.domaindb.system.context_dir
-        found_files = [file for file in db_dir.iterdir() if file.is_file() and
-                       any(file.name.lower().startswith(prefix) for prefix in self.domaindb.prefixes)]
-        if len(found_files) == 0:
-            raise MXFileException(f"No .sip file found for domain [{self.domaindb.domain}] in: {db_dir.resolve()}")
-        if len(found_files) > 1:
-            raise MXFileException(f"Multiple db_types files for domain [{self.domaindb.domain}] in: {db_dir.resolve()}")
+        context_dir = domain.system.xe.context_dir
+        sip_files = list(context_dir.glob("*.sip"))
 
-        sip_file = found_files[0]
+        if len(sip_files) == 0:
+            raise MXFileException(f"No .sip file found for domain [{self.domain.name}] in: {context_dir.resolve()}")
+        if len(sip_files) > 1:
+            raise RuntimeError("Multiple .sip files found in directory.")
+
+        sip_file = sip_files[0]
 
         # Parse the starting_context's initial population file (*.sip file)
         _logger.info(f"Parsing sip: [{sip_file}]")

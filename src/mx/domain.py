@@ -22,6 +22,7 @@ from mx.multiple_assigner_state_machine import MultipleAssignerStateMachine
 from mx.assigner_state_machine import AssignerStateMachine
 from mx.lifecycle_state_machine import LifecycleStateMachine
 from mx.db_names import mmdb
+from mx.initial_states import InitialStateContext
 # from mx.exceptions import *
 from mx.rvname import RVN
 
@@ -158,6 +159,9 @@ class Domain:
         """
         Create a state machine for each class with a lifecycle
         """
+        # Load the scenario initial states
+        icontext = InitialStateContext(domain=self)
+
         # Get each class_name and its primary id for each lifecycle
         for class_name, id_attrs in self.lifecycles.items():
             # Get all the instances from the user model for that class

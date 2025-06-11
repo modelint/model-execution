@@ -77,7 +77,6 @@ class XE:
         self.mxlog = MXLogger(scenario_name=log_file_name)
         pass
 
-
         # Load a metamodel file populated with the system as one or more modeled domains
         _logger.info(f"Loading the metamodel database from: [{self.mmdb_path}]")
         Database.open_session(name=mmdb)
