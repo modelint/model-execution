@@ -3,7 +3,6 @@
 # System
 import logging
 from typing import TYPE_CHECKING, NamedTuple
-from pathlib import Path
 from collections import defaultdict
 
 if TYPE_CHECKING:
@@ -30,6 +29,7 @@ _logger = logging.getLogger(__name__)
 
 MultipleAssigner = NamedTuple("MultipleAssigner", rnum=str, pclass=str)
 
+
 class Domain:
     """
     An Domain is an active component that can respond to external input
@@ -52,7 +52,8 @@ class Domain:
         self.alias = alias  # Now we have access to both the mmdb and this domain's schema
         self.system = system
         self.single_assigners = None
-        self.lifecycles: dict[str, list[str]] = {}
+        self.lifecycles: dict[str, list[LifecycleStateMachine]] = {}
+        self.lifecycle_ids: dict[str, list[str]] = {}
         self.pclasses: dict[str, list[str]] = {}
         self.single_assigners = None
         self.methods = None
@@ -61,6 +62,12 @@ class Domain:
         self.mult_assigners: dict[str, MultAssignerPartition] = {}
 
         self.file_path = self.system.xe.context_dir / f"{self.alias}.ral"  # Path to the domain database file
+
+        # Load the sip file and save all specified initial states
+        is_context = InitialStateContext(domain=self)
+        self.lifecycle_initial_states = is_context.lifecycle_istates
+        self.massigner_initial_states = is_context.ma_istates
+        # TODO: Single assigner initial states not yet specified in the sip file syntax
 
         # Initialize the variable name counter
         RVN.init_for_db(db=self.alias)
@@ -110,7 +117,7 @@ class Domain:
             R = f"Class:<{c}>"
             id_result = Relation.restrict(db=mmdb, restriction=R, relation='id_all')
             c_id_attrs = [t['Attribute'] for t in id_result.body]  # id attributes for the current class
-            self.lifecycles[c] = c_id_attrs
+            self.lifecycle_ids[c] = c_id_attrs
 
     def find_single_assigners(self):
         """
@@ -132,7 +139,7 @@ class Domain:
         # Now get the identifier attributes of all of these classes
         R = f"Domain:<{self.name}>, Identifier:<1>"
         Relation.join(db=mmdb, rname2='Identifier_Attribute', rname1='Multiple_Assigner',
-                      attrs={'Partitioning_class': 'Class', 'Domain':'Domain'}, svar_name='id_pall')
+                      attrs={'Partitioning_class': 'Class', 'Domain': 'Domain'}, svar_name='id_pall')
         # id_pall relation has all identifier attributes for all partitioning classes
 
         # Save the primary identifier for each partitioning class
@@ -159,17 +166,14 @@ class Domain:
         """
         Create a state machine for each class with a lifecycle
         """
-        # Load the scenario initial states
-        icontext = InitialStateContext(domain=self)
+        istates = self.lifecycle_initial_states
 
         # Get each class_name and its primary id for each lifecycle
-        for class_name, id_attrs in self.lifecycles.items():
+        for class_name, id_attrs in self.lifecycle_ids.items():
             # Get all the instances from the user model for that class
             inst_result = Relation.restrict(db=self.alias, relation=f"{class_name.replace(' ', '_')}")
             # Create a lifecycle statemachine for each instance
             for i in inst_result.body:
-                # Get initial state from the context
-                istates = self.context.lifecycle_istates
                 # Create identifier value for this instance
                 inst_id = {attr: i[attr] for attr in id_attrs}
                 # Get the initial state for this instance from the context
@@ -204,4 +208,3 @@ class Domain:
     #         # TODO: Support single assigners
     #         # self.assigners[sa] = SingleAssignerStateMachine(current_state="None", rnum=sa.rnum, domain=self.name)
     #         pass
-

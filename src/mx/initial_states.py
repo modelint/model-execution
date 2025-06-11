@@ -72,5 +72,4 @@ class InitialStateContext:
                     if len(s) == 2:
                         # index by rnum and save partitioning class and initial state
                         self.ma_istates[s[0]] = MultipleAssignerInitialState(pclass=class_name, state=s[1])
-        pass
 
