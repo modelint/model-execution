@@ -53,13 +53,14 @@ class Domain:
         self.system = system
         self.single_assigners = None
         self.lifecycles: dict[str, list[LifecycleStateMachine]] = {}
+        self.mult_assigners: dict[str, list[MultipleAssignerStateMachine]] = {}
         self.lifecycle_ids: dict[str, list[str]] = {}
         self.pclasses: dict[str, list[str]] = {}
         self.single_assigners = None
         self.methods = None
         # self.flows = activity: flow id, flow type(scalar, inst1, instM, table, tuple), data type(scalar, table, class)
         MultAssignerPartition = NamedTuple('MultAssignerPartion', pclass=str, id_attrs=dict[str, list[str]])
-        self.mult_assigners: dict[str, MultAssignerPartition] = {}
+        self.mult_assigner_partitions: dict[str, MultAssignerPartition] = {}
 
         self.file_path = self.system.xe.context_dir / f"{self.alias}.ral"  # Path to the domain database file
 
@@ -85,7 +86,7 @@ class Domain:
         # self.lifecycles: dict[str, list[LifecycleStateMachine]] = {}
         # self.assigners: dict[str, list[AssignerStateMachine]] = {}
         self.initiate_lifecycles()  # Create a lifecycle statemachine for each class with a lifecycle
-        # self.initiate_assigners()  # Create an assigner statemachine for each relationship managed by an assigner
+        self.initiate_assigners()  # Create an assigner statemachine for each relationship managed by an assigner
         # self.initiate_methods()
 
     def activate(self):
@@ -151,8 +152,8 @@ class Domain:
 
         R = f"Domain:<{self.name}>"
         result = Relation.restrict(db=mmdb, relation='Multiple_Assigner', restriction=R)
-        self.mult_assigners = [MultipleAssigner(rnum=t['Rnum'], pclass=t['Partitioning_class'])
-                               for t in result.body]
+        self.mult_assigner_partitions = [MultipleAssigner(rnum=t['Rnum'], pclass=t['Partitioning_class'])
+                                         for t in result.body]
 
     def display(self):
         """
@@ -188,21 +189,19 @@ class Domain:
             pass
         pass
 
-    # def initiate_assigners(self):
-    #     """
-    #     Initiates any single and multiple assigner state machines
-    #     """
-    #     for ma in self.db.mult_assigners:
-    #         pclass_id = self.db.pclasses[ma.pclass]
-    #         result = Relation.restrict(db=self.alias, relation=ma.pclass)
-    #         for t in result.body:
-    #             # build the id
-    #             id_val = {attr: t[attr] for attr in pclass_id}
-    #             istate = self.db.context.ma_istates[ma.rnum].state
-    #             self.assigners.setdefault(ma, []).append(MultipleAssignerStateMachine(current_state=istate,
-    #                                                           rnum=ma.rnum, pclass_name=ma.pclass,
-    #                                                           instance_id=id_val,
-    #                                                           domain=self.name))
+    def initiate_assigners(self):
+        """
+        Initiates any single and multiple assigner state machines
+        """
+        for ma in self.mult_assigner_partitions:
+            pclass_id = self.pclasses[ma.pclass]
+            result = Relation.restrict(db=self.alias, relation=ma.pclass)
+            for t in result.body:
+                # build the id
+                id_val = {attr: t[attr] for attr in pclass_id}
+                istate = self.massigner_initial_states[ma.rnum].state
+                self.mult_assigners.setdefault(ma, []).append(MultipleAssignerStateMachine(
+                    current_state=istate, rnum=ma.rnum, pclass_name=ma.pclass, instance_id=id_val, domain=self.name))
     #
     #     for sa in self.db.single_assigners:
     #         # TODO: Support single assigners
