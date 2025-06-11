@@ -76,7 +76,7 @@ class Domain:
 
         # self.lifecycles: dict[str, list[LifecycleStateMachine]] = {}
         # self.assigners: dict[str, list[AssignerStateMachine]] = {}
-        # self.initiate_lifecycles()  # Create a lifecycle statemachine for each class with a lifecycle
+        self.initiate_lifecycles()  # Create a lifecycle statemachine for each class with a lifecycle
         # self.initiate_assigners()  # Create an assigner statemachine for each relationship managed by an assigner
         # self.initiate_methods()
 
@@ -154,32 +154,31 @@ class Domain:
         Relvar.printall(db=self.alias)
         print(f"\n^^^ {self.name} domain model ^^^\n")
 
+    def initiate_lifecycles(self):
+        """
+        Create a state machine for each class with a lifecycle
+        """
+        # Get each class_name and its primary id for each lifecycle
+        for class_name, id_attrs in self.lifecycles.items():
+            # Get all the instances from the user model for that class
+            inst_result = Relation.restrict(db=self.alias, relation=f"{class_name.replace(' ', '_')}")
+            # Create a lifecycle statemachine for each instance
+            for i in inst_result.body:
+                # Get initial state from the context
+                istates = self.context.lifecycle_istates
+                # Create identifier value for this instance
+                inst_id = {attr: i[attr] for attr in id_attrs}
+                # Get the initial state for this instance from the context
+                istate = istates[class_name]
+                # Create the lifecycle and add it to our dictionary of lifecycles keyed by class name
+                self.lifecycles.setdefault(class_name, []).append(
+                    LifecycleStateMachine(current_state=istate, instance_id=inst_id,
+                                          class_name=class_name, domain=self.name)
+                )
+                pass
 
-    # def initiate_lifecycles(self):
-    #     """
-    #     Create a state machine for each class with a lifecycle
-    #     """
-    #     # Get each class_name and its primary id for each lifecycle
-    #     for class_name, id_attrs in self.lifecycles.items():
-    #         # Get all the instances from the user model for that class
-    #         inst_result = Relation.restrict(db=self.alias, relation=f"{class_name.replace(' ', '_')}")
-    #         # Create a lifecycle statemachine for each instance
-    #         for i in inst_result.body:
-    #             # Get initial state from the context
-    #             istates = self.context.lifecycle_istates
-    #             # Create identifier value for this instance
-    #             inst_id = {attr: i[attr] for attr in id_attrs}
-    #             # Get the initial state for this instance from the context
-    #             istate = istates[class_name]
-    #             # Create the lifecycle and add it to our dictionary of lifecycles keyed by class name
-    #             self.lifecycles.setdefault(class_name, []).append(
-    #                 LifecycleStateMachine(current_state=istate, instance_id=inst_id,
-    #                                       class_name=class_name, domain=self.name)
-    #             )
-    #             pass
-    #
-    #         pass
-    #     pass
+            pass
+        pass
 
     # def initiate_assigners(self):
     #     """
