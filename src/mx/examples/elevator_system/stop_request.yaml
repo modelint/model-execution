@@ -6,14 +6,15 @@ scenario:
     Dispatch stop request event
 
 interactions:
+  - type: signal
+    name: Stop request
+    lifecycle:  Accessible Shaft Level
+    domain: EVMAN
+    instance:
+      Floor: 3
+      Shaft: S1
 
-  - stimulate:
-      type: model operation
-      name: signal event
-      event: Stop request
-      domain: EVMAN
-      state model : Accessible Shaft Level
-      target instance:
-        Floor: 3
-        Shaft: S1
+
+
+
 

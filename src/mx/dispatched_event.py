@@ -2,19 +2,25 @@
 
 # System
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mx.domain import Domain
 
 # Model Integration
 
 # MX
-from mx.deprecated.bridge import *
+from mx.mxtypes import NamedValues
 
 class DispatchedEvent:
 
-    def __init__(self, signal: MXSignalEvent):
+    def __init__(self, source: [ str | None ], event_spec: str, state_model: str,
+                 params: NamedValues, domain: "Domain"):
         """
 
         """
-        # self.supplied_parameter_values = parameter_values
-        # self.event_spec = event_spec
-        self.arrival_time = datetime.now()
-        pass
+        self.source = source
+        self.event_spec = event_spec
+        self.state_model = state_model
+        self.params = params
+        self.domain = domain

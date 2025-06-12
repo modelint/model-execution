@@ -28,27 +28,33 @@ class Scenario:
         """
         # Process each interaction in the scenario
         for i in self.xe.scenario['interactions']:
-            # Is the interaction a stimulus or an inspection?  The only two we have right now
-            if i.get('stimulate', None):
-                self.inject_stimulus(i['stimulate'])
-            elif i.get('look', None):
-                self.look(i['look'])
-            elif i.get('delay', None):
-                self.process_delay(i['delay'])
-            else:
-                print("Unknown interaction type")
-        pass
+            match i["type"]:
+                case "signal":
+                    self.process_signal(i)
+                    pass
+                case "method call":
+                    self.process_method_call(i)
+                    pass
+                case "delay":
+                    pass
+                case _:
+                    print("Unknown interaction type")
+                    pass
+        #     pass
+        #     # Is the interaction a stimulus or an inspection?  The only two we have right now
+        #     if i.get('stimulate', None):
+        #         self.inject_stimulus(i['stimulate'])
+        #     elif i.get('look', None):
+        #         self.look(i['look'])
+        #     elif i.get('delay', None):
+        #         self.process_delay(i['delay'])
+        #     else:
+        #         print("Unknown interaction type")
+        # pass
 
     def inject_stimulus(self, stimulus):
         if stimulus["type"] == "model operation":
             self.package_model_op(stimulus)
-            pass
-        elif isinstance(stimulus.action, MXSignalEvent):
-            print("signal event")
-            DispatchedEvent(signal=stimulus.action)
-            pass
-        elif isinstance(stimulus.action, MXLifecycleStateEntered):
-            print("state entered")
         else:
             print("Unknown stimulus type")
 
@@ -81,6 +87,10 @@ class Scenario:
                    instance_id=instance_id, parameters=params)
 
     def process_signal(self, s):
+        target_domain = self.xe.system.domains[s["domain"]]
+        d = DispatchedEvent(source=s.get("source", None), target=s["target instance"],
+                            event_spec=s["event"],
+                            state_model=s["state model"], params=s.get("params", tuple()), domain=target_domain)
         pass
 
     def look(self, model_element):
