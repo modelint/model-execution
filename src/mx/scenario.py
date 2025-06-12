@@ -11,10 +11,12 @@ if TYPE_CHECKING:
     from mx.xe import XE
 
 # MX
-from mx.dispatched_event import DispatchedEvent
+from mx.interaction_event import InteractionEvent
 from mx.method import Method
+from mx.mxtypes import StateMachineType
 
 _logger = logging.getLogger(__name__)
+
 
 class Scenario:
 
@@ -88,9 +90,28 @@ class Scenario:
 
     def process_signal(self, s):
         target_domain = self.xe.system.domains[s["domain"]]
-        d = DispatchedEvent(source=s.get("source", None), target=s["target instance"],
-                            event_spec=s["event"],
-                            state_model=s["state model"], params=s.get("params", tuple()), domain=target_domain)
+        sm_type = s.get("state machine", None)
+        if not sm_type:
+            # TODO: raise exception
+            pass
+        match sm_type:
+            case "lifecycle":
+                ie = InteractionEvent.to_lifecycle(source=s.get("source", None), event_spec=s["name"],
+                                                   to_instance=s["instance"], to_class=s["class"],
+                                                   params=s.get("params", {}), domain=target_domain)
+            case "single assigner":
+                ie = InteractionEvent.to_single_assigner(source=s.get("source", None), event_spec=s["name"],
+                                                         to_rnum=s["rnum"], params=s.get("params", {}),
+                                                         domain=target_domain)
+            case "multiple assigner":
+                ie = InteractionEvent.to_multiple_assigner(source=s.get("source", None), event_spec=s["name"],
+                                                           partitioning_instance=s["instance"],
+                                                           partitioning_class=s["class"], to_rnum=s["rnum"],
+                                                           params=s.get("params", {}), domain=target_domain)
+            case _:
+                # TODO: raise exception
+                pass
+
         pass
 
     def look(self, model_element):

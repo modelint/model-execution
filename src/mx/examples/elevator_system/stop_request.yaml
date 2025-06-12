@@ -8,7 +8,8 @@ scenario:
 interactions:
   - type: signal
     name: Stop request
-    lifecycle:  Accessible Shaft Level
+    state machine: lifecycle
+    class: Accessible Shaft Level
     domain: EVMAN
     instance:
       Floor: 3
