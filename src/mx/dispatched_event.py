@@ -32,3 +32,6 @@ class DispatchedEvent:
         self.to_instance = to_instance
         self.partitioning_class = partitioning_class
         self.partitioning_instance = partitioning_instance
+
+    def dispatch(self):
+        pass  # Overriden by subclasses

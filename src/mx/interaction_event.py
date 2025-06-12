@@ -40,14 +40,15 @@ class InteractionEvent(DispatchedEvent):
                 pass  # TODO: Raise exception
 
         super().__init__(source=source, event_spec=event_spec, state_model=sm, sm_type=sm_type,
-                         paritioning_class=partitioning_class, partitioning_instance=partitioning_instance,
+                         to_instance=to_instance,
+                         partitioning_class=partitioning_class, partitioning_instance=partitioning_instance,
                          params=params, domain=domain)
 
-        self.to_instance = to_instance
-        self.to_class = to_class
-        self.partitioning_instance = partitioning_instance
-        self.partitioning_class = partitioning_class
         self.arrival_time = datetime.now()
+        self.dispatch()
+
+    def dispatch(self):
+        pass
 
     @classmethod
     def to_lifecycle(cls, source: [ str | None ], event_spec: str, to_instance: NamedValues, to_class: str,

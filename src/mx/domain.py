@@ -24,6 +24,7 @@ from mx.db_names import mmdb
 from mx.initial_states import InitialStateContext
 # from mx.exceptions import *
 from mx.rvname import RVN
+from mx.instance import generate_key
 
 _logger = logging.getLogger(__name__)
 
@@ -52,8 +53,8 @@ class Domain:
         self.alias = alias  # Now we have access to both the mmdb and this domain's schema
         self.system = system
         self.single_assigners = None
-        self.lifecycles: dict[str, list[LifecycleStateMachine]] = {}
-        self.mult_assigners: dict[str, list[MultipleAssignerStateMachine]] = {}
+        self.lifecycles: dict[str, dict[ str, LifecycleStateMachine]] = {}
+        self.mult_assigners: dict[str, list[MultipleAssignerStateMachine]] = {}  # TODO: match lifecycle dict
         self.lifecycle_ids: dict[str, list[str]] = {}
         self.pclasses: dict[str, list[str]] = {}
         self.single_assigners = None
@@ -177,12 +178,16 @@ class Domain:
             for i in inst_result.body:
                 # Create identifier value for this instance
                 inst_id = {attr: i[attr] for attr in id_attrs}
+                # Get a key
+                inst_key = generate_key(id_attr_value=inst_id)
                 # Get the initial state for this instance from the context
                 istate = istates[class_name]
-                # Create the lifecycle and add it to our dictionary of lifecycles keyed by class name
-                self.lifecycles.setdefault(class_name, []).append(
-                    LifecycleStateMachine(current_state=istate, instance_id=inst_id,
-                                          class_name=class_name, domain=self.name)
+                # Ensure the inner dictionary exists for the class_name
+                self.lifecycles.setdefault(class_name, {})[inst_key] = LifecycleStateMachine(
+                    current_state=istate,
+                    instance_id=inst_id,
+                    class_name=class_name,
+                    domain=self.name
                 )
                 pass
 
