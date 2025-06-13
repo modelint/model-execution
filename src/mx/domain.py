@@ -24,7 +24,8 @@ from mx.db_names import mmdb
 from mx.initial_states import InitialStateContext
 # from mx.exceptions import *
 from mx.rvname import RVN
-from mx.instance import generate_key
+from mx.mxtypes import snake
+
 
 _logger = logging.getLogger(__name__)
 
@@ -172,27 +173,30 @@ class Domain:
 
         # Get each class_name and its primary id for each lifecycle
         for class_name, id_attrs in self.lifecycle_ids.items():
-            # Get all the instances from the user model for that class
-            inst_result = Relation.restrict(db=self.alias, relation=f"{class_name.replace(' ', '_')}")
-            # Create a lifecycle statemachine for each instance
-            for i in inst_result.body:
+
+            # Tag the class relvar so that each instance has an arbitrary integer id 0..n
+            class_i_rv = f"{snake(class_name)}_i"
+            # We can use the above formula to obtain this relation variable later for any given class name
+            Relation.tag(db=self.alias, tag_attr_name="_instance", relation=class_name)
+            # Project on id attrs + the tagged _instance attr to yield the class_i_rv value
+            P = tuple(id_attrs + ['_instance'])
+            instance_r = Relation.project(db=self.alias, attributes=P, svar_name=class_i_rv)
+
+            # Create a lifecycle statemachine for each instance and index it to its instance id
+            for i in instance_r.body:
+                # Create the lifecycle
                 # Create identifier value for this instance
                 inst_id = {attr: i[attr] for attr in id_attrs}
-                # Get a key
-                inst_key = generate_key(id_attr_value=inst_id)
                 # Get the initial state for this instance from the context
                 istate = istates[class_name]
+                # Now use the instance id in the inner dictionary (local to class_name)
                 # Ensure the inner dictionary exists for the class_name
-                self.lifecycles.setdefault(class_name, {})[inst_key] = LifecycleStateMachine(
+                self.lifecycles.setdefault(class_name, {})[i["_instance"]] = LifecycleStateMachine(
                     current_state=istate,
                     instance_id=inst_id,
                     class_name=class_name,
                     domain=self.name
                 )
-                pass
-
-            pass
-        pass
 
     def initiate_assigners(self):
         """

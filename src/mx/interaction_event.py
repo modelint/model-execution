@@ -8,6 +8,8 @@ if TYPE_CHECKING:
     from mx.domain import Domain
 
 # Model Integration
+from pyral.relation import Relation
+
 
 # MX
 from mx.dispatched_event import DispatchedEvent
@@ -48,6 +50,19 @@ class InteractionEvent(DispatchedEvent):
         self.dispatch()
 
     def dispatch(self):
+        # Look up the target state machine and put this event in its set
+        match self.sm_type:
+            case StateMachineType.LIFECYCLE:
+                R = ", ".join([f"{a}:<{v}>" for a, v in self.to_instance.items()])
+                inst_id_r = Relation.restrict(db=self.domain.alias, relation=f"{self.state_model}_i", restriction=R)
+                target_inst_id = inst_id_r.body[0]["_instance"]
+                sm = self.domain.lifecycles[self.state_model][target_inst_id]
+                pass
+            case StateMachineType.MA:
+                pass
+            case StateMachineType.SA:
+                pass
+
         pass
 
     @classmethod
