@@ -11,7 +11,7 @@ from pyral.relation import Relation
 # MX
 from mx.exceptions import *
 from mx.db_names import mmdb
-from mx.dispatched_event import DispatchedEvent
+from mx.interaction_event import InteractionEvent
 
 
 class EventResponse(Enum):
@@ -34,28 +34,28 @@ class StateMachine:
         :param current_state: The statemachine is in this state when created
         """
         self.current_state = current_state
-        self.non_self_directed_events: list[DispatchedEvent] = []
-        self.self_directed_events: list[DispatchedEvent] = []
+        self.interaction_events: list[InteractionEvent] = []
+        # self.completion_events: list[CompletionEvent] = []
         self.dest_state = None
         self.active_event = None
         self.state_model = state_model
         self.domain = domain
 
-    def accept_event_from_self(self, event: DispatchedEvent):
-        """
-        New SelfDirected event received, queue it
+    # def accept_event_from_self(self, event: DispatchedEvent):
+    #     """
+    #     New SelfDirected event received, queue it
+    #
+    #     :param event: A dispatched self-directed event
+    #     """
+    #     self.completion_events.append(event)
 
-        :param event: A dispatched self-directed event
-        """
-        self.self_directed_events.append(event)
-
-    def accept_event_not_from_self(self, event: DispatchedEvent):
+    def accept_interaction_event(self, event: InteractionEvent):
         """
         New NonSelfDirected event received, queue it
 
         :param event: A dispatched non-self-directed event
         """
-        self.non_self_directed_events.add(event)
+        self.interaction_events.append(event)
 
     def check_input(self) -> bool:
         """
@@ -63,13 +63,13 @@ class StateMachine:
 
         :return: True if an event was selected
         """
-        if self.self_directed_events:
-            self.active_event = self.self_directed_events.pop(0)
+        if self.completion_events:
+            self.active_event = self.completion_events.pop(0)
             return True
 
-        if self.non_self_directed_events:
-            self.active_event = random.choice(self.non_self_directed_events)
-            # self.active_event = self.non_self_directed_events.pop(0) TODO: Make this an option
+        if self.interaction_events:
+            self.active_event = random.choice(self.interaction_events)
+            # self.active_event = self.interaction_events.pop(0) TODO: Make this an option
             return True
 
         return False
