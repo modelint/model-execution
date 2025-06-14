@@ -93,11 +93,16 @@ class Domain:
 
     def activate(self):
         """
-        Create any elements necessary before scenario execution begins
+        Run all state machines
 
         :return:
         """
         # At this point we are only testing method execution, so there's nothing to be done.  Just return.
+        for sm in self.lifecycle_ids:
+            while sm.check_input():
+                sm.go
+
+        pass
         return
 
     def find_lifecycles(self):

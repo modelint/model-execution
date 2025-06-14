@@ -42,7 +42,6 @@ class Scenario:
                 case _:
                     print("Unknown interaction type")
                     pass
-        #     pass
         #     # Is the interaction a stimulus or an inspection?  The only two we have right now
         #     if i.get('stimulate', None):
         #         self.inject_stimulus(i['stimulate'])
@@ -52,7 +51,9 @@ class Scenario:
         #         self.process_delay(i['delay'])
         #     else:
         #         print("Unknown interaction type")
-        # pass
+        pass
+        # No more interactions
+
 
     def inject_stimulus(self, stimulus):
         if stimulus["type"] == "model operation":

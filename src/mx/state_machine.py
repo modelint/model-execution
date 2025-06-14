@@ -12,6 +12,7 @@ from pyral.relation import Relation
 from mx.exceptions import *
 from mx.db_names import mmdb
 from mx.interaction_event import InteractionEvent
+from mx.completion_event import CompletionEvent
 
 
 class EventResponse(Enum):
@@ -35,11 +36,15 @@ class StateMachine:
         """
         self.current_state = current_state
         self.interaction_events: list[InteractionEvent] = []
-        # self.completion_events: list[CompletionEvent] = []
+        self.completion_events: list[CompletionEvent] = []
         self.dest_state = None
         self.active_event = None
         self.state_model = state_model
         self.domain = domain
+        self.int_processed = 0
+        self.comp_processed = 0
+        self.max_int_events = 0
+        self.max_comp_events = 0
 
     # def accept_event_from_self(self, event: DispatchedEvent):
     #     """
@@ -48,6 +53,38 @@ class StateMachine:
     #     :param event: A dispatched self-directed event
     #     """
     #     self.completion_events.append(event)
+
+    def run(self, max_int_events: int, max_comp_events: int) -> int:
+        """
+        Process up to the maximum number of allowed events and return the qty of unprocessed
+        events (interation or continuation).
+
+        :param max_int_events: Maximum interaction events to process, 0 means no limit (all)
+        :param max_comp_events: Maximum completion events to process, 0 means no limit (all)
+        :return: The aggregate quantity of remaining events (both types)
+        """
+        # Check simple case first
+        if not self.completion_events and not self.interaction_events:
+            return 0
+
+        self.max_int_events = max_int_events
+        self.max_comp_events = max_comp_events
+        # Reset counter
+        self.comp_processed = 0
+        self.int_processed = 0
+
+        while self.completion_events or self.interaction_events:
+            # Keep processing events until none are left or the max events in either cateogry is reached
+            if (0 < max_int_events <= self.int_processed) or\
+                    (0 < max_comp_events <= self.max_comp_events):
+                return len(self.completion_events) + len(self.interaction_events)
+
+            self.process_event()
+
+        return 0
+
+    def process_event(self):
+
 
     def accept_interaction_event(self, event: InteractionEvent):
         """
