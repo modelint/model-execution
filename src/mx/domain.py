@@ -97,12 +97,9 @@ class Domain:
 
         :return:
         """
-        # At this point we are only testing method execution, so there's nothing to be done.  Just return.
-        for sm in self.lifecycle_ids:
-            while sm.check_input():
-                sm.go
-
-        pass
+        for class_name, instance in self.lifecycles.items():
+            for inst_id, sm in instance.items():
+                sm.run()
         return
 
     def find_lifecycles(self):

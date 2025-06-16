@@ -95,9 +95,6 @@ class XE:
             Relvar.printall(db=mmdb)
             print(f"\n^^^ {msg} ^^^\n")
 
-        # Activate the system (build the dynamic components within)
-        self.system.activate()
-
         # Run the scenario
         s = Scenario(xe=self)
         s.run()

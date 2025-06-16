@@ -13,6 +13,7 @@ from mx.exceptions import *
 from mx.db_names import mmdb
 from mx.interaction_event import InteractionEvent
 from mx.completion_event import CompletionEvent
+from mx.completion_event import DispatchedEvent
 
 
 class EventResponse(Enum):
@@ -45,6 +46,7 @@ class StateMachine:
         self.comp_processed = 0
         self.max_int_events = 0
         self.max_comp_events = 0
+        self.active_event = None
 
     # def accept_event_from_self(self, event: DispatchedEvent):
     #     """
@@ -54,7 +56,7 @@ class StateMachine:
     #     """
     #     self.completion_events.append(event)
 
-    def run(self, max_int_events: int, max_comp_events: int) -> int:
+    def run(self, max_int_events: int = 0, max_comp_events: int = 0) -> int:
         """
         Process up to the maximum number of allowed events and return the qty of unprocessed
         events (interation or continuation).
@@ -84,6 +86,21 @@ class StateMachine:
         return 0
 
     def process_event(self):
+        self.active_event = self.select_next_event()
+        if self.active_event:
+            pass
+
+    def select_next_event(self) -> DispatchedEvent | None:
+        """
+        Returns a Dispatched Event if one is pending
+        """
+        return (
+            self.completion_events.pop(0)
+            if self.completion_events else
+            self.interaction_events.pop(0)
+            if self.interaction_events else
+            None
+        )
 
 
     def accept_interaction_event(self, event: InteractionEvent):

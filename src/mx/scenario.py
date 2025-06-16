@@ -55,6 +55,8 @@ class Scenario:
         # No more interactions
 
 
+
+
     def inject_stimulus(self, stimulus):
         if stimulus["type"] == "model operation":
             self.package_model_op(stimulus)
