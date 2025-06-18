@@ -7,12 +7,10 @@ scenario:
 
 interactions:
 
-  - stimulate:
-      type: model operation
-      name: call method
-      dest: EVMAN
-      class name: Cabin
-      method name: Ping
+    - type: call method
+      name: Ping
+      class: Cabin
+      domain: EVMAN
       parameters:
         dir: up
       instance:

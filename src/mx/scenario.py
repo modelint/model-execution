@@ -34,7 +34,7 @@ class Scenario:
                 case "signal":
                     self.process_signal(i)
                     pass
-                case "method call":
+                case "call method":
                     self.process_method_call(i)
                     pass
                 case "delay":
@@ -52,6 +52,9 @@ class Scenario:
         #     else:
         #         print("Unknown interaction type")
         pass
+
+        # Run the system
+        self.xe.system.run()
         # No more interactions
 
 
@@ -76,9 +79,9 @@ class Scenario:
                 pass
 
     def process_method_call(self, m):
-        name = m["method name"]
-        class_name = m["class name"]
-        domain_alias = m["dest"]
+        name = m["name"]
+        class_name = m["class"]
+        domain_alias = m["domain"]
         instance_id = m["instance"]
         params = m["parameters"]
 
