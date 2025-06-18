@@ -1,7 +1,10 @@
 """ life_cycle_state_machine.py """
 
 # System
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mx.domain import Domain
 
 # MX
 from mx.state_machine import StateMachine
@@ -13,7 +16,7 @@ class LifecycleStateMachine(StateMachine):
     class_name = None
     domain = None
 
-    def __init__(self, current_state: str, instance_id: dict[str, Any], class_name: str, domain: str):
+    def __init__(self, current_state: str, instance_id: dict[str, Any], class_name: str, domain: "Domain"):
         super().__init__(current_state=current_state, state_model=class_name, domain=domain)
 
         self.instance_id = instance_id

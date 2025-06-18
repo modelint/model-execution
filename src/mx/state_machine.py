@@ -4,6 +4,10 @@
 import logging
 import random
 from enum import Enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mx.domain import Domain
 
 # Model Integration
 from pyral.relation import Relation
@@ -29,12 +33,13 @@ sm_id_map = {}  # Map of identifier values to state machine instances
 
 class StateMachine:
 
-    def __init__(self, current_state: str, state_model: str, domain: str):
+    def __init__(self, current_state: str, state_model: str, domain: "Domain"):
         """
         Initialize a state machine with a current state
 
         :param current_state: The statemachine is in this state when created
         """
+        self.activity_executing = False
         self.current_state = current_state
         self.interaction_events: list[InteractionEvent] = []
         self.completion_events: list[CompletionEvent] = []
@@ -56,18 +61,17 @@ class StateMachine:
     #     """
     #     self.completion_events.append(event)
 
-    def run(self, max_int_events: int = 0, max_comp_events: int = 0) -> int:
+    @property
+    def busy(self) -> bool:
+        return self.interaction_events or self.completion_events or self.activity_executing
+
+    def go(self, max_int_events: int = 0, max_comp_events: int = 0):
         """
-        Process up to the maximum number of allowed events and return the qty of unprocessed
-        events (interation or continuation).
+        Process up to the maximum number of allowed events
 
         :param max_int_events: Maximum interaction events to process, 0 means no limit (all)
         :param max_comp_events: Maximum completion events to process, 0 means no limit (all)
-        :return: The aggregate quantity of remaining events (both types)
         """
-        # Check simple case first
-        if not self.completion_events and not self.interaction_events:
-            return 0
 
         self.max_int_events = max_int_events
         self.max_comp_events = max_comp_events
@@ -83,7 +87,6 @@ class StateMachine:
 
             self.process_event()
 
-        return 0
 
     def process_event(self):
         self.active_event = self.select_next_event()
@@ -110,6 +113,7 @@ class StateMachine:
         :param event: A dispatched non-self-directed event
         """
         self.interaction_events.append(event)
+        self.domain.events_pending = True
 
     def check_input(self) -> bool:
         """
@@ -153,7 +157,7 @@ class StateMachine:
         """
         # Look up the response in the mmdb
         R = (f"From_state:<{self.current_state}>, Event:<{self.active_event}>, State_model:<{self.state_model}>, "
-             f"Domain:<{self.domain}>")
+             f"Domain:<{self.domain.name}>")
         result = Relation.restrict(db=mmdb, relation='Transition', restriction=R)
         if result.body:
             # There is a transition specified
@@ -161,7 +165,7 @@ class StateMachine:
             return EventResponse.TRANSITION
 
         R = (f"From_state:<{self.current_state}>, Event:<{self.active_event}>, State_model:<{self.state_model}>, "
-             f"Domain:<{self.domain}>")
+             f"Domain:<{self.domain.name}>")
         result = Relation.restrict(db=mmdb, relation='Non_Transition', restriction=R)
         if not result.body:
             # There must be a response defined for every event defined on a statemodel

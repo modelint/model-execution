@@ -51,6 +51,8 @@ class System:
 
         self.domains = {d['Alias']: Domain(name=d['Name'], alias=d['Alias'], system=self) for d in domain_i.body}
 
-    def activate(self):
-        for d in self.domains.values():
-            d.activate()
+    def go(self):
+        work_remaining = True  # Assume there is work to be done
+        while work_remaining:
+            for d in self.domains.values():
+                work_remaining = d.go()  # We'll stay in the loop as long as at least one domain reports true

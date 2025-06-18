@@ -50,6 +50,9 @@ class Domain:
         :param alias: The domain alias serves as the name of the corresponding domain database
         :param system: Reference to the single System object.
         """
+        self.events_pending = False  # Initially, there is no work to do
+        self.activity_executing = False  # Initially, no Activity is executing
+
         self.name = name
         self.alias = alias  # Now we have access to both the mmdb and this domain's schema
         self.system = system
@@ -91,7 +94,11 @@ class Domain:
         self.initiate_assigners()  # Create an assigner statemachine for each relationship managed by an assigner
         # self.initiate_methods()
 
-    def activate(self):
+    @property
+    def busy(self) -> bool:
+        return self.events_pending or self.activity_executing
+
+    def go(self) -> bool:
         """
         Run all state machines
 
@@ -99,8 +106,9 @@ class Domain:
         """
         for class_name, instance in self.lifecycles.items():
             for inst_id, sm in instance.items():
-                sm.run()
-        return
+                if sm.busy:
+                    sm.go()
+        return self.busy()
 
     def find_lifecycles(self):
         """
@@ -197,7 +205,7 @@ class Domain:
                     current_state=istate,
                     instance_id=inst_id,
                     class_name=class_name,
-                    domain=self.name
+                    domain=self
                 )
 
     def initiate_assigners(self):

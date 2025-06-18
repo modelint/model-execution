@@ -51,10 +51,10 @@ class Scenario:
         #         self.process_delay(i['delay'])
         #     else:
         #         print("Unknown interaction type")
-        pass
 
         # Run the system
-        self.xe.system.run()
+        self.xe.system.go()
+        pass  # All work completed
         # No more interactions
 
 
