@@ -107,7 +107,7 @@ class Domain:
         for class_name, instance in self.lifecycles.items():
             for inst_id, sm in instance.items():
                 if sm.busy:
-                    sm.go()
+                    sm.go()  # Operating at thread granularity 0, 0 max events
         return self.busy()
 
     def find_lifecycles(self):

@@ -87,11 +87,24 @@ class StateMachine:
 
             self.process_event()
 
-
     def process_event(self):
         self.active_event = self.select_next_event()
-        if self.active_event:
+        if not self.active_event:
+            return
+
+        # Check for transition
+        R = (f"From_state:<{self.current_state}>, Event:<{self.active_event.event_spec}>, "
+             f"State_model:<{self.state_model}>, Domain:<{self.domain.name}>")
+        transition_r = Relation.restrict(db=mmdb, relation="Transition", restriction=R)
+        if transition_r.body:
+            to_state = transition_r.body[0]["To_state"]
             pass
+        pass
+
+
+
+
+
 
     def select_next_event(self) -> DispatchedEvent | None:
         """
