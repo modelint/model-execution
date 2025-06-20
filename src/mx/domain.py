@@ -58,10 +58,10 @@ class Domain:
         self.system = system
         self.single_assigners = None
         self.lifecycles: dict[str, dict[ str, LifecycleStateMachine]] = {}
-        self.mult_assigners: dict[str, list[MultipleAssignerStateMachine]] = {}  # TODO: match lifecycle dict
+        self.mult_assigners: dict[str, dict[ str, MultipleAssignerStateMachine]] = {}
+        # self.mult_assigners: dict[str, list[MultipleAssignerStateMachine]] = {}  # TODO: match lifecycle dict
         self.lifecycle_ids: dict[str, list[str]] = {}
         self.pclasses: dict[str, list[str]] = {}
-        self.single_assigners = None
         self.methods = None
         # self.flows = activity: flow id, flow type(scalar, inst1, instM, table, tuple), data type(scalar, table, class)
         MultAssignerPartition = NamedTuple('MultAssignerPartion', pclass=str, id_attrs=dict[str, list[str]])
@@ -202,6 +202,7 @@ class Domain:
                 # Now use the instance id in the inner dictionary (local to class_name)
                 # Ensure the inner dictionary exists for the class_name
                 self.lifecycles.setdefault(class_name, {})[i["_instance"]] = LifecycleStateMachine(
+                    lifecycle_sm_id=i["_instance"],
                     current_state=istate,
                     instance_id=inst_id,
                     class_name=class_name,
@@ -212,15 +213,16 @@ class Domain:
         """
         Initiates any single and multiple assigner state machines
         """
-        for ma in self.mult_assigner_partitions:
-            pclass_id = self.pclasses[ma.pclass]
-            result = Relation.restrict(db=self.alias, relation=ma.pclass)
-            for t in result.body:
-                # build the id
-                id_val = {attr: t[attr] for attr in pclass_id}
-                istate = self.massigner_initial_states[ma.rnum].state
-                self.mult_assigners.setdefault(ma, []).append(MultipleAssignerStateMachine(
-                    current_state=istate, rnum=ma.rnum, pclass_name=ma.pclass, instance_id=id_val, domain=self.name))
+        return
+        # for ma in self.mult_assigner_partitions:
+        #     pclass_id = self.pclasses[ma.pclass]
+        #     result = Relation.restrict(db=self.alias, relation=ma.pclass)
+        #     for t in result.body:
+        #         # build the id
+        #         id_val = {attr: t[attr] for attr in pclass_id}
+        #         istate = self.massigner_initial_states[ma.rnum].state
+        #         self.mult_assigners.setdefault(ma, {})[MultipleAssignerStateMachine(
+        #             ma_sm_id=, current_state=istate, rnum=ma.rnum, pclass_name=ma.pclass, instance_id=id_val, domain=self.name))
     #
     #     for sa in self.db.single_assigners:
     #         # TODO: Support single assigners

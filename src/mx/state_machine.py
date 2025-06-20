@@ -17,7 +17,8 @@ from mx.exceptions import *
 from mx.db_names import mmdb
 from mx.interaction_event import InteractionEvent
 from mx.completion_event import CompletionEvent
-from mx.completion_event import DispatchedEvent
+from mx.dispatched_event import DispatchedEvent
+from mx.state_activity import StateActivity
 
 
 class EventResponse(Enum):
@@ -33,17 +34,17 @@ sm_id_map = {}  # Map of identifier values to state machine instances
 
 class StateMachine:
 
-    def __init__(self, current_state: str, state_model: str, domain: "Domain"):
+    def __init__(self, sm_id: str, current_state: str, state_model: str, domain: "Domain"):
         """
         Initialize a state machine with a current state
 
         :param current_state: The statemachine is in this state when created
         """
+        self.sm_id = sm_id  # State machine id (unique across all state machine types in this domain)
         self.activity_executing = False
         self.current_state = current_state
         self.interaction_events: list[InteractionEvent] = []
         self.completion_events: list[CompletionEvent] = []
-        self.dest_state = None
         self.active_event = None
         self.state_model = state_model
         self.domain = domain
@@ -93,18 +94,25 @@ class StateMachine:
             return
 
         # Check for transition
+
+        transition_rv = Relation.declare_rv(db=mmdb, owner=self.sm_id, name="transition")
         R = (f"From_state:<{self.current_state}>, Event:<{self.active_event.event_spec}>, "
              f"State_model:<{self.state_model}>, Domain:<{self.domain.name}>")
-        transition_r = Relation.restrict(db=mmdb, relation="Transition", restriction=R)
+        transition_r = Relation.restrict(db=mmdb, relation="Transition", restriction=R,
+                                         svar_name=transition_rv)
         if transition_r.body:
-            to_state = transition_r.body[0]["To_state"]
-            pass
+            self.transition(transition_rv=transition_rv)
+            return
+
+        # Process non-transition
+        R = (f"State:<{self.current_state}>, Event:<{self.active_event.event_spec}>, "
+             f"State_model:<{self.state_model}>, Domain:<{self.domain.name}>")
+        non_transition_r = Relation.restrict(db=mmdb, relation="Transition", restriction=R)
+        if not non_transition_r:
+            pass  # TODO: This is an exception, bad mmdb_elevator data
+
+        # TODO: Process ignore or can't happen behavior
         pass
-
-
-
-
-
 
     def select_next_event(self) -> DispatchedEvent | None:
         """
@@ -145,9 +153,14 @@ class StateMachine:
 
         return False
 
-    def transition(self, dest_state: str):
-        self.dest_state = dest_state
-        # start activivity execution and wait for completion
+    def transition(self, transition_rv: str):
+        dest_real_state_r = Relation.semijoin(db=mmdb, rname1=transition_rv, rname2="Real State",
+                                              attrs= {"To_state": "Name", "State_model": "State_model",
+                                                      "Domain": "Domain"})
+        dest_real_state_t = dest_real_state_r.body[0]
+        self.current_state = dest_real_state_t["Name"]
+        StateActivity(anum=dest_real_state_t["Activity"], state_machine=self)
+        # start activity execution and wait for completion
 
     def ignore(self):
         """

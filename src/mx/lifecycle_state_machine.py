@@ -16,8 +16,11 @@ class LifecycleStateMachine(StateMachine):
     class_name = None
     domain = None
 
-    def __init__(self, current_state: str, instance_id: dict[str, Any], class_name: str, domain: "Domain"):
-        super().__init__(current_state=current_state, state_model=class_name, domain=domain)
+    def __init__(self, lifecycle_sm_id: int, current_state: str, instance_id: dict[str, Any], class_name: str,
+                 domain: "Domain"):
+        super().__init__(sm_id=f"lc_{lifecycle_sm_id}", current_state=current_state, state_model=class_name,
+                         domain=domain)
 
+        self.lifecycle_sm_id = lifecycle_sm_id  # Unique among lifecycle state machines in this domain
         self.instance_id = instance_id
         self.class_name = class_name
