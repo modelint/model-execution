@@ -1,0 +1,20 @@
+Initiate:
+  Stop_request:
+    target:
+      Shaft: S1
+      Floor: 3
+
+Interactions:
+  - external event:
+      ee: TRANS
+      name: Go to floor
+      response: Arrived at floor
+      delay: 7 sec
+  - state entry:
+      ee: SIO
+      name: OPENING
+      lifecycle: Door
+      response: Door opened
+      delay: 3 sec
+
+
