@@ -33,12 +33,12 @@ Name | Height
 Bank Level
 Bank | Floor
 --
-MF5  { [Lower Floors] [5] }
-MF4  { [Lower Floors] [4] }
-MF3  { [Lower Floors] [3] }
-MF2  { [Lower Floors] [2] }
-MF1  { [Lower Floors] [1] }
-MFL  { [Lower Floors] [L] }
+MF5  { [Main] [5] }
+MF4  { [Main] [4] }
+MF3  { [Main] [3] }
+MF2  { [Main] [2] }
+MF1  { [Main] [1] }
+MFL  { [Main] [L] }
 --
 Top Bank Level
 R38>Bank Level | Calling down
@@ -76,10 +76,10 @@ Shaft | Floor
 Accessible Shaft Level
 Shaft | Floor | Bank | Stop requested
 --
-{ [S1] [5]  [Lower Floors] [False] } > NOT REQUESTED
-{ [S1] [4]  [Lower Floors] [False] } > NOT REQUESTED
-{ [S1] [3]  [Lower Floors] [False] } > NOT REQUESTED
-{ [S1] [2]  [Lower Floors] [False] } > NOT REQUESTED
-{ [S1] [1]  [Lower Floors] [False] } > NOT REQUESTED
-{ [S1] [L]  [Lower Floors] [False] } > NOT REQUESTED
+{ [S1] [5]  [Main] [False] } > NOT REQUESTED
+{ [S1] [4]  [Main] [False] } > NOT REQUESTED
+{ [S1] [3]  [Main] [False] } > NOT REQUESTED
+{ [S1] [2]  [Main] [False] } > NOT REQUESTED
+{ [S1] [1]  [Main] [False] } > NOT REQUESTED
+{ [S1] [L]  [Main] [False] } > NOT REQUESTED
 --
