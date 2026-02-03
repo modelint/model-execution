@@ -39,7 +39,7 @@ class Domain:
 
     def __init__(self, name: str, alias: str, system: 'System'):
         """
-        Initiate a database session for this domain and load it from its databae file.
+        Initiate a database session for this domain and load it from its database file.
 
         Gather data of interest for the domain's execution from the database and prep the domain
         for execution.
@@ -127,7 +127,7 @@ class Domain:
 
         # Save the primary identifier for each class with a lifecycle
         for c in class_names:
-            R = f"Class:<{c}>"
+            R = f"Class:<{c}>, Identifier:<{1}>"
             id_result = Relation.restrict(db=mmdb, restriction=R, relation='id_all')
             c_id_attrs = [t['Attribute'] for t in id_result.body]  # id attributes for the current class
             self.lifecycle_ids[c] = c_id_attrs

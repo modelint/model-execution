@@ -42,13 +42,15 @@ class System:
         """
         Load and create a session for each domain database
         """
-        # Create a dictionary of domains
-        domain_i = Relation.restrict(db=mmdb, relation='Domain')
+        # Create a database schema for each modeled domain
+        Relation.restrict(db=mmdb, relation='Modeled Domain')
+        domain_i = Relation.semijoin(db=mmdb, rname2='Domain')
         if not domain_i.body:
             msg = f"No domains defined for system in metamodel"
             _logger.exception(msg)
             raise MXUserDBException(msg)
 
+        # Initialize modeled domains only
         self.domains = {d['Alias']: Domain(name=d['Name'], alias=d['Alias'], system=self) for d in domain_i.body}
 
     def go(self):

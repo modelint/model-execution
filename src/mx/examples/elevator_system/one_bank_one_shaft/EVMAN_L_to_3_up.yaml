@@ -1,3 +1,8 @@
+Scenario:
+  name: S1 up L to 3
+  description: >
+    Cabin with door closed at L going up services stop request at 3
+
 Initiate:
   Stop_request:
     target:

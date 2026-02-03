@@ -52,7 +52,7 @@ class XE:
         self.verbose = False
         self.mxlog = None
 
-    def initialize(self, mmdb_path: Path, context_dir: Path, scenario_path: Path, verbose:bool, debug: bool):
+    def initialize(self, mmdb_path: Path, context_dir: Path, scenario_file: Path, verbose:bool, debug: bool):
         """
         Generate a user database (udb) from the populated metamodel (mmdb) and then populate the udb with
         a population of initial instances establishing a starting context for any further execution and then
@@ -60,22 +60,22 @@ class XE:
 
         :param mmdb_path: Path to the system (all domains) populated into the metamodel *.ral TclRAL
         :param context_dir: Directory containing one initial instance population *.sip file per domain
-        :param scenario_path: Path to an *.scn file defining a scenario to run
+        :param scenario_file: Path to a file defining a scenario to run
         :param verbose: Verbose mode
         :param debug: Debug mode - prints schemas and other info to the console if true
         """
         self.mmdb_path = mmdb_path
         self.context_dir = context_dir
+        self.scenario_path = context_dir / scenario_file
         self.verbose = verbose  # Print db schemas, etc to console
         self.debug = debug  # Print intermediate tables and values to console
 
         # Load the scenario
-        self.scenario = load_scenario(path=scenario_path)
+        self.scenario = load_scenario(path=self.scenario_path)
 
         # Initialize model execution logger for scenario specific output
-        log_file_name = self.scenario["scenario"].get("name", "unnamed_scenario")
+        log_file_name = self.scenario["Scenario"].get("name", "unnamed_scenario").replace(' ', '-')
         self.mxlog = MXLogger(scenario_name=log_file_name)
-        pass
 
         # Load a metamodel file populated with the system as one or more modeled domains
         _logger.info(f"Loading the metamodel database from: [{self.mmdb_path}]")

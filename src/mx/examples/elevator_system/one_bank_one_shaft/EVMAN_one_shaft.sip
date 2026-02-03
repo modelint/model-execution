@@ -33,12 +33,12 @@ Name | Height
 Bank Level
 Bank | Floor
 --
-MF5  { [Main] [5] }
-MF4  { [Main] [4] }
-MF3  { [Main] [3] }
-MF2  { [Main] [2] }
-MF1  { [Main] [1] }
-MFL  { [Main] [L] }
+MF5  { [Main] [5] } > WAITING FOR CALL
+MF4  { [Main] [4] } > WAITING FOR CALL
+MF3  { [Main] [3] } > WAITING FOR CALL
+MF2  { [Main] [2] } > WAITING FOR CALL
+MF1  { [Main] [1] } > WAITING FOR CALL
+MFL  { [Main] [L] } > WAITING FOR CALL
 --
 Top Bank Level
 R38>Bank Level | Calling down
