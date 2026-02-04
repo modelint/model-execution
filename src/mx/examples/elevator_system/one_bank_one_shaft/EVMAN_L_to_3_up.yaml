@@ -3,23 +3,46 @@ Scenario:
   description: >
     Cabin with door closed at L going up services stop request at 3
 
-Initiate:
-  Stop_request:
-    target:
-      Shaft: S1
-      Floor: 3
-
 Interactions:
-  - external event:
+  - stimulus:
+      to: EVMAN
+      type: event
+      name: Stop request
+      target:
+        Shaft: S1
+        Floor: 3
+  - response:
+      from: EVMAN
+      to: TRANS
+      type: external event
       ee: TRANS
       name: Go to floor
-      response: Arrived at floor
-      delay: 7 sec
-  - state entry:
-      ee: SIO
-      name: OPENING
+      source:
+        Shaft: S1
+        Floor: 3
+  - delay: 7 s
+  - stimulus:
+      to: EVMAN
+      type: event
+      name: Arrived at floor
+      target:
+        Shaft: S1
+        Floor: 3
+  - response:
+      from: EVMAN
+      notify: [UI, SIO]
+      type: condition
+      condition: state entry
       lifecycle: Door
-      response: Door opened
-      delay: 3 sec
-
-
+      state: OPENING
+      source:
+        Shaft: S1
+        Floor: 3
+  - delay: 3 s
+  - stimulus:
+      to: EVMAN
+      type: event
+      name: Door opened
+      source:
+        Shaft: S1
+        Floor: 3

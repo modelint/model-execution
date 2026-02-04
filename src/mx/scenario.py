@@ -31,6 +31,7 @@ class Scenario:
         # Process each interaction in the scenario
         for i in self.xe.scenario['interactions']:
             match i["type"]:
+                case "event":
                 case "signal":
                     self.process_signal(i)
                     pass
