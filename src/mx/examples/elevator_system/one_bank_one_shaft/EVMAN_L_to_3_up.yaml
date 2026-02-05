@@ -1,48 +1,110 @@
+# Scenario definition
+# Define a specific scenario and what is expected to happen
+# When we use the term 'user' we are referring to whoever is running the scenario
+
+# Scenario section
+# General information about the scenario
+# --
+# name - name of the scenario
+# description - explain what is going on, what is being tested, etc
+# domains - what domains are executing in this scenario (any others will be stubbed out)
+# --
+# Interactions section
+# What is expected to happen in terms of stimuli, responses, and scenario timing
+# Each component plays out in sequence beginning with an initial stimulus
+# --
+# stimulus - a scenario action injected into a target domain
+# delay - optional wait time before injection specifies as a number and units <min, s, ms>
+# to - the target domain
+# type - what to inject (event, domain operation)
+# name - name of the event or operation
+# class - destination of an event
+# instance - destination of an event as one or more identifier attribute values for a single identifier of the class
+# --
+# response - something that happens in a domain
+# This may prompt further action by the scenario director to move things along
+# or requires a notification to the scenario user
+# type - what happened (external event, ...)
+# --
+# external event response
+# --
+# from - domain where it happened
+# to - domain destination (this domain may or may not be present in the executing system)
+# ee - if external event, the target EE in the from domain
+# name - name of the response (external event name, ...)
+# class - source of the response
+# instance - source of the response as one or more identifier attribute values for a single identifier of the class
+# --
+# condition response
+# --
+# from - domain where the condition occurred
+# notify - which domains should be notified (if domains are not present in executing system, we just notify the user)
+# condition - what happened in the from domain (state entry, attribute write,
+# class - source of the condition
+# instance - source of the condition as one or more identifier attribute values for a single identifier of the class
+# state - if state entry, name of the entered state
+
+
 Scenario:
   name: S1 up L to 3
   description: >
     Cabin with door closed at L going up services stop request at 3
+  domains: [EVMAN] # Only testing the application domain for now
 
 Interactions:
   - stimulus:
       to: EVMAN
       type: event
       name: Stop request
-      target:
+      class: Accessible Shaft Level
+      instance:
         Shaft: S1
         Floor: 3
   - response:
-      from: EVMAN
-      to: TRANS
       type: external event
-      ee: TRANS
-      name: Go to floor
-      source:
+      from: EVMAN
+      to: UI
+      ee: UI
+      name: New destination
+      class: Transfer
+      instance:
         Shaft: S1
         Floor: 3
-  - delay: 7 s
+  - response:
+      type: external event
+      from: EVMAN
+      to: TRANS
+      ee: TRANS
+      name: Go to floor
+      class: Cabin
+      instance:
+        Shaft: S1
+        Floor: 3
   - stimulus:
+      delay: 7 s
       to: EVMAN
       type: event
       name: Arrived at floor
-      target:
+      class: Cabin
+      instance:
         Shaft: S1
         Floor: 3
   - response:
+      type: condition
       from: EVMAN
       notify: [UI, SIO]
-      type: condition
       condition: state entry
-      lifecycle: Door
+      class: Door
       state: OPENING
-      source:
+      instance:
         Shaft: S1
         Floor: 3
-  - delay: 3 s
   - stimulus:
+      delay: 3 s
       to: EVMAN
       type: event
       name: Door opened
-      source:
+      class: Door
+      instance:
         Shaft: S1
         Floor: 3

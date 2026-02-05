@@ -1,0 +1,7 @@
+#!/bin/zsh
+
+# getmmdb_elevator - Copies a new metamodel database from xuml-populate populated with the elevator system
+
+src_dir="/Users/starr/SDEV/Python/PyCharm/xuml-populate/working"
+cp "$src_dir/mmdb_elevator.ral" .
+cp "$src_dir/mmdb_elevator.txt" .
