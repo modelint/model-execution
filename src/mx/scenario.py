@@ -6,6 +6,7 @@
 import logging
 from typing import TYPE_CHECKING
 import time
+from operator import itemgetter
 
 if TYPE_CHECKING:
     from mx.xe import XE
@@ -22,6 +23,14 @@ class Scenario:
 
     def __init__(self, xe: "XE"):
         self.xe = xe
+        try:
+            self.name, self.description, self.participating_domains = itemgetter(
+                "name", "description", "domains"
+            )(xe.scenario_parse["Scenario"])
+        except KeyError as e:
+            msg = f"Missing field: {e} in scenario file"
+            _logger.error(msg)
+            raise
 
     def run(self):
         """
@@ -31,7 +40,6 @@ class Scenario:
         # Process each interaction in the scenario
         for i in self.xe.scenario['interactions']:
             match i["type"]:
-                case "event":
                 case "signal":
                     self.process_signal(i)
                     pass
