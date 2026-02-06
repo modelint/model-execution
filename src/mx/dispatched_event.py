@@ -2,7 +2,7 @@
 
 # System
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from mx.domain import Domain
@@ -14,9 +14,9 @@ from mx.mxtypes import NamedValues, StateMachineType
 
 class DispatchedEvent:
 
-    def __init__(self, source: [ str | None ], event_spec: str, state_model: str,
-                 sm_type: StateMachineType, to_instance: [ NamedValues | None ], partitioning_class: [ str | None],
-                 partitioning_instance: [NamedValues | None ], params: NamedValues, domain: "Domain"):
+    def __init__(self, source: Optional[str], event_spec: str, state_model: str,
+                 sm_type: StateMachineType, to_instance: Optional[NamedValues], partitioning_class: Optional[str],
+                 partitioning_instance: Optional[NamedValues], params: NamedValues, domain: "Domain"):
         """
 
         """

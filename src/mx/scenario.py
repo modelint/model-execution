@@ -143,30 +143,10 @@ class Scenario:
                    instance_id=instance_id, parameters=params)
 
     def process_signal(self, s):
-        target_domain = self.xe.system.domains[s["domain"]]
-        sm_type = s.get("state machine", None)
-        if not sm_type:
-            # TODO: raise exception
-            pass
-        match sm_type:
-            case "lifecycle":
-                ie = InteractionEvent.to_lifecycle(source=s.get("source", None), event_spec=s["name"],
-                                                   to_instance=s["instance"], to_class=s["class"],
-                                                   params=s.get("params", {}), domain=target_domain)
-            case "single assigner":
-                ie = InteractionEvent.to_single_assigner(source=s.get("source", None), event_spec=s["name"],
-                                                         to_rnum=s["rnum"], params=s.get("params", {}),
-                                                         domain=target_domain)
-            case "multiple assigner":
-                ie = InteractionEvent.to_multiple_assigner(source=s.get("source", None), event_spec=s["name"],
-                                                           partitioning_instance=s["instance"],
-                                                           partitioning_class=s["class"], to_rnum=s["rnum"],
-                                                           params=s.get("params", {}), domain=target_domain)
-            case _:
-                # TODO: raise exception
-                pass
-
-        pass
+        target_domain = s["to"]
+        ie = InteractionEvent.to_lifecycle(event_spec=s["name"],
+                                           to_instance=s["instance"], to_class=s["class"],
+                                           params=s.get("params", {}), domain=target_domain)
 
     def look(self, model_element):
         pass
