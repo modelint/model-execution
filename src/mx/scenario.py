@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 from mx.interaction_event import InteractionEvent
 from mx.method import Method
 from mx.mxtypes import StateMachineType
+from mx.exceptions import *
 
 _logger = logging.getLogger(__name__)
 
@@ -32,13 +33,51 @@ class Scenario:
             _logger.error(msg)
             raise
 
-    def run(self):
+        self.interactions = xe.scenario_parse.get("Interactions", [])
+
+    def inject(self, stimulus):
+        """
+        Inject stimulus into the executing system
+
+        Args:
+            stimulus: Scenario specified stimulus to inject
+        """
+        stype = stimulus.get("type")
+        if not stype:
+            msg = f"No type specified for stimulus: [{stimulus}]"
+            _logger.error(msg)
+            raise MXScenarioDirectorInput(msg)
+
+        match stype:
+            case "event":
+                self.process_signal(stimulus)
+                pass
+
+    def process_response(self, response):
+        """
+        Process the response by notifying the user somehow (log, display, etc)
+
+        Args:
+            response: Scenario specified stimulus to inject
         """
 
-        :return:
+    def run(self):
         """
-        # Process each interaction in the scenario
-        for i in self.xe.scenario['interactions']:
+        Process each interaction, if any, in the scenario
+        """
+        for i in self.interactions:
+            # Each interaction is a single dictonary item with a key specifying the interaction type
+            itype, idesc = list(i.items())[0]  # Split out k,v of single dictionary item
+            match itype:
+                case "stimulus":
+                    self.inject(stimulus=idesc)
+                case "response":
+                    self.process_response(response=idesc)
+                case _:
+                    msg = f"Unknown interaction type: [{itype}]"
+                    _logger.error(msg)
+                    raise MXScenarioDirectorInput(msg)
+
             match i["type"]:
                 case "signal":
                     self.process_signal(i)

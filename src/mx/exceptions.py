@@ -3,7 +3,15 @@ exceptions.py – Model Execution exceptions
 """
 
 class MXException(Exception):
-    """ Top level Model Execution exception """
+    """ Model Execution exception """
+    pass
+
+class MXScenarioDirector(MXException):
+    """ Scenario Director exception """
+    pass
+
+class MXScenarioDirectorInput(MXScenarioDirector):
+    """ Problem in the scenario script input """
     pass
 
 class MXFileException(FileNotFoundError):
