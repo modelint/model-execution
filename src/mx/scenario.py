@@ -60,6 +60,7 @@ class Scenario:
         Args:
             response: Scenario specified stimulus to inject
         """
+        pass
 
     def run(self):
         """
@@ -78,18 +79,18 @@ class Scenario:
                     _logger.error(msg)
                     raise MXScenarioDirectorInput(msg)
 
-            match i["type"]:
-                case "signal":
-                    self.process_signal(i)
-                    pass
-                case "call method":
-                    self.process_method_call(i)
-                    pass
-                case "delay":
-                    pass
-                case _:
-                    print("Unknown interaction type")
-                    pass
+            # match i["type"]:
+            #     case "signal":
+            #         self.process_signal(i)
+            #         pass
+            #     case "call method":
+            #         self.process_method_call(i)
+            #         pass
+            #     case "delay":
+            #         pass
+            #     case _:
+            #         print("Unknown interaction type")
+            #         pass
         #     # Is the interaction a stimulus or an inspection?  The only two we have right now
         #     if i.get('stimulate', None):
         #         self.inject_stimulus(i['stimulate'])
@@ -143,7 +144,8 @@ class Scenario:
                    instance_id=instance_id, parameters=params)
 
     def process_signal(self, s):
-        target_domain = s["to"]
+        target_domain_alias = s['to']
+        target_domain = self.xe.system.domains[target_domain_alias]
         ie = InteractionEvent.to_lifecycle(event_spec=s["name"],
                                            to_instance=s["instance"], to_class=s["class"],
                                            params=s.get("params", {}), domain=target_domain)

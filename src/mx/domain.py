@@ -34,7 +34,7 @@ MultipleAssigner = NamedTuple("MultipleAssigner", rnum=str, pclass=str)
 
 class Domain:
     """
-    An Domain is an active component that can respond to external input
+    A Domain is an active component that can respond to external input
     """
 
     def __init__(self, name: str, alias: str, system: 'System'):
@@ -46,9 +46,10 @@ class Domain:
 
         When execution begins, manage execution of this domain.
 
-        :param name: The name of the domain, used for indexing into the mmdb
-        :param alias: The domain alias serves as the name of the corresponding domain database
-        :param system: Reference to the single System object.
+        Args:
+            name: The name of the domain, used for indexing into the mmdb
+            alias: The domain alias serves as the name of the corresponding domain database
+            system: Reference to the single System object.
         """
         self.events_pending = False  # Initially, there is no work to do
         self.activity_executing = False  # Initially, no Activity is executing

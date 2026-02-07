@@ -38,7 +38,11 @@ class StateMachine:
         """
         Initialize a state machine with a current state
 
-        :param current_state: The statemachine is in this state when created
+        Args:
+            sm_id:
+            current_state: The statemachine is in this state when created
+            state_model:
+            domain:
         """
         self.sm_id = sm_id  # State machine id (unique across all state machine types in this domain)
         self.activity_executing = False
@@ -70,10 +74,13 @@ class StateMachine:
         """
         Process up to the maximum number of allowed events
 
-        :param max_int_events: Maximum interaction events to process, 0 means no limit (all)
-        :param max_comp_events: Maximum completion events to process, 0 means no limit (all)
-        """
+        Args:
+            max_int_events: Maximum interaction events to process, 0 means no limit (all)
+            max_comp_events: Maximum completion events to process, 0 means no limit (all)
 
+        Returns:
+
+        """
         self.max_int_events = max_int_events
         self.max_comp_events = max_comp_events
         # Reset counter

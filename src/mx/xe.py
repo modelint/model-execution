@@ -30,7 +30,6 @@ class XE:
     This class represents the overall model execution environment.
     It follows the singleton pattern to ensure only one XE exists.
     """
-
     _instance = None
 
     def __new__(cls):
@@ -54,7 +53,7 @@ class XE:
         self.verbose = False
         self.mxlog = None
 
-    def initialize(self, mmdb_path: Path, context_dir: Path, scenario_file: Path, verbose:bool, debug: bool):
+    def initialize(self, mmdb_path: Path, context_dir: Path, scenario_file: Path, verbose: bool, debug: bool):
         """
         Generate a user database from the populated metamodel and run a scenario.
 
@@ -65,6 +64,7 @@ class XE:
             mmdb_path: Path to the system (all domains) populated into the metamodel *.ral TclRAL database.
             context_dir: Directory containing one initial instance population *.sip file per domain.
             scenario_file: Path to a file defining a scenario to run. verbose: Verbose mode flag.
+            verbose: If true, db schemas are printed on the console
             debug: Debug mode flag. If True, prints schemas and other info to the console.
         """
         self.mmdb_path = mmdb_path
@@ -107,4 +107,3 @@ class XE:
 
         # Run the scenario (sequence of interactions)
         # Scenario.run(sys_domains=self.system.domains)
-

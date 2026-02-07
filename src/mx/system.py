@@ -23,6 +23,9 @@ class System:
     def __init__(self, xe: "XE"):
         """
         Set the system name
+
+        Args:
+            xe:
         """
         self.xe = xe
         self.domains: dict[str, Domain] = {}
