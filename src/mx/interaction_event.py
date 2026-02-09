@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.relvar import Relvar
 
 
 # MX

@@ -53,6 +53,7 @@ Scenario:
 
 Interactions:
   - stimulus:
+      from: UI
       to: EVMAN
       type: event
       name: Stop request

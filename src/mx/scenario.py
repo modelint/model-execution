@@ -34,6 +34,8 @@ class Scenario:
             raise
 
         self.interactions = xe.scenario_parse.get("Interactions", [])
+        self.pending_response = None  # The response we are currently waiting on
+
 
     def inject(self, stimulus):
         """
@@ -53,14 +55,24 @@ class Scenario:
                 self.process_signal(stimulus)
                 pass
 
-    def process_response(self, response):
+    def process_response(self, r):
         """
         Process the response by notifying the user somehow (log, display, etc)
 
         Args:
             response: Scenario specified stimulus to inject
         """
-        pass
+        # Set to pending response and return control to MX
+        self.pending_response = r
+        # run the MX loop
+        match r["type"]:
+            case 'external event':
+                from_inst_str = '-'.join(f"{v}" for v in r["instance"].values())
+                msg = f"{r["type"]} | {r['name']}() from {r['from']}::{r['class']}[{from_inst_str}] to {r['to']}"
+                print(msg)
+                pass
+            case _:
+                pass
 
     def run(self):
         """
@@ -73,7 +85,7 @@ class Scenario:
                 case "stimulus":
                     self.inject(stimulus=idesc)
                 case "response":
-                    self.process_response(response=idesc)
+                    self.process_response(r=idesc)
                 case _:
                     msg = f"Unknown interaction type: [{itype}]"
                     _logger.error(msg)
@@ -145,6 +157,8 @@ class Scenario:
 
     def process_signal(self, s):
         target_domain_alias = s['to']
+        # TODO: Always provide a source, EE, inst, rel, rel-pinst
+        # TODO: We'll need to define a source Data Class
         target_domain = self.xe.system.domains[target_domain_alias]
         ie = InteractionEvent.to_lifecycle(event_spec=s["name"],
                                            to_instance=s["instance"], to_class=s["class"],
