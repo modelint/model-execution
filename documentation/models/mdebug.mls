@@ -1,0 +1,34 @@
+diagram class
+notation Starr
+presentation default
+orientation landscape
+color butterscotch
+sheet A2
+padding l150 b100
+frame Model Integration Diagram
+frame_presentation default
+nodes
+    System 7,4
+    Scenario 7,6
+    Execution Unit 8-9,4
+    Monitor Scope 8-9,2
+    Interaction 5,6
+    Interaction Type 5,3
+    Stimulus 4-5,7 >right
+    Response 6,7 >right
+    Property 2,3
+    Property Value 2-3,5
+    Interaction Property/2 3-4,4
+    Pending Response/2 7,8
+connectors
+    +R1 : -/1 l*|Scenario : -/1 r|System
+    -R2 : +/1 b|Scenario : +/2 t*|Interaction
+    +R3 : r|Interaction { l|Stimulus, l|Response }
+    +R4 : -/1 b*|Execution Unit : -/1 t|System
+    +R5 : -/2 l*|Execution Unit : -/2 r|Monitor Scope
+    +R6 : -/1 r-1|Interaction Type : -/1 l*|Interaction
+    -R7 : -/1 b|Interaction Type : -/1 t*|Property, l|Interaction Property
+    -R8 : +/1 r|Interaction Property : -/2 b|Interaction, t|Property Value
+    -R9 : +/1 r|Scenario : +/1 t|Response, l-1|Pending Response
+    -OR10.3 : -/1 t-2|Interaction : -/1 l+2|Interaction : L6R-1 L5R+2
+

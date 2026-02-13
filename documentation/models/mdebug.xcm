@@ -1,0 +1,130 @@
+metadata
+    Title : MX Debugger
+    Author : Leon Starr
+    Document ID : mint.sd.td.1
+    Version : 0.2.0
+    Creation date : February 9, 2026
+    Modification date : February 12, 2026
+    Organization : Model Integration, LLC / www.modelint.com
+    Copyright notice > MIT
+    Organization logo > mint
+domain Model Debugger, MDEBUG
+subsystem Session, D 1-99
+class Execution Unit, XU
+attributes
+    ID : XU ID {I}
+    Scope : Scope Name {R5}
+    System : System Name {R4}
+--
+class Interaction
+attributes
+    Number : Ordinal {I, OR10}
+    Scenario : Scenario Name {R2}
+    Type : Interaction Type Name {R6}
+    Announce : Boolean
+--
+class Interaction Property
+attributes
+    Type : Interaction Type Name {I, R7}
+    Property : Property Name {I, R7}
+--
+class Interaction Type
+attributes
+    Name : Interaction Type Name {I}
+--
+class Monitor Scope
+attributes
+    Name : Scope Name {I}
+    Set : Boolean
+--
+class Pending Response
+attributes
+    Response : Ordinal {I, R9}
+    Scenario : Scenario Name {I2, R9}
+--
+class Property
+attributes
+    Name : Property Name {I}
+--
+class Property Value
+attributes
+    Type : Interaction Type Name {I, R8c}
+    Property : Property Name {I, R8}
+    Value : Value Representation
+--
+class Response
+attributes
+    Number : Ordinal {I, R3}
+--
+class Scenario
+attributes
+    Name : Scenario Name {I}
+    Description : Description
+    System : System Name {R1}
+--
+class Stimulus
+attributes
+    Number : Ordinal {I, R3}
+    Delay : Duration
+--
+class System
+attributes
+    Name : System Name {I}
+--
+relationships
+    R1
+    directs, 1 System
+    is directed by, 1c Scenario
+    Scenario.System -> System.Name
+--
+    R2
+    plays out as a sequence of, M Event
+    occurs in, 1 Scenario
+    Event.Scenario -> Scenario.Name
+--
+    R3
+    Event +
+        Direction
+        Situation
+    <subclass>.Event -> Event.Number
+--
+    R4
+    operates in, 1 System
+    executes, Mc Execution Unit
+    Execution Unit.System -> System.Name
+--
+    R5
+    checks for breakpoint in, 1 Monitor Scope
+    monitors breakpoints for, Mc Execution Unit
+    Execution Unit.Scope -> Monitor Scope.Name
+--
+    R6
+    specifies, Mc Interaction
+    is specified by, 1 Interaction Type
+    Interaction.Type -> Interaction Type.Name
+--
+    R7
+    is described by, Mc Property
+    describes, Mc Interaction Type
+    1 Interaction Property
+    Interaction Property.Interaction Type -> Interaction Type.Name
+    Interaction Property.Property -> Property.Name
+--
+    R8
+    sets value for, Mc Interaction Property
+    has value set by, Mc Interaction
+    1 Property Value
+    Property Value.Interaction -> Interaction.Number
+    Property Value.(Type, Property) -> Interaction Property.(Type, Property)
+--
+    R9
+    is waiting for, 1c Response
+    is pending for, 1c Scenario
+    1 Pending Response
+    Pending Response.Scenario -> Scenario.Name
+    Pending Response.Response -> Response.Number
+--
+    OR10
+    before / after, Interaction
+    Number : I
+--

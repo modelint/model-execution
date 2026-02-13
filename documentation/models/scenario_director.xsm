@@ -1,0 +1,43 @@
+metadata
+    Title : State Machine
+    Author : Leon Starr
+    Document ID : mint.sd.td.2
+    Creation date : Feburary 10, 2026
+    Modification date : Feburary 10, 2026
+    Version : 0.1.0
+    Organization : Model Integration, LLC / www.modelint.com
+    Copyright notice > MIT
+    Organization logo > mint
+domain Metamodel
+class State Machine
+events
+    Start
+    Process events
+    Situation
+    Direction
+    No more events
+--
+initial transitions
+    Start > INITIALIZE
+--
+state INITIALIZE
+activity
+    // Load the scenario
+transitions
+    Process events > PROCESSING
+--
+state PROCESSING
+activity
+    // Check the next event
+transitions
+    Direction > ISSUING DIRECTION
+    Situation > BROADCASTING SITUATION
+--
+state ISSUING DIRECTION
+activity
+    // issue direction
+--
+state BROADCASTING SITUATION
+activity
+    // broadcast situation
+--

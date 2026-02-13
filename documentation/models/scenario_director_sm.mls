@@ -1,0 +1,19 @@
+diagram state machine
+notation xUML
+presentation default
+orientation landscape
+sheet A2
+color harolds purple crayon
+padding l40 b60
+frame Model Integration Diagram
+frame_presentation default
+nodes
+    INITIALIZE 11,4
+    PROCESSING 9,4
+    ISSUING DIRECTION 8,3
+    BROADCASTING SITUATION 8,5
+connectors
+    +Start : t|INITIALIZE
+    +Process events : b|INITIALIZE : t*|PROCESSING
+    +Direction : l|PROCESSING : t|ISSUING DIRECTION
+    +Situation : r|PROCESSING : t|BROADCASTING SITUATION

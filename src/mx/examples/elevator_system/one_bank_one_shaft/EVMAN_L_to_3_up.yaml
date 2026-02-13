@@ -66,7 +66,7 @@ Interactions:
       from: EVMAN
       to: UI
       ee: UI
-      name: New destination
+      name: Set destination
       class: Transfer
       instance:
         Shaft: S1
@@ -83,6 +83,7 @@ Interactions:
         Floor: 3
   - stimulus:
       delay: 7 s
+      from: TRANS
       to: EVMAN
       type: event
       name: Arrived at floor
@@ -102,6 +103,7 @@ Interactions:
         Floor: 3
   - stimulus:
       delay: 3 s
+      from: SIO
       to: EVMAN
       type: event
       name: Door opened
