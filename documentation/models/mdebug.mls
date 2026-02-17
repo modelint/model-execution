@@ -4,31 +4,37 @@ presentation default
 orientation landscape
 color butterscotch
 sheet A2
-padding l150 b100
+padding l150 b200
 frame Model Integration Diagram
 frame_presentation default
 nodes
-    System 7,4
-    Scenario 7,6
-    Execution Unit 8-9,4
-    Monitor Scope 8-9,2
-    Interaction 5,6
-    Interaction Type 5,3
-    Stimulus 4-5,7 >right
-    Response 6,7 >right
-    Property 2,3
-    Property Value 2-3,5
-    Interaction Property/2 3-4,4
-    Pending Response/2 7,8
+    System 8,5
+    Actor 8,3
+    Scenario 6,5
+    System Interaction/2 3-4,5
+    System Input/2 2,4
+    System Output/2 2,6
+    Actor Target 5,2
+    Modeling Language/2 9-10,6-7
+    Action Type 8,8
+    Execution Level/2 8,6-7
+    Pending System Output/2 5,7
+    Parameter 8,10
+    Supplied Parameter 5,11
 connectors
-    +R1 : -/1 l*|Scenario : -/1 r|System
-    -R2 : +/1 b|Scenario : +/2 t*|Interaction
-    +R3 : r|Interaction { l|Stimulus, l|Response }
-    +R4 : -/1 b*|Execution Unit : -/1 t|System
-    +R5 : -/2 l*|Execution Unit : -/2 r|Monitor Scope
-    +R6 : -/1 r-1|Interaction Type : -/1 l*|Interaction
-    -R7 : -/1 b|Interaction Type : -/1 t*|Property, l|Interaction Property
-    -R8 : +/1 r|Interaction Property : -/2 b|Interaction, t|Property Value
-    -R9 : +/1 r|Scenario : +/1 t|Response, l-1|Pending Response
-    -OR10.3 : -/1 t-2|Interaction : -/1 l+2|Interaction : L6R-1 L5R+2
+    +R1 : -/1 t*|Scenario : -/1 b|System
+    -R2 : +/1 b|Scenario : +/2 t*|System Interaction
+    +R3 : b|System Interaction { t|System Input, t-1|System Output }
+    -R4 : +/1 r|Actor : +/2 l*|System
+    -R5-1 : +/1 b+1|Actor : -/2 l|System Interaction
+    -R6.2 : -/1 b-1|Actor : -/1 l-2|System Interaction, r|Actor Target
+    -R7 : +/2 t|System : +/2 l|Modeling Language
+    +R8.2 : +/1 t|Action Type : +/1 r|Modeling Language
+    -R9 : +/2 b|Action Type : +/2 r+1|System Interaction
+    -OR10.2 : -/1 l+2|System Interaction : -/1 t-2|System Interaction : L4R+1 L5R-2
+    -R11 : +/1 b|Modeling Language : +/1 t*|Execution Level
+    +R12 : -/1 b|Execution Level : +/2 r+2|Scenario
+    +R13 : +/1 r-2|Scenario : +/1 t+1|System Output, l|Pending System Output
+    -R14 : +/1 r|Action Type : +/1 l*|Parameter
+    -R15 : +/1 b|Parameter : -/2 r-1|System Interaction, l|Supplied Parameter
 

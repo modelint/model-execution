@@ -1,75 +1,85 @@
 metadata
-    Title : MX Debugger
+    Title : Model Debugger Domain Class Model
     Author : Leon Starr
     Document ID : mint.sd.td.1
-    Version : 0.2.0
-    Creation date : February 9, 2026
+    Version : 0.3.0
+    Creation date : February 16, 2026
     Modification date : February 12, 2026
     Organization : Model Integration, LLC / www.modelint.com
     Copyright notice > MIT
     Organization logo > mint
 domain Model Debugger, MDEBUG
 subsystem Session, D 1-99
-class Execution Unit, XU
+class Actor
 attributes
-    ID : XU ID {I}
-    Scope : Scope Name {R5}
+    ID : Actor ID {I}
+    Address : Address {I2}
     System : System Name {R4}
 --
-class Interaction
+class Action Type
 attributes
-    Number : Ordinal {I, OR10}
-    Scenario : Scenario Name {R2}
-    Type : Interaction Type Name {R6}
-    Announce : Boolean
+    Name : Action Type Name {I}
+    Language : Modeling Language Name {R8}
 --
-class Interaction Property
+class Actor Target
 attributes
-    Type : Interaction Type Name {I, R7}
-    Property : Property Name {I, R7}
+    Actor : Actor ID {I, R6}
+    Interaction : System Interaction {I, R6}
 --
-class Interaction Type
+class Execution Level
 attributes
-    Name : Interaction Type Name {I}
+    Name : Level Name {I}
+    Language : Modeling Language Name {R11}
 --
-class Monitor Scope
+class Modeling Language
 attributes
-    Name : Scope Name {I}
-    Set : Boolean
+    Name : Modeling Language Name {I}
 --
-class Pending Response
+class Parameter
 attributes
-    Response : Ordinal {I, R9}
-    Scenario : Scenario Name {I2, R9}
+    Name : Parameter Name {I}
+    Action type : Action Type Name {I, R14}
 --
-class Property
+class Pending System Output
 attributes
-    Name : Property Name {I}
+    System output : Ordinal {I, R13}
+    Scenario : Scenario Name {I2, R13}
 --
-class Property Value
+class Supplied Parameter
 attributes
-    Type : Interaction Type Name {I, R8c}
-    Property : Property Name {I, R8}
+    Type : Action Type Name {I, R8c}
+    Parameter : Parameter Name {I, R8}
+    Interaction : Ordinal {I, R8}
     Value : Value Representation
---
-class Response
-attributes
-    Number : Ordinal {I, R3}
 --
 class Scenario
 attributes
     Name : Scenario Name {I}
     Description : Description
     System : System Name {R1}
---
-class Stimulus
-attributes
-    Number : Ordinal {I, R3}
-    Delay : Duration
+    Step size : Execution Level Name {R12}
 --
 class System
 attributes
     Name : System Name {I}
+    Language : Modeling Language Name {R7}
+--
+class System Input
+attributes
+    Number : Ordinal {I, R3}
+    Delay : Duration
+--
+class System Interaction
+attributes
+    Number : Ordinal {I, OR10}
+    Scenario : Scenario Name {R2}
+    Type : Action Type Name {R9}
+    Source : Actor ID {R5}
+    Announce : Boolean
+--
+class System Output
+attributes
+    Number : Ordinal {I, R3}
 --
 relationships
     R1
@@ -78,9 +88,9 @@ relationships
     Scenario.System -> System.Name
 --
     R2
-    plays out as a sequence of, M Event
+    plays out as a sequence of, M System Interaction
     occurs in, 1 Scenario
-    Event.Scenario -> Scenario.Name
+    System Interaction.Scenario -> Scenario.Name
 --
     R3
     Event +
@@ -89,42 +99,67 @@ relationships
     <subclass>.Event -> Event.Number
 --
     R4
-    operates in, 1 System
-    executes, Mc Execution Unit
-    Execution Unit.System -> System.Name
+    does things in, 1 System
+    activates, Mc Actor
+    Actor.System -> System.Name
 --
     R5
-    checks for breakpoint in, 1 Monitor Scope
-    monitors breakpoints for, Mc Execution Unit
-    Execution Unit.Scope -> Monitor Scope.Name
+    initiates, Mc System Interaction
+    is initiated by, 1 Actor
+    System Interaction.Source -> Actor.ID
 --
     R6
-    specifies, Mc Interaction
-    is specified by, 1 Interaction Type
-    Interaction.Type -> Interaction Type.Name
+    is target of, Mc System Interaction
+    targets, Mc Actor
+    1 Actor Target
+    Actor Target.Actor -> Actor.ID
+    Actor Target.Interaction -> System Interaction.Number
 --
     R7
-    is described by, Mc Property
-    describes, Mc Interaction Type
-    1 Interaction Property
-    Interaction Property.Interaction Type -> Interaction Type.Name
-    Interaction Property.Property -> Property.Name
+    models components in, Mc System
+    components are modeled by, 1 Modeling Language
+    System.Language -> Modeling Language.Name
 --
     R8
-    sets value for, Mc Interaction Property
-    has value set by, Mc Interaction
-    1 Property Value
-    Property Value.Interaction -> Interaction.Number
-    Property Value.(Type, Property) -> Interaction Property.(Type, Property)
+    is defined by, 1 Modeling Language
+    defines, Mc Action Type
+    Action Type.Language -> Modeling Language.Name
 --
     R9
-    is waiting for, 1c Response
-    is pending for, 1c Scenario
-    1 Pending Response
-    Pending Response.Scenario -> Scenario.Name
-    Pending Response.Response -> Response.Number
+    is a model action defined by, 1 Action Type
+    defines model action in, Mc System Interaction
+    System Interaction.Type -> Action Type.Name
 --
     OR10
     before / after, Interaction
     Number : I
+--
+    R11
+    defines, Mc Monitor Scope
+    is defined by, 1 Modeling Language
+    Monitor Scope.Language -> Modeling Language.Name
+--
+    R12
+    steps by, 1 Execution Level
+    sets step granularity of, 1c Scenario
+    Scenario.Step -> Execution Level.Name
+--
+    R13
+    is waiting for, 1c System Output
+    is pending for, 1c Scenario
+    1 Pending System Output
+    Pending System Output.Scenario -> Scenario.Name
+    Pending System Output.System output -> System Output.Number
+--
+    R14
+    is qualified by, Mc Parameter
+    qualifies, 1 Action Type
+    Parameter.Action type -> Action type.Name
+--
+    R15
+    supplies value for, Mc Parameter
+    has value supplied by, Mc System Interaction
+    1 Supplied Parameter
+    Supplied Parameter.Interaction -> System Interaction.Number
+    Supplied Parameter.(Parameter, Action type) -> Parameter.(Name, Action type)
 --
