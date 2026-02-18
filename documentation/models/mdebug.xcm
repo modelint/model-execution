@@ -2,41 +2,17 @@ metadata
     Title : Model Debugger Domain Class Model
     Author : Leon Starr
     Document ID : mint.sd.td.1
-    Version : 0.4.0
+    Version : 0.4.2
     Creation date : February 9, 2026
-    Modification date : February 17, 2026
+    Modification date : February 18, 2026
     Organization : Model Integration, LLC / www.modelint.com
     Copyright notice > MIT
     Organization logo > mint
 domain Model Debugger, MDEBUG
 subsystem Session, D 1-99
-class Role
-attributes
-    ID : Role ID {I}
-    Actor : Actor ID {R5}
---
-class Input Source
-attributes
-    Role : Role ID {I, R6}
-    System input : Ordinal {R16}
---
-class Input Target
-attributes
-    Role : Role ID {I, R6}
---
-class Output Source
-attributes
-    Role : Role ID {I, R6}
---
-class Output Target
-attributes
-    Role : Role ID {I, R6}
-    System output : Ordinal {R19}
---
 class Actor
 attributes
-    ID : Actor ID {I}
-    Address : Address {I2}
+    ID : Address {I}
     System : System Name {R4}
 --
 class Action Type
@@ -47,28 +23,50 @@ attributes
 class Execution Level
 attributes
     Name : Level Name {I}
-    Language : Modeling Language Name {R11}
+    Language : Modeling Language Name {I, R11}
+--
+class Input Source
+attributes
+    Actor : Address {I, R6}
+    Role : Role ID {I, R6}
+    System input : Ordinal {R16}
+--
+class Input Target
+attributes
+    Actor : Address {I, R6}
+    Role : Role ID {I, R6}
 --
 class Modeling Language
 attributes
     Name : Modeling Language Name {I}
 --
-class Parameter
+class Output Source
 attributes
-    Name : Parameter Name {I}
-    Action type : Action Type Name {I, R14}
+    Actor : Address {I, R6}
+    Role : Role ID {I, R6}
 --
-class Pending System Output
+class Output Target
 attributes
-    System output : Ordinal {I, R13}
-    Scenario : Scenario Name {I2, R13}
+    Actor : Address {I, R6}
+    Role : Role ID {I, R6}
+    System output : Ordinal {R19}
 --
-class Supplied Parameter
+class Qualification
 attributes
     Type : Action Type Name {I, R8c}
-    Parameter : Parameter Name {I, R8}
+    Qualifier : Qualifier Name {I, R8}
     Interaction : Ordinal {I, R8}
     Value : Value Representation
+--
+class Qualifier
+attributes
+    Name : Qualifier Name {I}
+    Action type : Action Type Name {I, R14}
+--
+class Role
+attributes
+    Actor : Address {I, R5}
+    ID : Role ID {I}
 --
 class Scenario
 attributes
@@ -76,6 +74,14 @@ attributes
     Description : Description
     System : System Name {R1}
     Step size : Execution Level Name {R12}
+    Language : Modeling Language Name {R12}
+    Current interaction : Ordinal {R13}
+--
+class Supplied Parameter
+attributes
+    Name : Parameter Name {I}
+    Interaction : Ordinal {I, R20}
+    Value : Value Representation
 --
 class System
 attributes
@@ -85,7 +91,8 @@ attributes
 class System Input
 attributes
     Number : Ordinal {I, R3}
-    Target : Role ID {R17}
+    Target actor : Address {R18}
+    Target role : Role ID {R17}
     Delay : Duration
 --
 class System Interaction
@@ -99,7 +106,8 @@ attributes
 class System Output
 attributes
     Number : Ordinal {I, R3}
-    Source : Role ID {R18}
+    Source actor : Address {R18}
+    Source role : Role ID {R18}
 --
 relationships
     R1
@@ -147,8 +155,8 @@ relationships
     Action Type.Language -> Modeling Language.Name
 --
     R9
-    is a model action defined by, 1 Action Type
-    defines model action in, Mc System Interaction
+    injects or monitors, 1 Action Type
+    is injected or monitored in, Mc System Interaction
     System Interaction.Actor type -> Action Type.Name
 --
     OR10
@@ -156,33 +164,31 @@ relationships
     Number : I
 --
     R11
-    defines, Mc Monitor Scope
+    defines, Mc Execution Level
     is defined by, 1 Modeling Language
-    Monitor Scope.Language -> Modeling Language.Name
+    Execution Level.Language -> Modeling Language.Name
 --
     R12
     steps by, 1 Execution Level
     sets step granularity of, 1c Scenario
-    Scenario.Step -> Execution Level.Name
+    Scenario.(Step, Language) -> Execution Level.(Name, Language)
 --
     R13
-    is waiting for, 1c System Output
-    is pending for, 1c Scenario
-    1 Pending System Output
-    Pending System Output.Scenario -> Scenario.Name
-    Pending System Output.System output -> System Output.Number
+    is processing, 1 System Interaction
+    is being processed by, 1c Scenario
+    Scenario.Current interaction -> System Interaction.Number
 --
     R14
-    is qualified by, Mc Parameter
+    is qualified by, Mc Qualifier
     qualifies, 1 Action Type
-    Parameter.Action type -> Action type.Name
+    Qualifier.Action type -> Action type.Name
 --
     R15
-    supplies value for, Mc Parameter
+    supplies value for, Mc Qualifier
     has value supplied by, Mc System Interaction
-    1 Supplied Parameter
-    Supplied Parameter.Interaction -> System Interaction.Number
-    Supplied Parameter.(Parameter, Action type) -> Parameter.(Name, Action type)
+    1 Qualification
+    Qualification.Interaction -> System Interaction.Number
+    Qualification.(Qualifier, Action type) -> Qualifier.(Name, Action type)
 --
     R16
     is initiated by, 1c Input Source
@@ -192,15 +198,20 @@ relationships
     R17
     is directed to, 1 Input Target
     receives, 1 System Input
-    System Input.Target -> Input Target.Role
+    System Input.(Target actor, Target role) -> Input Target.(Actor, Role)
 --
     R18
     originates from, 1 Output Source
-    receives, 1 System Output
-    System Output.Source -> Output Source.Role
+    emits, 1 System Output
+    System Output.(Source actor, Source role) -> Output Source.(Actor, Role)
 --
     R19
     is sent to, Mc Output Target
     receives, 1 System Output
     Output Target.System output -> System Output.Number
+--
+    R20
+    is packaged in, 1 System Interaction
+    packages, Mc Supplied Parameter
+    Supplied Parameter.Interaction -> System Interaction.Number
 --
