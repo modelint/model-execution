@@ -2,9 +2,9 @@ metadata
     Title : Model Debugger Domain Class Model
     Author : Leon Starr
     Document ID : mint.sd.td.1
-    Version : 0.3.0
+    Version : 0.3.2
     Creation date : February 9, 2026
-    Modification date : February 16, 2026
+    Modification date : February 17, 2026
     Organization : Model Integration, LLC / www.modelint.com
     Copyright notice > MIT
     Organization logo > mint
@@ -20,11 +20,6 @@ class Action Type
 attributes
     Name : Action Type Name {I}
     Language : Modeling Language Name {R8}
---
-class Actor Target
-attributes
-    Actor : Actor ID {I, R6}
-    Interaction : System Interaction {I, R6}
 --
 class Execution Level
 attributes
@@ -73,13 +68,19 @@ class System Interaction
 attributes
     Number : Ordinal {I, OR10}
     Scenario : Scenario Name {R2}
-    Type : Action Type Name {R9}
-    Source : Actor ID {R5}
+    Action type : Action Type Name {R9}
+    Name : Interaction Name
+    Initiating actor : Actor ID {R5}
     Announce : Boolean
 --
 class System Output
 attributes
     Number : Ordinal {I, R3}
+--
+class Target Actor
+attributes
+    Actor : Actor ID {I, R6}
+    Interaction : System Interaction {I, R6}
 --
 relationships
     R1
@@ -99,8 +100,8 @@ relationships
     <subclass>.Event -> Event.Number
 --
     R4
-    does things in, 1 System
-    activates, Mc Actor
+    is a monitored behavioral element in, 1 System
+    monitored behavior is performed by, Mc Actor
     Actor.System -> System.Name
 --
     R5
@@ -128,7 +129,7 @@ relationships
     R9
     is a model action defined by, 1 Action Type
     defines model action in, Mc System Interaction
-    System Interaction.Type -> Action Type.Name
+    System Interaction.Actor type -> Action Type.Name
 --
     OR10
     before / after, Interaction
