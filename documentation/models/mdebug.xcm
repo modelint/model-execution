@@ -2,7 +2,7 @@ metadata
     Title : Model Debugger Domain Class Model
     Author : Leon Starr
     Document ID : mint.sd.td.1
-    Version : 0.3.2
+    Version : 0.4.0
     Creation date : February 9, 2026
     Modification date : February 17, 2026
     Organization : Model Integration, LLC / www.modelint.com
@@ -10,6 +10,29 @@ metadata
     Organization logo > mint
 domain Model Debugger, MDEBUG
 subsystem Session, D 1-99
+class Role
+attributes
+    ID : Role ID {I}
+    Actor : Actor ID {R5}
+--
+class Input Source
+attributes
+    Role : Role ID {I, R6}
+    System input : Ordinal {R16}
+--
+class Input Target
+attributes
+    Role : Role ID {I, R6}
+--
+class Output Source
+attributes
+    Role : Role ID {I, R6}
+--
+class Output Target
+attributes
+    Role : Role ID {I, R6}
+    System output : Ordinal {R19}
+--
 class Actor
 attributes
     ID : Actor ID {I}
@@ -62,6 +85,7 @@ attributes
 class System Input
 attributes
     Number : Ordinal {I, R3}
+    Target : Role ID {R17}
     Delay : Duration
 --
 class System Interaction
@@ -70,17 +94,12 @@ attributes
     Scenario : Scenario Name {R2}
     Action type : Action Type Name {R9}
     Name : Interaction Name
-    Initiating actor : Actor ID {R5}
     Announce : Boolean
 --
 class System Output
 attributes
     Number : Ordinal {I, R3}
---
-class Target Actor
-attributes
-    Actor : Actor ID {I, R6}
-    Interaction : System Interaction {I, R6}
+    Source : Role ID {R18}
 --
 relationships
     R1
@@ -105,16 +124,17 @@ relationships
     Actor.System -> System.Name
 --
     R5
-    initiates, Mc System Interaction
-    is initiated by, 1 Actor
-    System Interaction.Source -> Actor.ID
+    plays, Mc Role
+    is played by, 1 Actor
+    Role.Actor -> Actor.ID
 --
     R6
-    is target of, Mc System Interaction
-    targets, Mc Actor
-    1 Actor Target
-    Actor Target.Actor -> Actor.ID
-    Actor Target.Interaction -> System Interaction.Number
+    Actor +
+        Input Source
+        Input Target
+        Output Source
+        Output Target
+    <subclass>.Role -> Role.ID
 --
     R7
     models components in, Mc System
@@ -163,4 +183,24 @@ relationships
     1 Supplied Parameter
     Supplied Parameter.Interaction -> System Interaction.Number
     Supplied Parameter.(Parameter, Action type) -> Parameter.(Name, Action type)
+--
+    R16
+    is initiated by, 1c Input Source
+    initiates, 1 System Input
+    Input Source.System input -> System Input.Number
+--
+    R17
+    is directed to, 1 Input Target
+    receives, 1 System Input
+    System Input.Target -> Input Target.Role
+--
+    R18
+    originates from, 1 Output Source
+    receives, 1 System Output
+    System Output.Source -> Output Source.Role
+--
+    R19
+    is sent to, Mc Output Target
+    receives, 1 System Output
+    Output Target.System output -> System Output.Number
 --

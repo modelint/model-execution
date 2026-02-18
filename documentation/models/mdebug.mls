@@ -3,38 +3,46 @@ notation Starr
 presentation default
 orientation landscape
 color butterscotch
-sheet A2
+sheet A1
 padding l150 b200
 frame Model Integration Diagram
 frame_presentation default
 nodes
-    System 8,5
-    Actor 8,2
-    Scenario 6,5
-    System Interaction/2 3-4,5
-    System Input/2 1-2,4
-    System Output/2 1-2,6
-    Target Actor 5,1
-    Modeling Language/2 9-10,6-7
-    Action Type 8,8
-    Execution Level/2 8,6-7
-    Pending System Output/2 5,7
-    Parameter 8,10
-    Supplied Parameter 5,11
+    Role 2-3,5
+    Input Source 4,3
+    Input Target 4,4
+    Output Source 4,5-6
+    Output Target 4,7
+    System 12,5
+    Actor 12,2
+    Scenario 10,5
+    System Interaction/2 7-8,5
+    System Input/2 5-6,3-4
+    System Output/2 5-6,6
+    Modeling Language/2 13-14,6-7
+    Action Type 12,8
+    Execution Level/2 12,6-7
+    Pending System Output/2 9,7
+    Parameter 12,10
+    Supplied Parameter 9,11
 connectors
     +R1 : -/1 t*|Scenario : -/1 b|System
     -R2 : +/1 b|Scenario : +/2 t*|System Interaction
     +R3 : b|System Interaction { t|System Input, t-1|System Output }
     -R4 : +/2 r|Actor : +/2 l*|System
-    -R5-1 : +/1 b+1|Actor : -/2 l|System Interaction
-    -R6.2 : -/1 b-1|Actor : -/1 l-2|System Interaction, r|Target Actor
+    -R5.2 : +/1 b|Actor : +/2 l|Role
+    -R6 : t|Role { b|Input Source, b|Input Target, b|Output Source, b|Output Target }
     -R7 : +/2 t|System : +/2 l|Modeling Language
     +R8.2 : +/1 t|Action Type : +/1 r|Modeling Language
     -R9 : +/2 b|Action Type : +/2 r+1|System Interaction
-    -OR10.2 : -/1 l+2|System Interaction : -/1 t-2|System Interaction : L4R+1 L5R-2
+    -OR10.2 : -/1 l+2|System Interaction : -/1 t-2|System Interaction : L4R+1 L9R-2
     -R11 : +/1 b|Modeling Language : +/1 t*|Execution Level
     +R12 : -/1 b|Execution Level : +/2 r+2|Scenario
     +R13 : +/1 r-2|Scenario : +/1 t+1|System Output, l|Pending System Output
     -R14 : +/1 r|Action Type : +/1 l*|Parameter
     -R15 : +/1 b|Parameter : -/2 r-1|System Interaction, l|Supplied Parameter
+    -R16 : -/1 t|Input Source : +/1 l|System Input
+    +R17 : +/1 t|Input Target : +/1 r|System Input
+    -R18 : +/1 t|Output Source : +/1 l|System Output
+    +R19 : +/1 t|Output Target : +/1 r|System Output
 
