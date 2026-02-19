@@ -2,9 +2,9 @@ metadata
     Title : Model Debugger Domain Class Model
     Author : Leon Starr
     Document ID : mint.sd.td.1
-    Version : 0.4.2
+    Version : 0.4.3
     Creation date : February 9, 2026
-    Modification date : February 18, 2026
+    Modification date : February 19, 2026
     Organization : Model Integration, LLC / www.modelint.com
     Copyright notice > MIT
     Organization logo > mint
@@ -29,12 +29,13 @@ class Input Source
 attributes
     Actor : Address {I, R6}
     Role : Role ID {I, R6}
-    System input : Ordinal {R16}
+    Interaction : Ordinal {I, R6, R16}
 --
 class Input Target
 attributes
     Actor : Address {I, R6}
     Role : Role ID {I, R6}
+    Interaction : Ordinal {I, R6}
 --
 class Modeling Language
 attributes
@@ -44,12 +45,13 @@ class Output Source
 attributes
     Actor : Address {I, R6}
     Role : Role ID {I, R6}
+    Interaction : Ordinal {I, R6}
 --
 class Output Target
 attributes
     Actor : Address {I, R6}
     Role : Role ID {I, R6}
-    System output : Ordinal {R19}
+    Interaction : Ordinal {I, R6, R19}
 --
 class Qualification
 attributes
@@ -66,7 +68,8 @@ attributes
 class Role
 attributes
     Actor : Address {I, R5}
-    ID : Role ID {I}
+    Interaction : Ordinal {I, R5}
+    Role : Role ID {I}
 --
 class Scenario
 attributes
@@ -95,7 +98,7 @@ attributes
     Target role : Role ID {R17}
     Delay : Duration
 --
-class System Interaction
+class Interaction
 attributes
     Number : Ordinal {I, OR10}
     Scenario : Scenario Name {R2}
@@ -116,9 +119,9 @@ relationships
     Scenario.System -> System.Name
 --
     R2
-    plays out as a sequence of, M System Interaction
+    plays out as a sequence of, M Interaction
     occurs in, 1 Scenario
-    System Interaction.Scenario -> Scenario.Name
+    Interaction.Scenario -> Scenario.Name
 --
     R3
     Event +
@@ -132,9 +135,11 @@ relationships
     Actor.System -> System.Name
 --
     R5
-    plays, Mc Role
-    is played by, 1 Actor
+    plays role in, Mc Interaction
+    is played by, M Actor
+    M Role
     Role.Actor -> Actor.ID
+    Role.Interaction -> Interaction.Number
 --
     R6
     Actor +
@@ -142,7 +147,7 @@ relationships
         Input Target
         Output Source
         Output Target
-    <subclass>.Role -> Role.ID
+    <subclass>.(Actor, Interaction, Role) -> Role.(Actor, Interaction, Role)
 --
     R7
     models components in, Mc System
@@ -156,8 +161,8 @@ relationships
 --
     R9
     injects or monitors, 1 Action Type
-    is injected or monitored in, Mc System Interaction
-    System Interaction.Actor type -> Action Type.Name
+    is injected or monitored in, Mc Interaction
+    Interaction.Actor type -> Action Type.Name
 --
     OR10
     before / after, Interaction
@@ -174,9 +179,9 @@ relationships
     Scenario.(Step, Language) -> Execution Level.(Name, Language)
 --
     R13
-    is processing, 1 System Interaction
+    is processing, 1 Interaction
     is being processed by, 1c Scenario
-    Scenario.Current interaction -> System Interaction.Number
+    Scenario.Current interaction -> Interaction.Number
 --
     R14
     is qualified by, Mc Qualifier
@@ -185,9 +190,9 @@ relationships
 --
     R15
     supplies value for, Mc Qualifier
-    has value supplied by, Mc System Interaction
+    has value supplied by, Mc Interaction
     1 Qualification
-    Qualification.Interaction -> System Interaction.Number
+    Qualification.Interaction -> Interaction.Number
     Qualification.(Qualifier, Action type) -> Qualifier.(Name, Action type)
 --
     R16
@@ -211,7 +216,7 @@ relationships
     Output Target.System output -> System Output.Number
 --
     R20
-    is packaged in, 1 System Interaction
+    is packaged in, 1 Interaction
     packages, Mc Supplied Parameter
-    Supplied Parameter.Interaction -> System Interaction.Number
+    Supplied Parameter.Interaction -> Interaction.Number
 --
