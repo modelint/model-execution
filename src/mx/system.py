@@ -45,7 +45,6 @@ class System:
         """
         Load and create a session for each domain database
         """
-        # Create a database schema for each modeled domain
         Relation.restrict(db=mmdb, relation='Modeled Domain')
         domain_i = Relation.semijoin(db=mmdb, rname2='Domain')
         if not domain_i.body:
