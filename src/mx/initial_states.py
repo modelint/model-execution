@@ -42,11 +42,11 @@ class InitialStateContext:
         self.lifecycle_istates: dict[str, str] = {}
         self.ma_istates: dict[str, MultipleAssignerInitialState] = {}
 
-        context_dir = domain.system.xe.context_dir
+        context_dir = domain.system.playground / 'population'
         sip_files = list(context_dir.glob("*.sip"))
 
         if len(sip_files) == 0:
-            raise MXFileException(f"No .sip file found for domain [{self.domain.name}] in: {context_dir.resolve()}")
+            raise MXFileException(f"No .sip file found for domain [{domain.name}] in: {context_dir.resolve()}")
         if len(sip_files) > 1:
             raise RuntimeError("Multiple .sip files found in directory.")
 

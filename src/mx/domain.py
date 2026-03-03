@@ -68,7 +68,7 @@ class Domain:
         MultAssignerPartition = NamedTuple('MultAssignerPartion', pclass=str, id_attrs=dict[str, list[str]])
         self.mult_assigner_partitions: dict[str, MultAssignerPartition] = {}
 
-        self.file_path = self.system.xe.context_dir / f"{self.alias}.ral"  # Path to the domain database file
+        self.file_path = self.system.playground / 'population' / f"{self.alias}.ral"  # Path to the domain database file
 
         # Load the sip file and save all specified initial states
         is_context = InitialStateContext(domain=self)
@@ -82,7 +82,7 @@ class Domain:
         # Load the domain database
         Database.open_session(name=self.alias)
         Database.load(db=self.alias, fname=str(self.file_path))
-        if self.system.xe.verbose:
+        if self.system.verbose:
             self.display()
         self.find_lifecycles()
         self.find_single_assigners()

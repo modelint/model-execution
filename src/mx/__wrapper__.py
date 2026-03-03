@@ -39,14 +39,16 @@ def main():
 
     # Here is the path to the mmdb populated with the elevator domain models
     # Normally this is provided by the mdb
-    mmdb_path = Path("/Users/starr/SDEV/Python/PyCharm/ModelExecution/src/mx/systems/elevator/models/mmdb_elevator.ral")
+    system_path = Path("/Users/starr/SDEV/Python/PyCharm/ModelExecution/src/mx/systems/elevator")
 
     # Now we can try loading the system
     the_System = System()  # Create the singleton instance
-    the_System.initialize(mmdb_path=mmdb_path, verbose=False, debug=True)
+    the_System.initialize(system_path=system_path, verbose=False, debug=True)
 
     # Try printing it out
     the_System.print_models(class_names=['Class', 'Attribute'], output_file='class.txt')
+
+    the_System.load_domains(playground='one_bank_one_shaft')
     print("\nNo problemo")  # Comment this line out before release
 
 

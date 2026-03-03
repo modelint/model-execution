@@ -41,29 +41,31 @@ class System:
             return
         self._initialized = True
 
-        self.mmdb_path = None
-        self.domains: dict[str, Domain] = {}
-        self.name = None
+        self.path = None  # Path to the top level of all system specific files
+        self.mmdb_path = None  # Path to the populated metamodel database
+        self.domains: dict[str, Domain] = {}  # All modeled domains in the system
+        self.name = None  # Name of the system, extracted from the populated metamodel
         self.debug = False
         self.verbose = False
+        self.playground = None  # This is a set of populated domain dbs and compatible scenarios
         # self.mxlog = MXLogger()
 
-
-    def initialize(self, mmdb_path: Path, verbose: bool, debug: bool):
+    def initialize(self, system_path: Path, verbose: bool, debug: bool):
         """
+        Load the system from a populated metamodel database.
+        The end result is a System with one or more modeled domains, each unpopulated
 
         Args:
-            mmdb_path:
-            verbose:
-            debug:
-
-        Returns:
-
+            system_path:  Path to the system
+            verbose:  If true, we may log to the console
+            debug: If true, we do some diagnostic activity
         """
-        self.mmdb_path = mmdb_path
+        self.path = system_path
+        self.set_mmdb_path()  # Sets self.mmdb_path
+
 
         # Load a metamodel file populated with the system as one or more modeled domains
-        _logger.info(f"Loading the metamodel database from: [{self.mmdb_path}]")
+        _logger.info(f"Loading the metamodel database from: [{self.mmdb_path.name}]")
         Database.open_session(name=mmdb)
         Database.load(db=mmdb, fname=str(self.mmdb_path))
 
@@ -79,7 +81,7 @@ class System:
         self.name = system_i.body[0]['Name']
 
     @classmethod
-    def print_models(cls, class_names=None, output_file=DEFAULT_MODEL_OUTPUT_NAME, display=False, save=True):
+    def print_models(self, class_names=None, output_file=DEFAULT_MODEL_OUTPUT_NAME, display=False, save=True):
         with open(output_file, 'w') as f:
             with redirect_stdout(f):
                 if not class_names:
@@ -88,10 +90,16 @@ class System:
                     for c in class_names:
                         Relation.print(db=mmdb, variable_name=c)
 
-    def load_domains(self):
+    def load_domains(self, playground: str):
         """
-        Load and create a session for each domain database
+        Load each populated domain database in the selected playground
+
+        Args:
+            playground: Name of the selected playground
         """
+        # Set path to the selected playground
+        self.playground = self.path / 'playgrounds' / playground
+
         Relation.restrict(db=mmdb, relation='Modeled Domain')
         domain_i = Relation.semijoin(db=mmdb, rname2='Domain')
         if not domain_i.body:
@@ -107,3 +115,17 @@ class System:
         while work_remaining:
             for d in self.domains.values():
                 work_remaining = d.go()  # We'll stay in the loop as long as at least one domain reports true
+
+    def set_mmdb_path(self):
+
+        model_path = self.path / 'models'
+        ral_files = list(model_path.glob("*.ral"))
+        #
+        if len(ral_files) == 0:
+            print(f"Error: No .ral file found in '{self.path}'")
+            return None
+        elif len(ral_files) > 1:
+            print(f"Error: Multiple .ral files found in '{self.path}': {[f.name for f in ral_files]}")
+            return None
+
+        self.mmdb_path = model_path / ral_files[0]
