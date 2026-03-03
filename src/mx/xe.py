@@ -20,10 +20,10 @@ from mx.mx_logger import MXLogger
 _logger = logging.getLogger(__name__)
 
 
-def load_scenario(path: str | Path) -> dict[str, Any]:
-    with open(path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
-
+# def load_scenario(path: str | Path) -> dict[str, Any]:
+#     with open(path, 'r', encoding='utf-8') as f:
+#         return yaml.safe_load(f)
+#
 
 class XE:
     """
@@ -53,7 +53,7 @@ class XE:
         self.verbose = False
         self.mxlog = None
 
-    def initialize(self, mmdb_path: Path, context_dir: Path, scenario_file: Path, verbose: bool, debug: bool):
+    def initialize(self, mmdb_path: Path, verbose: bool, debug: bool):
         """
         Generate a user database from the populated metamodel and run a scenario.
 
@@ -68,17 +68,17 @@ class XE:
             debug: Debug mode flag. If True, prints schemas and other info to the console.
         """
         self.mmdb_path = mmdb_path
-        self.context_dir = context_dir
-        self.scenario_path = context_dir / scenario_file
+        # self.context_dir = context_dir
+        # self.scenario_path = context_dir / scenario_file
         self.verbose = verbose  # Print db schemas, etc to console
         self.debug = debug  # Print intermediate tables and values to console
 
         # Load the scenario
-        self.scenario_parse = load_scenario(path=self.scenario_path)
+        # self.scenario_parse = load_scenario(path=self.scenario_path)
 
         # Initialize model execution logger for scenario specific output
-        log_file_name = self.scenario_parse["Scenario"].get("name", "unnamed_scenario").replace(' ', '-')
-        self.mxlog = MXLogger(scenario_name=log_file_name)
+        # log_file_name = self.scenario_parse["Scenario"].get("name", "unnamed_scenario").replace(' ', '-')
+        # self.mxlog = MXLogger(scenario_name=log_file_name)
 
         # Load a metamodel file populated with the system as one or more modeled domains
         _logger.info(f"Loading the metamodel database from: [{self.mmdb_path}]")
@@ -99,8 +99,8 @@ class XE:
             print(f"\n^^^ {msg} ^^^\n")
 
         # Run the scenario
-        s = Scenario(xe=self)
-        s.run()
+        # s = Scenario(xe=self)
+        # s.run()
 
         # Close the mx logger
         self.mxlog.close()

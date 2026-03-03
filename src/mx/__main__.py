@@ -68,8 +68,7 @@ def main():
     # Domain specified
     if args.system:
         xe = XE()  # Create the singleton instance
-        xe.initialize(mmdb_path=Path(args.system), context_dir=Path(args.context),
-                      scenario_file=Path(args.scenario), verbose=args.verbose, debug=args.debug)
+        xe.initialize(mmdb_path=Path(args.system), verbose=args.verbose, debug=args.debug)
 
     print("\nNo problemo")  # Comment this line out before release
     logger.info("No problemo")  # We didn't die on an exception, basically

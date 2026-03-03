@@ -1,0 +1,30 @@
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mi-mx"
+version = "0.1.0"
+description = "Shlaer-Mellor Executable UML Model Execution Environment"
+readme = "README.md"
+authors = [{ name = "Leon Starr", email = "leon_starr@modelint.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["shlaer-mellor", "metamodel", "executable uml", "mbse", "xuml", "xtuml", "platform independent", "sysml"]
+dependencies = ["xcm-parser", "xsm-parser", "mi-configurator", "mi-pyral", "sip-parser", "PyYAML", 'tomli; python_version < "3.13"']
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+build = ["build", "twine"]
+dev = ["bump2version", "pytest"]
+
+[project.scripts]
+mx = "mx.__main__:main"
+
+[project.urls]
+repository    = "https://github.com/modelint/model-execution"
+documentation = "https://github.com/modelint/model-execution/wiki"

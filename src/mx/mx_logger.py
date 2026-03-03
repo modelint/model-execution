@@ -14,9 +14,8 @@ if TYPE_CHECKING:
 
 class MXLogger:
 
-    def __init__(self, scenario_name: str, mode: str = 'w', include_timestamps: bool = False):
-        self.scenario = scenario_name
-        self.path = Path(f"{scenario_name.replace(' ', '_')}.log")
+    def __init__(self, mode: str = 'w', include_timestamps: bool = False):
+        self.path = Path(f"mx_logger.log")  # In the working diretory for now
         self.file = self.path.open(mode=mode, encoding='utf-8', buffering=1)
         self.include_timestamps = include_timestamps
         self.header()
