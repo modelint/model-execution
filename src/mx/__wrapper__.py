@@ -49,6 +49,9 @@ def main():
     the_System.print_models(class_names=['Class', 'Attribute'], output_file='class.txt')
 
     the_System.load_domains(playground='one_bank_one_shaft')
+
+    the_System.domains['EVMAN'].print_classes(class_names=['Cabin', 'Door'], output_file='evman_cabin_door.txt')
+
     print("\nNo problemo")  # Comment this line out before release
 
 

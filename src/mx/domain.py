@@ -2,8 +2,9 @@
 
 # System
 import logging
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, Optional
 from collections import defaultdict
+from contextlib import redirect_stdout
 
 if TYPE_CHECKING:
     from mx.system import System
@@ -167,6 +168,15 @@ class Domain:
         result = Relation.restrict(db=mmdb, relation='Multiple_Assigner', restriction=R)
         self.mult_assigner_partitions = [MultipleAssigner(rnum=t['Rnum'], pclass=t['Partitioning_class'])
                                          for t in result.body]
+
+    def print_classes(self, class_names=None, output_file: Optional[str] = None, display=False, save=True):
+        with open(output_file, 'w') as f:
+            with redirect_stdout(f):
+                if not class_names:
+                    self.display()
+                else:
+                    for c in class_names:
+                        Relation.print(db=self.alias, variable_name=c)
 
     def display(self):
         """
