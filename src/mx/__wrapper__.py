@@ -12,12 +12,14 @@
 import logging
 import logging.config
 from pathlib import Path
-import sys
 import atexit
+from collections import namedtuple
+from enum import Enum
 
 # MX
 from mx.system import System
 from mx import version
+from mx.mdb_types import *
 
 _logpath = Path("mx.log")
 _progname = 'Blueprint Model Execution'
@@ -32,6 +34,7 @@ def get_logger():
     logging.config.fileConfig(fname=log_conf_path, disable_existing_loggers=False)
     return logging.getLogger(__name__)  # Create a logger for this module
 
+
 def main():
     # Start logging
     logger = get_logger()
@@ -42,15 +45,43 @@ def main():
     system_path = Path("/Users/starr/SDEV/Python/PyCharm/ModelExecution/src/mx/systems/elevator")
 
     # Now we can try loading the system
-    the_System = System()  # Create the singleton instance
-    the_System.initialize(system_path=system_path, verbose=False, debug=True)
+    s = System()  # Create the singleton instance
+    s.initialize(system_path=system_path, verbose=False, debug=True)
 
     # Try printing it out
-    the_System.print_models(class_names=['Class', 'Attribute'], output_file='class.txt')
+    s.print_models(class_names=['Class', 'Attribute'], output_file='class.txt')
 
-    the_System.load_domains(playground='one_bank_one_shaft')
+    s.load_domains(playground='one_bank_one_shaft')
 
-    the_System.domains['EVMAN'].print_classes(class_names=['Cabin', 'Door'], output_file='evman_cabin_door.txt')
+    s.domains['EVMAN'].print_classes(class_names=['Cabin', 'Door'], output_file='evman_cabin_door.txt')
+
+
+# Begin hard coded scenario
+    actors = {
+        'EVMAN:ASLEV<S1-3>': InstanceAddress(
+            domain='EVMAN', class_name='Accessible Shaft Level',
+            instance_id={'Shaft': 'S1', 'Floor': '3'}
+        ),
+        'UI': ExternalAddress(domain='UI'),
+        'EVMAN:XFER<S1>': InstanceAddress(domain='EVMAN', class_name='Transfer',
+                                          instance_id={'Shaft': 'S1'}),
+    }
+
+    interactions = [
+        Interaction(
+            direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Stop request',
+            source=actors['UI'], target=actors['EVMAN:ASLEV<S1-3>'], parameters=None
+        ),
+        Interaction(
+            direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Set destination',
+            source=actors['EVMAN:XFER<S1>'], target=actors['UI'], parameters=None
+        ),
+
+    ]
+
+    system_responses = s.inject(stimulus=interactions[0], responses=[interactions[1]])
+    pass
+
 
     print("\nNo problemo")  # Comment this line out before release
 

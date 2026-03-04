@@ -12,10 +12,12 @@ from pyral.relation import Relation
 from pyral.relvar import Relvar
 
 # MX
+from mx.interaction_event import InteractionEvent
 from mx.domain import Domain
 from mx.db_names import mmdb
 from mx.rvname import RVN
 from mx.exceptions import *
+from mx.mdb_types import *
 # from mx.mx_logger import MXLogger
 
 _logger = logging.getLogger(__name__)
@@ -48,6 +50,7 @@ class System:
         self.debug = False
         self.verbose = False
         self.playground = None  # This is a set of populated domain dbs and compatible scenarios
+        self.response_monitor = None
         # self.mxlog = MXLogger()
 
     def initialize(self, system_path: Path, verbose: bool, debug: bool):
@@ -129,3 +132,33 @@ class System:
             return None
 
         self.mmdb_path = model_path / ral_files[0]
+
+    def inject(self, stimulus: Interaction, responses: list[Interaction]) -> list[Interaction]:
+        """
+
+        Args:
+            stimulus:
+            responses:
+
+        Returns:
+
+        """
+        # Save expected responses to be detected
+        self.response_monitor = responses
+
+        # process the stimulus
+        match stimulus.action:
+            case ActionType.EXTERNAL_EVENT:
+                pass
+            case ActionType.SIGNAL_INSTANCE:
+                self.process_signal_instance(stimulus)
+            case _:
+                pass
+
+        pass
+
+    def process_signal_instance(self, s: Interaction):
+        target_domain = self.domains[s.target.domain]
+        ie = InteractionEvent.to_lifecycle(event_spec=s.name, source=s.source,
+                                           to_instance=s.target.instance_id, to_class=s.target.class_name,
+                                           params=s.parameters, domain=target_domain)

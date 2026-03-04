@@ -8,13 +8,14 @@ if TYPE_CHECKING:
     from mx.domain import Domain
 
 # Model Integration
+from mdb_types import *
 
 # MX
 from mx.mxtypes import NamedValues, StateMachineType
 
 class DispatchedEvent:
 
-    def __init__(self, source: Optional[str], event_spec: str, state_model: str,
+    def __init__(self, source: ElementAddress, event_spec: str, state_model: str,
                  sm_type: StateMachineType, to_instance: Optional[NamedValues], partitioning_class: Optional[str],
                  partitioning_instance: Optional[NamedValues], params: NamedValues, domain: "Domain"):
         """
