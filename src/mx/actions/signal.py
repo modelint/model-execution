@@ -17,6 +17,9 @@ from mx.actions.flow import ActiveFlow
 
 class SignalAction(Action):
 
+    monitor_external = False
+    monitor_internal = False
+
     def __init__(self, action_id: str, activity: "Method"):
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 

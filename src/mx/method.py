@@ -5,7 +5,7 @@ import logging
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from mx.xe import XE
+    from mx.system import System
 
 # Model Integration
 from pyral.relation import Relation
@@ -23,18 +23,21 @@ _logger = logging.getLogger(__name__)
 
 class Method(Activity):
 
-    def __init__(self, xe: "XE", name: str, class_name: str, domain_name: str, domain_alias: str,
+    def __init__(self, system: "System", name: str, class_name: str, domain_name: str, domain_alias: str,
                  instance_id: NamedValues, parameters: NamedValues):
         """
         Lookup the Method and execute it
 
-        :param xe: For access to environment settings (debug, verbose, etc)
-        :param name:  Method name
-        :param class_name:  Method is defined on this class
-        :param domain_name:  Method is defined on class in this domain
-        :param instance_id:  Method is invoked on this instance, specified by identifier attribute value pairs
-        :param parameters:  Parameters and values for this Method's Signature
+        Args:
+            system: For access to environment settings (debug, verbose, etc)
+            name: Method name
+            class_name: Method is defined on this class
+            domain_name: Method is defined on class in this domain
+            domain_alias:
+            instance_id: Method is invoked on this instance, specified by identifier attribute value pairs
+            parameters: Parameters and values for this Method's Signature
         """
+        self.system = system
         self.name = name
         self.domain_name = domain_name
         self.domain_alias = domain_alias

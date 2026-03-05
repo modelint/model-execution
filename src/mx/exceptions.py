@@ -6,12 +6,8 @@ class MXException(Exception):
     """ Model Execution exception """
     pass
 
-class MXScenarioDirector(MXException):
-    """ Scenario Director exception """
-    pass
-
-class MXScenarioDirectorInput(MXScenarioDirector):
-    """ Problem in the scenario script input """
+class MXMonitor(MXException):
+    """ Debugging monitor triggered """
     pass
 
 class MXFileException(FileNotFoundError):

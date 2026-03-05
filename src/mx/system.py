@@ -133,18 +133,37 @@ class System:
 
         self.mmdb_path = model_path / ral_files[0]
 
-    def inject(self, stimulus: Interaction, responses: list[Interaction]) -> list[Interaction]:
+    def set_response_monitors(self, responses):
         """
+        Flag any action associated with a response to be monitored so that when and if that action fires,
+        it checks to see if its data matches an expected response.
+
+        Args:
+            responses: Any number of responses that should be monitored
+        """
+        self.response_monitor = responses
+        for r in responses:
+            match r.action:
+                case ActionType.EXTERNAL_EVENT:
+                    from mx.actions.signal import SignalAction
+                    SignalAction.monitor_external = True
+                case ActionType.SIGNAL_INSTANCE:
+                    from mx.actions.signal import SignalAction
+                    SignalAction.monitor_internal = True
+
+    def inject(self, stimulus: Interaction, responses: list[Interaction]) -> Interaction:
+        """
+        Inject the supplied stimulus and set a monitor for each expected response, if any
 
         Args:
             stimulus:
             responses:
 
         Returns:
-
+            Interaction:
         """
         # Save expected responses to be detected
-        self.response_monitor = responses
+        self.set_response_monitors(responses)
 
         # process the stimulus
         match stimulus.action:
@@ -154,6 +173,14 @@ class System:
                 self.process_signal_instance(stimulus)
             case _:
                 pass
+
+        # Now resume the system
+        suspend_status = self.go()
+        # the suspend status tells us why the system stopped
+        # monitor tripped, terminal condition
+        # If monitor tripped, report the detected interaction and exit
+
+
 
         pass
 

@@ -13,6 +13,12 @@ class Direction(Enum):
     STIMULUS = "STIMULUS"
     RESPONSE = "RESPONSE"
 
+class SuspendStatus(Enum):
+    """
+    Reasons why the system has stopped running
+    """
+    MONITOR_TRIPPED = "MONITOR_TRIPPED"  # An monitored condition or response was detected
+    TERMINAL_CONDITION = "TERMINAL_CONDITION"  # The system has entered a terminal state
 
 Interaction = namedtuple('mdb_Interaction', 'direction action name source target parameters')
 InstanceAddress = namedtuple('mdb_Interaction', 'domain class_name instance_id')

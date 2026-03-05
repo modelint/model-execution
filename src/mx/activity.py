@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from mx.xe import XE
+    from mx.system import System
 
 # MX
 from mx.deprecated.bridge import NamedValues
@@ -37,14 +37,16 @@ class Activity:
         "gate": Gate
     }
 
-    def __init__(self, xe: "XE", domain: str, anum: str, parameters: NamedValues):
+    def __init__(self, system: "System", domain: str, anum: str, parameters: NamedValues):
         """
 
-        :param domain:
-        :param anum:
-        :param parameters:
+        Args:
+            system:
+            domain:
+            anum:
+            parameters:
         """
-        self.xe = xe
+        self.system = system
         self.anum = anum
         self.parameters = parameters
         self.domain = domain

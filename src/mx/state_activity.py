@@ -15,7 +15,7 @@ class StateActivity(Activity):
     def __init__(self, anum: str, state_machine: "StateMachine"):
 
         self.state_machine = state_machine
-        super().__init__(xe=state_machine.domain.system.xe, domain=state_machine.domain.name, anum=anum,
+        super().__init__(system=state_machine.domain.system, domain=state_machine.domain.name, anum=anum,
                          parameters=state_machine.active_event.params)
         pass
 
