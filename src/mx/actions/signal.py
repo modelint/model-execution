@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from mx.method import Method  # TOOD: Replace with Activity after refactoring State/Assigner Activities
+    from mx.method_execution import MethodExecution  # TOOD: Replace with Activity after refactoring State/Assigner Activities
 
 # Model Integration
 from pyral.relation import Relation
@@ -20,7 +20,7 @@ class SignalAction(Action):
     monitor_external = False
     monitor_internal = False
 
-    def __init__(self, action_id: str, activity: "Method"):
+    def __init__(self, action_id: str, activity: "MethodExecution"):
         super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
 
         # Do not execute this Action if it is not enabled, see comment in Action class

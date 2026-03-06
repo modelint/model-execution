@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 # MX
 from mx.interaction_event import InteractionEvent
-from mx.method import Method
+from mx.method_execution import MethodExecution
 from mx.mxtypes import StateMachineType
 from mx.exceptions import *
 
@@ -151,9 +151,9 @@ class Scenario:
 
         self.xe.mxlog.log(f"Calling {domain_alias}:{class_name}.{name}({formatted_params}) on instance"
                           f" [{{{formatted_id}}}]")
-        m = Method(xe=self.xe, name=name, class_name=class_name,
-                   domain_name=self.xe.system.domains[domain_alias].name, domain_alias=domain_alias,
-                   instance_id=instance_id, parameters=params)
+        m = MethodExecution(xe=self.xe, name=name, class_name=class_name,
+                            domain_name=self.xe.system.domains[domain_alias].name, domain_alias=domain_alias,
+                            instance_id=instance_id, parameters=params)
 
     def process_signal(self, s):
         target_domain_alias = s['to']

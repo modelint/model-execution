@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from mx.method import Method
+    from mx.method_execution import MethodExecution
 
 # Model Integration
 from pyral.relation import Relation
@@ -49,7 +49,7 @@ def str_to_bool(s: str) -> bool:
 # TODO: Copy paste from Restrict - redo for Rank Restrict
 class RankRestrict(Action):
 
-    def __init__(self, action_id: str, activity: "Method"):
+    def __init__(self, action_id: str, activity: "MethodExecution"):
         """
         Perform the Rank Restrict Action on a domain model.
 

@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from mx.method import Method  # TOOD: Replace with Activity after refactoring State/Assigner Activities
+    from mx.method_execution import MethodExecution  # TOOD: Replace with Activity after refactoring State/Assigner Activities
 
 # Model Integration
 from pyral.relation import Relation
@@ -17,7 +17,7 @@ from mx.actions.flow import ActiveFlow, FlowDir
 
 class Rename(Action):
 
-    def __init__(self, action_id: str, activity: "Method"):
+    def __init__(self, action_id: str, activity: "MethodExecution"):
         """
         Perform the Rename Action on a domain model.
 

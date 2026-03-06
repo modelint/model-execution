@@ -1,10 +1,10 @@
-""" activity.py -- A metamodel Activity """
+""" activity_execution.py -- A metamodel Activity """
 
 # System
 from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from mx.system import System
+    from mx.domain import Domain
 
 # MX
 from mx.deprecated.bridge import NamedValues
@@ -20,7 +20,7 @@ from mx.actions.restrict import Restrict
 from mx.actions.gate import Gate
 from mx.actions.rank_restrict import RankRestrict
 
-class Activity:
+class ActivityExecution:
 
     # This is a dispatch table mapping action names to the python classes that execute these actions
     execute_action: dict[str, Callable[..., None]] = {
@@ -37,19 +37,31 @@ class Activity:
         "gate": Gate
     }
 
-    def __init__(self, system: "System", domain: str, anum: str, parameters: NamedValues):
+    def __init__(self, domain: 'Domain', anum: str, parameters: NamedValues):
         """
 
         Args:
-            system:
             domain:
             anum:
             parameters:
         """
-        self.system = system
+        self.domain = domain
+        self.system = domain.system
         self.anum = anum
         self.parameters = parameters
-        self.domain = domain
+
+    def next_action(self) -> str:
+        """
+        Select the next action to execute and return its action id
+
+        Returns:
+            The action ID as a string
+        """
+        # instance_id_value = '_'.join(v for v in self.instance.values())
+        # self.owner_name = f"{class_name}_{name}_{instance_id_value}"
+        #
+        # self.method_rvname = Relation.declare_rv(db=mmdb, owner=self.owner_name, name="method_name")
+        pass
 
     def execute(self):
         """

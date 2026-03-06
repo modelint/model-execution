@@ -1,4 +1,4 @@
-""" method.py -- class method """
+""" method_execution.py -- class method """
 
 # System
 import logging
@@ -13,7 +13,7 @@ from pyral.database import Database
 
 # MX
 from mx.actions.flow import ActiveFlow
-from mx.activity import Activity
+from mx.activity_execution import ActivityExecution
 from mx.deprecated.bridge import NamedValues
 from mx.instance_set import InstanceSet
 from db_names import mmdb
@@ -21,7 +21,7 @@ from exceptions import *
 
 _logger = logging.getLogger(__name__)
 
-class Method(Activity):
+class MethodExecution(ActivityExecution):
 
     def __init__(self, system: "System", name: str, class_name: str, domain_name: str, domain_alias: str,
                  instance_id: NamedValues, parameters: NamedValues):
@@ -180,7 +180,7 @@ class Method(Activity):
             # Execute the appropriate action
             # We do this by instantiating the class defined for the action_type
             # Using the Activity's action execution dispatch dictionary
-            current_x_action = Method.execute_action[action_type](activity=self, action_id=action)
+            current_x_action = MethodExecution.execute_action[action_type](activity=self, action_id=action)
             pass
 
         pass

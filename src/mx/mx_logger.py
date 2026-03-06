@@ -10,7 +10,7 @@ from pyral.relation import Relation
 # MX
 from mx.actions.flow import label, FlowDir
 if TYPE_CHECKING:
-    from mx.activity import Activity
+    from mx.activity_execution import ActivityExecution
 
 class MXLogger:
 
@@ -35,13 +35,13 @@ class MXLogger:
         self.file.write(t)
         self.file.write("\n")
 
-    def log_nsflow(self, flow_name: str, flow_dir: FlowDir, flow_type: str, activity: "Activity", db: str, rv_name: str):
+    def log_nsflow(self, flow_name: str, flow_dir: FlowDir, flow_type: str, activity: "ActivityExecution", db: str, rv_name: str):
         flow_label = label(name=flow_name, activity=activity)
         show_label = f"<{flow_label}>" if flow_label else ""
         indir, outdir = ("->", "") if flow_dir == FlowDir.IN else ("", "->")
         self.log_table(message=f"{indir} {flow_name} {show_label} {outdir} :: {flow_type}", db=db, rv_name=rv_name)
 
-    def log_sflow(self, flow_name: str, flow_dir: FlowDir, flow_type: str, activity: "Activity"):
+    def log_sflow(self, flow_name: str, flow_dir: FlowDir, flow_type: str, activity: "ActivityExecution"):
         flow_label = label(name=flow_name, activity=activity)
         show_label = f"<{flow_label}>" if flow_label else ""
         indir, outdir = ("->", "") if flow_dir == FlowDir.IN else ("", "->")

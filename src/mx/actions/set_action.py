@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from mx.method import Method
+    from mx.method_execution import MethodExecution
 
 # Model Integration
 from pyral.relation import Relation
@@ -31,7 +31,7 @@ def declare_mm_rvs(db: str, owner: str) -> MMRVs:
 
 class SetAction(Action):
 
-    def __init__(self, action_id: str, activity: "Method"):
+    def __init__(self, action_id: str, activity: "MethodExecution"):
         """
         Perform the Set Action on a domain model.
 

@@ -17,7 +17,7 @@ from pyral.relvar import Relvar
 # Model Execution
 # from domain_model_db import MultipleAssigner
 # from mx.single_assigner_state_machine import SingleAssignerStateMachine
-from mx.method import Method
+from mx.method_execution import MethodExecution
 from mx.multiple_assigner_state_machine import MultipleAssignerStateMachine
 from mx.assigner_state_machine import AssignerStateMachine
 from mx.lifecycle_state_machine import LifecycleStateMachine

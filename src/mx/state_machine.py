@@ -18,7 +18,7 @@ from mx.db_names import mmdb
 from mx.interaction_event import InteractionEvent
 from mx.completion_event import CompletionEvent
 from mx.dispatched_event import DispatchedEvent
-from mx.state_activity import StateActivity
+from mx.state_activity_execution import StateActivityExecution
 
 
 class EventResponse(Enum):
@@ -166,7 +166,7 @@ class StateMachine:
                                                       "Domain": "Domain"})
         dest_real_state_t = dest_real_state_r.body[0]
         self.current_state = dest_real_state_t["Name"]
-        StateActivity(anum=dest_real_state_t["Activity"], state_machine=self)
+        StateActivityExecution(anum=dest_real_state_t["Activity"], state_machine=self)
         # start activity execution and wait for completion
 
     def ignore(self):

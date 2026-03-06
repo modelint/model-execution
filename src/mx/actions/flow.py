@@ -10,7 +10,7 @@ from pyral.relation import Relation
 # MX
 from mx.db_names import mmdb
 if TYPE_CHECKING:
-    from mx.activity import Activity
+    from mx.activity_execution import ActivityExecution
 
 
 class ActiveFlow(NamedTuple):
@@ -21,7 +21,7 @@ class FlowDir(Enum):
     IN = "in"
     OUT = "out"
 
-def label(name: str, activity: "Activity") -> str:
+def label(name: str, activity: "ActivityExecution") -> str:
     R = f"ID:<{name}>, Activity:<{activity.anum}>, Domain:<{activity.domain}>"
     labeled_flow_r = Relation.restrict(db=mmdb, relation='Labeled Flow', restriction=R)
     if labeled_flow_r.body:

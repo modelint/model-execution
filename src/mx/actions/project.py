@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from mx.method import Method  # TODO: Replace with Activity after refactoring State/Assigner Activities
+    from mx.method_execution import MethodExecution  # TODO: Replace with Activity after refactoring State/Assigner Activities
 
 # Model Integration
 from pyral.relation import Relation
@@ -32,7 +32,7 @@ def declare_mm_rvs(db: str, owner: str) -> MMRVs:
 
 class Project(Action):
 
-    def __init__(self, action_id: str, activity: "Method"):
+    def __init__(self, action_id: str, activity: "MethodExecution"):
         """
         Perform the Project Action on a domain model.
 

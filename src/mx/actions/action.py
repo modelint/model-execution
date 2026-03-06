@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from mx.method import Method  # TOOD: Replace with Activity after refactoring State/Assigner Activities
+    from mx.method_execution import MethodExecution  # TOOD: Replace with Activity after refactoring State/Assigner Activities
 
 # Model Integration
 from pyral.relation import Relation
@@ -18,7 +18,7 @@ no_nsflow_output_actions = {"scalarswitch", "gate", "read", "extract"}
 
 class Action:
 
-    def __init__(self, activity: "Method", anum: str, action_id: str):
+    def __init__(self, activity: "MethodExecution", anum: str, action_id: str):
         """
 
         :param activity:  Name of the encompassing Activity
