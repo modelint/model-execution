@@ -39,4 +39,3 @@ class StateActivityExecution(ActivityExecution):
         # Relation.free_rvs(db=mmdb, owner=self.owner_name)
         # Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
 
-        self.execute()

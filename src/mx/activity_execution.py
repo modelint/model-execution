@@ -83,13 +83,17 @@ class ActivityExecution:
 
         return self.ready_actions.pop() if self.ready_actions else None
 
-
     def execute(self):
         """
         Execute an Activity
         """
         # We keep executing ready actions until there are no more
-        while (a := self.next_action()) is not None:
-            ActionExecution(activity_execution=self, action_id=a)
+        while (action_id := self.next_action()) is not None:
+            # Lookup the action type
+            R = (f"ID:<{action_id}>, Activity:<{self.anum}>, "
+                 f"Domain:<{self.domain.name}>")
+            action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
+            action_type = action_r.body[0]["Type"]
+            current_x_action = ActivityExecution.execute_action[action_type](activity=self, action_id=action_id)
             pass
         pass

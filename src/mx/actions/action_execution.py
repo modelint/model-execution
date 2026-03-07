@@ -29,13 +29,6 @@ class ActionExecution:
         self.activity_execution = activity_execution
         self.action_id = action_id
 
-        # Lookup the action type
-        R = (f"ID:<{self.action_id}>, Activity:<{self.activity_execution.anum}>, "
-             f"Domain:<{self.activity_execution.domain.name}>")
-        action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
-        self.action_type = action_r.body[0]["Type"]
-        current_x_action = ActivityExecution.execute_action[self.action_type](activity=self, action_id=self.action_id)
-        pass
 
 
     # def __init__(self, activity: "MethodExecution", anum: str, action_id: str):
