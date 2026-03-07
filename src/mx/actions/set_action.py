@@ -12,7 +12,7 @@ from pyral.database import Database  # Diagnostics
 
 # MX
 from mx.db_names import mmdb
-from mx.actions.action import Action
+from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 
@@ -29,7 +29,7 @@ def declare_mm_rvs(db: str, owner: str) -> MMRVs:
                       "set_table_action")
     return MMRVs(*rvs)
 
-class SetAction(Action):
+class SetAction(ActionExecution):
 
     def __init__(self, action_id: str, activity: "MethodExecution"):
         """

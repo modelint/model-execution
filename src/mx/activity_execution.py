@@ -6,7 +6,11 @@ from typing import TYPE_CHECKING, Callable
 if TYPE_CHECKING:
     from mx.domain import Domain
 
+# Model Integration
+from pyral.relation import Relation
+
 # MX
+from mx.actions.action_execution import ActionExecution
 from mx.deprecated.bridge import NamedValues
 from mx.actions.traverse import Traverse
 from mx.actions.rename import Rename
@@ -19,6 +23,8 @@ from mx.actions.set_action import SetAction
 from mx.actions.restrict import Restrict
 from mx.actions.gate import Gate
 from mx.actions.rank_restrict import RankRestrict
+from mx.actions.signal import Signal
+from mx.db_names import mmdb
 
 class ActivityExecution:
 
@@ -34,7 +40,9 @@ class ActivityExecution:
         "restrict": Restrict,
         "rank restrict": RankRestrict,
         "extract": Extract,
-        "gate": Gate
+        "gate": Gate,
+        "signal": Signal,
+        # "write": Write,
     }
 
     def __init__(self, domain: 'Domain', anum: str, parameters: NamedValues):
@@ -49,24 +57,39 @@ class ActivityExecution:
         self.system = domain.system
         self.anum = anum
         self.parameters = parameters
+        self.ready_actions: set[str] = set()
 
-    def next_action(self) -> str:
+    def next_action(self) -> str | None:
         """
         Select the next action to execute and return its action id
 
         Returns:
             The action ID as a string
         """
-        # instance_id_value = '_'.join(v for v in self.instance.values())
-        # self.owner_name = f"{class_name}_{name}_{instance_id_value}"
-        #
-        # self.method_rvname = Relation.declare_rv(db=mmdb, owner=self.owner_name, name="method_name")
-        pass
+        # Check the Flow Depenency instances, are there any?
+        R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
+        fdep_r = Relation.restrict(db=mmdb, relation="Flow Dependency", restriction=R)
+        if not fdep_r.body:
+            # There are no flow dependencies, so we can just execute the actions in any order
+            R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
+            enabled_action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
+            # Put all actions in this Activity into the set of ready actions
+            for a in enabled_action_r.body:
+                self.ready_actions.add(a["ID"])
+        else:
+            # Process dependencies
+            pass
+        # All actions in the set are ready to execute, so it doesn't matter in what order we process them
+
+        return self.ready_actions.pop() if self.ready_actions else None
+
 
     def execute(self):
         """
-        Each type of Activity (Method, State) overrides this method
-        :return:
+        Execute an Activity
         """
-        # TODO: Look for commonality to promote
+        # We keep executing ready actions until there are no more
+        while (a := self.next_action()) is not None:
+            ActionExecution(activity_execution=self, action_id=a)
+            pass
         pass

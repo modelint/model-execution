@@ -12,7 +12,7 @@ from pyral.database import Database  # Diagnostics
 
 # MX
 from mx.db_names import mmdb
-from mx.actions.action import Action
+from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.instance_set import InstanceSet
@@ -50,7 +50,7 @@ def str_to_bool(s: str) -> bool:
         raise ValueError(f"Invalid boolean string: {s}")
 
 
-class Select(Action):
+class Select(ActionExecution):
 
     def __init__(self, action_id: str, activity: "MethodExecution"):
         """

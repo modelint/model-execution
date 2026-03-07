@@ -12,7 +12,7 @@ from pyral.database import Database  # For diagnostics
 
 # MX
 from mx.db_names import mmdb
-from mx.actions.action import Action
+from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.instance_set import InstanceSet
@@ -40,7 +40,7 @@ def declare_dom_rvs(db: str, owner: str) -> DomRVs:
     rvs = declare_rvs(db, owner, "hopped", "output_irefs")
     return DomRVs(*rvs)
 
-class Traverse(Action):
+class Traverse(ActionExecution):
 
     def __init__(self, action_id: str, activity: "MethodExecution"):
         """

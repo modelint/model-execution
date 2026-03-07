@@ -13,7 +13,7 @@ from pyral.rtypes import Extent, Card
 
 # MX
 from mx.db_names import mmdb
-from mx.actions.action import Action
+from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import FlowDir
 from mx.rvname import declare_rvs
 
@@ -29,7 +29,7 @@ def declare_mm_rvs(db: str, owner: str) -> MMRVs:
     rvs = declare_rvs(db, owner, "activity_gate_actions", "this_gate_action", "flow_deps")
     return MMRVs(*rvs)
 
-class Gate(Action):
+class Gate(ActionExecution):
 
     def __init__(self, action_id: str, activity: "MethodExecution"):
         """

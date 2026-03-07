@@ -6,8 +6,12 @@ from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from mx.domain import Domain
 
+# Model Integration
+from pyral.relation import Relation
+
 # MX
 from mx.state_machine import StateMachine
+from mx.db_names import mmdb
 
 
 class LifecycleStateMachine(StateMachine):
@@ -24,3 +28,5 @@ class LifecycleStateMachine(StateMachine):
         self.lifecycle_sm_id = lifecycle_sm_id  # Unique among lifecycle state machines in this domain
         self.instance_id = instance_id
         self.class_name = class_name
+
+        pass

@@ -145,11 +145,11 @@ class System:
         for r in responses:
             match r.action:
                 case ActionType.EXTERNAL_EVENT:
-                    from mx.actions.signal import SignalAction
-                    SignalAction.monitor_external = True
+                    from mx.actions.signal import Signal
+                    Signal.monitor_external = True
                 case ActionType.SIGNAL_INSTANCE:
-                    from mx.actions.signal import SignalAction
-                    SignalAction.monitor_internal = True
+                    from mx.actions.signal import Signal
+                    Signal.monitor_internal = True
 
     def inject(self, stimulus: Interaction, responses: list[Interaction]) -> Interaction:
         """

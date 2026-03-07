@@ -12,7 +12,7 @@ from pyral.relation import Database  # Diagnostic
 
 # MX
 from mx.db_names import mmdb
-from mx.actions.action import Action
+from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 
@@ -35,7 +35,7 @@ def declare_my_module_rvs(db: str, owner: str) -> RVs:
     rvs = declare_rvs(db, owner, "activity_scalar_switch_actions", "this_scalar_switch_action", "cases", "mvals")
     return RVs(*rvs)
 
-class ScalarSwitch(Action):
+class ScalarSwitch(ActionExecution):
 
     def __init__(self, action_id: str, activity: "MethodExecution"):
         """
