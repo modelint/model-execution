@@ -20,6 +20,7 @@ from enum import Enum
 from mx.system import System
 from mx import version
 from mx.mdb_types import *
+from mx.mxtypes import *
 
 _logpath = Path("mx.log")
 _progname = 'Blueprint Model Execution'

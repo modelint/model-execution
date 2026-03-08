@@ -10,12 +10,14 @@ if TYPE_CHECKING:
 from pyral.relation import Relation
 
 # MX
+from mx.actions.flow import ActiveFlow
 from mx.actions.action_execution import ActionExecution
 from mx.deprecated.bridge import NamedValues
 from mx.actions.traverse import Traverse
 from mx.actions.rename import Rename
 from mx.actions.scalar_switch import ScalarSwitch
 from mx.actions.read import Read
+from mx.actions.write import Write
 from mx.actions.extract import Extract
 from mx.actions.select import Select
 from mx.actions.project import Project
@@ -42,7 +44,7 @@ class ActivityExecution:
         "extract": Extract,
         "gate": Gate,
         "signal": Signal,
-        # "write": Write,
+        "write": Write,
     }
 
     def __init__(self, domain: 'Domain', anum: str, parameters: NamedValues):
@@ -58,6 +60,7 @@ class ActivityExecution:
         self.anum = anum
         self.parameters = parameters
         self.ready_actions: set[str] = set()
+        self.flows: dict[str, ActiveFlow | None] = {}
 
     def next_action(self) -> str | None:
         """

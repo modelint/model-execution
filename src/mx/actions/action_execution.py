@@ -28,6 +28,18 @@ class ActionExecution:
         """
         self.activity_execution = activity_execution
         self.action_id = action_id
+        self.action_type = type(self).__name__.lower()
+
+        # Check the Flow Dependency class for all required input Flow names
+        R = f"To_action:<{action_id}>, Activity:<{self.activity_execution.anum}>, Domain:<{self.activity_execution.domain.name}>"
+        dependencies_r = Relation.restrict(db=mmdb, relation="Flow Dependency", restriction=R)
+        required_flow_names = [d["Flow"] for d in dependencies_r.body]
+        # Check our dictionary of active flows and disable if any required input flows were not set
+        if self.action_type == "gate":
+            self.disabled = all(self.activity_execution.flows[f] is None for f in required_flow_names)
+        else:
+            self.disabled = any(self.activity_execution.flows[f] is None for f in required_flow_names)
+        pass
 
 
 

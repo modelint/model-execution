@@ -186,6 +186,7 @@ class System:
 
     def process_signal_instance(self, s: Interaction):
         target_domain = self.domains[s.target.domain]
+        params = s.parameters if s.parameters else {}
         ie = InteractionEvent.to_lifecycle(event_spec=s.name, source=s.source,
                                            to_instance=s.target.instance_id, to_class=s.target.class_name,
                                            params=s.parameters, domain=target_domain)

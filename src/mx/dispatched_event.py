@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from mdb_types import *
 
 # MX
-from mx.mxtypes import NamedValues, StateMachineType
+from mx.mxtypes import *
 
 class DispatchedEvent:
 

@@ -48,7 +48,7 @@ class StateMachine:
         self.activity_executing = False
         self.current_state = current_state
         self.interaction_events: list[InteractionEvent] = []
-        self.completion_events: list[CompletionEvent] = []
+        self.completion_event: CompletionEvent | None = None
         self.active_event = None
         self.state_model = state_model
         self.domain = domain
@@ -58,17 +58,20 @@ class StateMachine:
         self.max_comp_events = 0
         self.active_event = None
 
-    # def accept_event_from_self(self, event: DispatchedEvent):
-    #     """
-    #     New SelfDirected event received, queue it
-    #
-    #     :param event: A dispatched self-directed event
-    #     """
-    #     self.completion_events.append(event)
+    def accept_completion_event(self, event: DispatchedEvent):
+        """
+        New Completion event received. Only one may be pending at a time,
+        so we throw an exception if we already have one.
+
+        Args:
+            event: A dispatched completion event
+
+        """
+        self.completion_event = event
 
     @property
     def busy(self) -> bool:
-        return self.interaction_events or self.completion_events or self.activity_executing
+        return self.interaction_events or self.completion_event or self.activity_executing
 
     def go(self, max_int_events: int = 0, max_comp_events: int = 0):
         """
@@ -87,12 +90,11 @@ class StateMachine:
         self.comp_processed = 0
         self.int_processed = 0
 
-        while self.completion_events or self.interaction_events:
+        while self.completion_event or self.interaction_events:
             # Keep processing events until none are left or the max events in either cateogry is reached
-            if (0 < max_int_events <= self.int_processed) or\
-                    (0 < max_comp_events <= self.max_comp_events):
-                return len(self.completion_events) + len(self.interaction_events)
-
+            if (0 < max_int_events <= self.int_processed) or (0 < max_comp_events <= self.max_comp_events):
+                comp_event = 1 if self.completion_event else 0
+                return len(self.interaction_events) + comp_event
             self.process_event()
 
     def process_event(self):
@@ -126,13 +128,9 @@ class StateMachine:
         Returns a Dispatched Event if one is pending
         """
         return (
-            self.completion_events.pop(0)
-            if self.completion_events else
-            self.interaction_events.pop(0)
-            if self.interaction_events else
-            None
+            self.completion_event if self.completion_event else
+            self.interaction_events.pop(0) if self.interaction_events else None
         )
-
 
     def accept_interaction_event(self, event: InteractionEvent):
         """

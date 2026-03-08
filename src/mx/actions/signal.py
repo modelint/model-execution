@@ -27,4 +27,14 @@ class Signal(ActionExecution):
         if self.disabled:
             return
 
+
+        # Determine the signal type
+        # Is it a Send Signal Action?
+        #   If so, is it a Signal Completion Action?
+        # Else Canceled Delayed Signal Action
+
+        # for Signal Completion Action case
+        # We know it will be queued for the xi (if lifecycle)
+        # Send Signal Action has the ev spec
+
         pass

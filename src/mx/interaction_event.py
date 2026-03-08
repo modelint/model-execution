@@ -2,7 +2,7 @@
 
 # System
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from mx.domain import Domain
@@ -11,19 +11,19 @@ if TYPE_CHECKING:
 from pyral.relation import Relation
 from pyral.relvar import Relvar
 
-
 # MX
-from mx.mdb_types import *
 from mx.dispatched_event import DispatchedEvent
-from mx.mxtypes import NamedValues, StateMachineType
+from mx.mxtypes import *
 
 
 class InteractionEvent(DispatchedEvent):
 
-    def __init__(self, sm_type: StateMachineType, event_spec, params, domain, source: ElementAddress,
-                 to_instance: Optional[NamedValues]=None,
-                 to_class: Optional[str]= None, partitioning_instance:Optional[NamedValues]=None,
-                 partitioning_class: Optional[str] = None, to_rnum: Optional[str] = None):
+    def __init__(self, sm_type: StateMachineType, event_spec: str, params: NamedValues,
+                 domain: "Domain",
+                 source: ElementAddress,
+                 to_instance: NamedValues = None,
+                 to_class: str = None, partitioning_instance: NamedValues = None,
+                 partitioning_class: str = None, to_rnum: str = None):
         """
 
         """
