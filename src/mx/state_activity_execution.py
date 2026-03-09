@@ -23,8 +23,15 @@ class StateActivityExecution(ActivityExecution):
         from mx.assigner_state_machine import AssignerStateMachine
         if isinstance(self.state_machine, LifecycleStateMachine):
             self.instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
-            owner_name = f"{self.anum}_{self.instance_id_value}"
+            owner_name = f"{anum}_{self.instance_id_value}"
             rv_name = Relation.declare_rv(db=mmdb, owner=owner_name, name="lifecycle_name")
+            R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
+            Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
+            Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=rv_name)
+            # if not method_i.body:
+            #     msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
+            #     _logger.error(msg)
+            #     raise MXMetamodelDBException(msg)
         elif isinstance(self.state_machine, AssignerStateMachine):
             # Single assigner is just the rnum
             owner_name = ""  # TODO: Fill this in

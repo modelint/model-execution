@@ -102,6 +102,6 @@ class ActivityExecution(ABC):
                  f"Domain:<{self.domain.name}>")
             action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
             action_type = action_r.body[0]["Type"]
-            current_x_action = ActivityExecution.execute_action[action_type](activity=self, action_id=action_id)
+            current_x_action = ActivityExecution.execute_action[action_type](activity_execution=self, action_id=action_id)
             pass
         pass

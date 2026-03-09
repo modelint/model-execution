@@ -30,6 +30,12 @@ class ActionExecution:
         self.action_id = action_id
         self.action_type = type(self).__name__.lower()
 
+        # The domain alias is also the name of the TclRAL domain database session
+        self.domdb = self.activity_execution.domain.alias  # Abbreviated access since we use it alot
+
+        # relation variable prefix (rvp) is the full concatenation
+        self.rvp = f"{self.activity_execution.owner_name}_{action_id}"
+
         # Check the Flow Dependency class for all required input Flow names
         R = f"To_action:<{action_id}>, Activity:<{self.activity_execution.anum}>, Domain:<{self.activity_execution.domain.name}>"
         dependencies_r = Relation.restrict(db=mmdb, relation="Flow Dependency", restriction=R)
