@@ -11,6 +11,7 @@ from pyral.relation import Relation
 from pyral.database import Database
 
 # MX
+from mx.actions.flow import ActiveFlow
 from mx.activity_execution import ActivityExecution
 from db_names import mmdb
 
@@ -19,6 +20,7 @@ class StateActivityExecution(ActivityExecution):
     def __init__(self, anum: str, state_machine: "StateMachine"):
 
         self.state_machine = state_machine
+        self.xi_flow_name = None
         from mx.lifecycle_state_machine import LifecycleStateMachine
         from mx.assigner_state_machine import AssignerStateMachine
         if isinstance(self.state_machine, LifecycleStateMachine):
@@ -27,7 +29,9 @@ class StateActivityExecution(ActivityExecution):
             rv_name = Relation.declare_rv(db=mmdb, owner=owner_name, name="lifecycle_name")
             R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
             Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
-            Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=rv_name)
+            lifecycle_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=rv_name)
+            self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
+            pass
             # if not method_i.body:
             #     msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
             #     _logger.error(msg)
@@ -45,6 +49,10 @@ class StateActivityExecution(ActivityExecution):
         super().__init__(domain=state_machine.domain, anum=anum, owner_name=owner_name, rv_name=rv_name,
                          parameters=state_machine.active_event.params)
 
+        pass
+        # Set the value of the initial instance flow
+        if self.xi_flow_name:
+            self.flows[self.xi_flow_name] = ActiveFlow(value=self.state_machine.instance_id, flowtype=self.state_machine.state_model)
         self.execute()
         # Relation.free_rvs(db=mmdb, owner=self.owner_name)
         # Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
