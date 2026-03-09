@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from mx.domain import Domain
 
 # Model Integration
+from pyral.relation import Relation
 
 # MX
 from mx.dispatched_event import DispatchedEvent
@@ -24,35 +25,39 @@ class CompletionEvent(DispatchedEvent):
         """
 
         """
-        super().__init__(source=source, event_spec=event_spec, state_model=sm, sm_type=sm_type,
+        state_model = None
+        match sm_type:
+            case StateMachineType.LIFECYCLE:
+                state_model = source.class_name
+            case StateMachineType.SA:
+                pass
+            case StateMachineType.MA:
+                pass
+        super().__init__(source=source, event_spec=event_spec, state_model=state_model, sm_type=sm_type,
                          to_instance=to_instance,
                          partitioning_class=partitioning_class, partitioning_instance=partitioning_instance,
                          params=params, domain=domain)
-        pass
+        self.dispatch()
 
-        # dest_instance = None
-        # dest_rnum = None
-        # if isinstance(target, str):
-        #     dest_rnum = target  # Target is a single assigner rnum
-        #     return
-        # else:
-        #     dest_instance = target  # Target value is an instance
-        #     return
+    def dispatch(self):
+        # Look up the target state machine and set the completion event
+        match self.sm_type:
+            case StateMachineType.LIFECYCLE:
+                # We need the instance id generated for the executing instance of this lifecycle
+                # Since this is a completion event, we can just use the source instance id
+                # So we restrict based on the identifier attr/value pairs
+                R = ", ".join([f"{a}:<{v}>" for a, v in self.source.instance_id.items()])
+                inst_id_r = Relation.restrict(db=self.domain.alias, relation=f"{self.state_model}_i", restriction=R)
+                target_inst_id = inst_id_r.body[0]["_instance"]
+                # Now we grab the lifecycle state machine instance
+                sm = self.domain.lifecycles[self.state_model][target_inst_id]
+                # And tell it to set this completion event
+                # Note that only one completion event may be active at a time, so unlike an interaction event
+                # We don't queue it or put it in a set. We just make it the one and only pending completion event.
+                sm.accept_completion_event(event=self)
+            case StateMachineType.MA:
+                pass
+            case StateMachineType.SA:
+                pass
 
-    @classmethod
-    def to_lifecycle(cls, event_spec: str, to_instance: NamedValues, to_class: str,
-                     params: NamedValues, domain: "Domain"):
-        # For Completion Event the source and destination are the same, so we define the
-        # source by extracting the elements out of the destination params
-        source = InstanceAddress(domain=domain.name, class_name=to_class, instance_id=to_instance)
-        return cls(sm_type=StateMachineType.LIFECYCLE, event_spec=event_spec, params=params, domain=domain,
-                   source=source, to_instance=to_instance, to_class=to_class)
-
-    @classmethod
-    def to_multiple_assigner(cls):
-        pass
-
-    @classmethod
-    def to_single_assigner(cls):
-        pass
 

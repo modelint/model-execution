@@ -60,7 +60,9 @@ class StateActivityExecution(ActivityExecution):
         # Executing instance flow (if this is a Lifecycle state activity)
         if self.xi_flow_name:
             self.flows[self.xi_flow_name] = ActiveFlow(value=self.state_machine.instance_id, flowtype=self.state_machine.state_model)
-        # Any constant flows
+
+        # Any Scalar Value (constant) flows
+        # These are flows whose value is specified in the activity such as 'Stop requested = TRUE'
         scalar_value_r = Relation.semijoin(db=mmdb, rname1=self.rv_name, rname2="Scalar Value")
         if scalar_value_r.body:
             sflow_r = Relation.join(db=mmdb, rname2="Scalar Flow")
@@ -71,21 +73,5 @@ class StateActivityExecution(ActivityExecution):
                 self.flows[sv_flow_name] = ActiveFlow(value=sval, flowtype=sval_type)
                 pass
 
-        pass
-
-
-    # def _build_activity_rvname(self) -> str:
-    #     self.xi_flow = None
-    #     from mx.lifecycle_state_machine import LifecycleStateMachine
-    #     if isinstance(self.state_machine, LifecycleStateMachine):
-    #         instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
-    #         self.owner_name = f"{self.anum}_{instance_id_value}"
-    #         R = f"Anum:<{self.anum}>, Domain:<{self.domain.name}>"
-    #         lifecycle_activity_r = Relation.restrict(db=mmdb, relation="Lifecycle Activity", restriction=R)
-    #         self.xi_flow = lifecycle_activity_r.body[0]["Executing_instance_flow"]
-    #     else:
-    #         # TODO: Implement for assigner and multiple assigner
-    #         pass
-    #     return Relation.declare_rv(db=mmdb, owner=self.owner_name, name="activity_name")
-
-
+        # All input parameter flows
+        # TODO: Set these by referencing method_execution.py file

@@ -20,21 +20,20 @@ from mx.rvname import declare_rvs
 
 # See comment in scalar_switch.py
 class RVs(NamedTuple):
-    activity_read_switch_actions: str
-    this_read_action: str
-    attr_read_accesses: str
+    this_write_action: str
+    attr_write_accesses: str
     attributes: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_my_module_rvs(db: str, owner: str) -> RVs:
-    rvs = declare_rvs(db, owner, "activity_read_switch_actions", "this_read_action",
-                      "attr_read_accesses", "attributes")
+    rvs = declare_rvs(db, owner, "this_write_action",
+                      "attr_write_accesses", "attributes")
     return RVs(*rvs)
 
 class Write(ActionExecution):
 
-    def __init__(self, action_id: str, activity: "ActivityExecution"):
+    def __init__(self, action_id: str, activity_execution: "ActivityExecution"):
         """
         Perform the Read Action on a domain model.
 
@@ -42,7 +41,7 @@ class Write(ActionExecution):
             action_id: The ACTN<n> value identifying each Action instance
             activity: The A<n> Activity ID (for Method and State Activities)
         """
-        super().__init__(activity_execution=activity, action_id=action_id)
+        super().__init__(activity_execution=activity_execution, action_id=action_id)
 
         # Do not execute this Action if it is not enabled, see comment in Action class
         if self.disabled:
@@ -52,37 +51,36 @@ class Write(ActionExecution):
         rv = declare_my_module_rvs(db=mmdb, owner=self.rvp)
 
         # Lookup the Action instance
-        # Start with all Rename actions in this Activity
-        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Read_Action",
-                          svar_name=rv.activity_read_switch_actions)
+        Relation.semijoin(db=mmdb, rname1=self.activity_execution.rv_name, rname2="Write Action")
         # Narrow it down to this Read Action instance
         R = f"ID:<{action_id}>"
-        read_action_t = Relation.restrict(db=mmdb, relation=rv.activity_read_switch_actions, restriction=R,
-                                          svar_name=rv.this_read_action)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=rv.this_read_action)
+        write_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name=rv.this_write_action)
+        if __debug__:
+            Relation.print(db=mmdb, variable_name=rv.this_write_action)
 
-        self.source_flow_name = read_action_t.body[0]["Instance_flow"]
-        self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        self.source_flow_name = write_action_t.body[0]["Instance_flow"]
+        self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        pass
 
-        self.activity.xe.mxlog.log(message="Flows")
-        self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-                                          flow_type=self.source_flow.flowtype, activity=self.activity,
-                                          db=self.domdb, rv_name=self.source_flow.value)
-        attribute_read_accesses_r = Relation.semijoin(db=mmdb, rname1=rv.this_read_action,
-                                                      rname2="Attribute Read Access",
-                                                      attrs={"ID": "Read_action",
+        # self.activity.xe.mxlog.log(message="Flows")
+        # self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+        #                                   flow_type=self.source_flow.flowtype, activity=self.activity,
+        #                                   db=self.domdb, rv_name=self.source_flow.value)
+        attribute_read_accesses_r = Relation.semijoin(db=mmdb, rname1=rv.this_write_action,
+                                                      rname2="Attribute Write Access",
+                                                      attrs={"ID": "Write_action",
                                                              "Activity": "Activity", "Domain": "Domain"},
-                                                      svar_name=rv.attr_read_accesses)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=rv.attr_read_accesses)
+                                                      svar_name=rv.attr_write_accesses)
+        if __debug__:
+            Relation.print(db=mmdb, variable_name=rv.attr_write_accesses)
 
         # Get all attributes being read so we can look up each type
-        attr_r = Relation.semijoin(db=mmdb, rname1=rv.attr_read_accesses, rname2="Attribute",
+        attr_r = Relation.semijoin(db=mmdb, rname1=rv.attr_write_accesses, rname2="Attribute",
                                    attrs={"Attribute": "Name", "Class": "Class", "Domain": "Domain"},
                                    svar_name=rv.attributes)
         # Accessed attribute / type pairs
         atypes = {t["Name"]: t["Scalar"] for t in attr_r.body}
+        pass
 
         # Expand irefs to instance set
         input_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="read_input")

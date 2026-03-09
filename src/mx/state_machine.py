@@ -19,6 +19,7 @@ from mx.interaction_event import InteractionEvent
 from mx.completion_event import CompletionEvent
 from mx.dispatched_event import DispatchedEvent
 from mx.state_activity_execution import StateActivityExecution
+from mx.mxtypes import StateMachineType
 
 
 class EventResponse(Enum):
@@ -34,7 +35,7 @@ sm_id_map = {}  # Map of identifier values to state machine instances
 
 class StateMachine:
 
-    def __init__(self, sm_id: str, current_state: str, state_model: str, domain: "Domain"):
+    def __init__(self, sm_id: str, current_state: str, state_model: str, sm_type: StateMachineType, domain: "Domain"):
         """
         Initialize a state machine with a current state
 
@@ -45,6 +46,7 @@ class StateMachine:
             domain:
         """
         self.sm_id = sm_id  # State machine id (unique across all state machine types in this domain)
+        self.sm_type = sm_type
         self.activity_executing = False
         self.current_state = current_state
         self.interaction_events: list[InteractionEvent] = []
@@ -58,16 +60,23 @@ class StateMachine:
         self.max_comp_events = 0
         self.active_event = None
 
-    def accept_completion_event(self, event: DispatchedEvent):
+    def accept_completion_event(self, event: CompletionEvent):
         """
         New Completion event received. Only one may be pending at a time,
         so we throw an exception if we already have one.
 
         Args:
             event: A dispatched completion event
-
         """
+        pass
+        if self.completion_event:
+            msg = f"Completion event dispatch while completion event already pending for state machine"
+            _logger.error(msg)
+            raise MXStateMachineException(msg)
+
+        # Otherwise, accept the completion event
         self.completion_event = event
+        pass
 
     @property
     def busy(self) -> bool:
