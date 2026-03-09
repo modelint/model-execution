@@ -2,6 +2,7 @@
 
 # System
 from typing import TYPE_CHECKING, Callable
+from abc import ABC, abstractmethod
 
 if TYPE_CHECKING:
     from mx.domain import Domain
@@ -28,7 +29,7 @@ from mx.actions.rank_restrict import RankRestrict
 from mx.actions.signal import Signal
 from mx.db_names import mmdb
 
-class ActivityExecution:
+class ActivityExecution(ABC):
 
     # This is a dispatch table mapping action names to the python classes that execute these actions
     execute_action: dict[str, Callable[..., None]] = {
@@ -47,13 +48,15 @@ class ActivityExecution:
         "write": Write,
     }
 
-    def __init__(self, domain: 'Domain', anum: str, parameters: NamedValues):
+    def __init__(self, domain: 'Domain', anum: str, owner_name: str, rv_name: str, parameters: NamedValues):
         """
 
         Args:
-            domain:
-            anum:
-            parameters:
+            domain: The local domain object
+            anum: This activity's identifier
+            owner_name: String that uniquely identifies this activity and executing instance or rnum
+            rv_name: Relational variable name holding this activity's metamodel data
+            parameters: Possibly an empty dictionary of parameter values conforming to the Activity's signature
         """
         self.domain = domain
         self.system = domain.system
@@ -61,6 +64,8 @@ class ActivityExecution:
         self.parameters = parameters
         self.ready_actions: set[str] = set()
         self.flows: dict[str, ActiveFlow | None] = {}
+        self.owner_name = owner_name
+        self.rv_name = rv_name
 
     def next_action(self) -> str | None:
         """
@@ -69,7 +74,7 @@ class ActivityExecution:
         Returns:
             The action ID as a string
         """
-        # Check the Flow Depenency instances, are there any?
+        # Check the Flow Dependency instances, are there any?
         R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
         fdep_r = Relation.restrict(db=mmdb, relation="Flow Dependency", restriction=R)
         if not fdep_r.body:

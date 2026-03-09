@@ -20,13 +20,23 @@ class Signal(ActionExecution):
     monitor_external = False
     monitor_internal = False
 
-    def __init__(self, action_id: str, activity: "ActivityExecution"):
-        super().__init__(activity_execution=activity, action_id=action_id)
+    def __init__(self, action_id: str, activity_execution: "ActivityExecution"):
+        super().__init__(activity_execution=activity_execution, action_id=action_id)
 
         # Do not execute this Action if it is not enabled, see comment in Action class
         if self.disabled:
             return
 
+        # Determine the type of signal to be gennerated
+        send_signal_action_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="read_input")
+        Relation.semijoin(db=mmdb, rname1=self.activity_execution.rv_name, rname2="Send Signal Action",
+                          svar_name=send_signal_action_rv)
+        R = f"ID:<{self.action_id}>, Activity:<{anum}>, Domain:<{domain}>"
+        labeled_flow_r = Relation.restrict(db=mmdb, relation="Labeled Flow", restriction=R)
+        if not flow_r.body:
+            msg = f"Flow {fid} in {anum}:{domain} not found"
+            _logger.error(msg)
+        raise FlowException(msg)
 
         # Determine the signal type
         # Is it a Send Signal Action?
