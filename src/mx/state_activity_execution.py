@@ -48,14 +48,31 @@ class StateActivityExecution(ActivityExecution):
 
         super().__init__(domain=state_machine.domain, anum=anum, owner_name=owner_name, rv_name=rv_name,
                          parameters=state_machine.active_event.params)
-
-        pass
-        # Set the value of the initial instance flow
-        if self.xi_flow_name:
-            self.flows[self.xi_flow_name] = ActiveFlow(value=self.state_machine.instance_id, flowtype=self.state_machine.state_model)
+        self.enable_initial_flows()
         self.execute()
         # Relation.free_rvs(db=mmdb, owner=self.owner_name)
         # Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
+
+    def enable_initial_flows(self):
+        """
+        Set the values of any initially available flows in this State Activity
+        """
+        # Executing instance flow (if this is a Lifecycle state activity)
+        if self.xi_flow_name:
+            self.flows[self.xi_flow_name] = ActiveFlow(value=self.state_machine.instance_id, flowtype=self.state_machine.state_model)
+        # Any constant flows
+        scalar_value_r = Relation.semijoin(db=mmdb, rname1=self.rv_name, rname2="Scalar Value")
+        if scalar_value_r.body:
+            sflow_r = Relation.join(db=mmdb, rname2="Scalar Flow")
+            for sv_i in sflow_r.body:
+                sv_flow_name = sv_i['ID']
+                sval = sv_i['Name']
+                sval_type = sv_i['Type']
+                self.flows[sv_flow_name] = ActiveFlow(value=sval, flowtype=sval_type)
+                pass
+
+        pass
+
 
     # def _build_activity_rvname(self) -> str:
     #     self.xi_flow = None
