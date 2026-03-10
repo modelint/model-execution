@@ -1,4 +1,4 @@
-""" read.py  -- execute a relational read action """
+""" write.py  -- execute an attribute write action """
 
 # System
 from typing import TYPE_CHECKING, NamedTuple
@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.relvar import Relvar
 from pyral.database import Database  # Diagnostics
 
 # MX
@@ -17,6 +18,7 @@ from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
+from mx.exceptions import *
 
 # See comment in scalar_switch.py
 class RVs(NamedTuple):
@@ -38,8 +40,8 @@ class Write(ActionExecution):
         Perform the Read Action on a domain model.
 
         Args:
-            action_id: The ACTN<n> value identifying each Action instance
-            activity: The A<n> Activity ID (for Method and State Activities)
+            action_id: The ACTN<n> value
+            activity_execution: The Activity Execution object
         """
         super().__init__(activity_execution=activity_execution, action_id=action_id)
 
@@ -66,7 +68,7 @@ class Write(ActionExecution):
         # self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
         #                                   flow_type=self.source_flow.flowtype, activity=self.activity,
         #                                   db=self.domdb, rv_name=self.source_flow.value)
-        attribute_read_accesses_r = Relation.semijoin(db=mmdb, rname1=rv.this_write_action,
+        attribute_write_accesses_r = Relation.semijoin(db=mmdb, rname1=rv.this_write_action,
                                                       rname2="Attribute Write Access",
                                                       attrs={"ID": "Write_action",
                                                              "Activity": "Activity", "Domain": "Domain"},
@@ -74,7 +76,7 @@ class Write(ActionExecution):
         if __debug__:
             Relation.print(db=mmdb, variable_name=rv.attr_write_accesses)
 
-        # Get all attributes being read so we can look up each type
+        # Get all attributes being written so we can look up each type
         attr_r = Relation.semijoin(db=mmdb, rname1=rv.attr_write_accesses, rname2="Attribute",
                                    attrs={"Attribute": "Name", "Class": "Class", "Domain": "Domain"},
                                    svar_name=rv.attributes)
@@ -83,19 +85,30 @@ class Write(ActionExecution):
         pass
 
         # Expand irefs to instance set
-        input_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="read_input")
-        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=input_iset_rv,
-                              class_name=self.source_flow.flowtype)
+        # output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="write_output")
+        # InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=output_iset_rv,
+        #                       class_name=self.source_flow.flowtype)
 
-        for access in attribute_read_accesses_r.body:
-            attr_value_r = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
-                                            relation=input_iset_rv)
-            attr_value = attr_value_r.body[0][access["Attribute"]]
-            self.activity.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
-            self.activity.xe.mxlog.log(message=f"- Attribute: {access["Attribute"]}")
-            self.activity.xe.mxlog.log_sflow(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT,
-                                             flow_type=atypes[access["Attribute"]], activity=self.activity)
-            self.activity.xe.mxlog.log(message=f"Scalar value: [{attr_value}]")
+        if len(self.source_flow.value) > 1:
+            msg = f"Write to multiple instances not yet supported"
+            raise MXException(msg)
+
+        for access in attribute_write_accesses_r.body:
+            new_value = self.activity_execution.flows[access['Input_flow']].value
+            # TODO: Fix PyRAL updateone so that we don't need to convert to snake case here
+            write_attr = access['Attribute'].replace(' ', '_')
+            class_name = access['Class'].replace(' ', '_')
+            Relvar.updateone(db=self.domdb, relvar_name=class_name, id=self.source_flow.value,
+                             update={write_attr: new_value})
+            pass
+            # # attr_value_r = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
+            # #                                 relation=output_iset_rv)
+            # attr_value = attr_value_r.body[0][access["Attribute"]]
+            # self.activity.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
+            # self.activity.xe.mxlog.log(message=f"- Attribute: {access["Attribute"]}")
+            # self.activity.xe.mxlog.log_sflow(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT,
+            #                                  flow_type=atypes[access["Attribute"]], activity=self.activity)
+            # self.activity.xe.mxlog.log(message=f"Scalar value: [{attr_value}]")
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         # And since we are outputing a scalar flow, there is no domain rv output to preserve
