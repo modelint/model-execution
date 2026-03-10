@@ -44,3 +44,17 @@ class InstanceSet:
         :param class_name: The irefs refer to instances of this class
         """
         Relation.join(db=db, rname1=irefs_rv, rname2=class_name, svar_name=iset_rv)
+
+    @staticmethod
+    def attr_dict(db: str, relation_rv: str) -> list[dict[str, str]]:
+        """
+        Convert a relation into a list of dictionary attr/value pair tuples
+
+        Args:
+            db:
+            relation_rv:
+
+        Returns:
+
+        """
+        pass

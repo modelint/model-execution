@@ -80,16 +80,14 @@ class Write(ActionExecution):
         attr_r = Relation.semijoin(db=mmdb, rname1=rv.attr_write_accesses, rname2="Attribute",
                                    attrs={"Attribute": "Name", "Class": "Class", "Domain": "Domain"},
                                    svar_name=rv.attributes)
-        # Accessed attribute / type pairs
-        atypes = {t["Name"]: t["Scalar"] for t in attr_r.body}
-        pass
 
         # Expand irefs to instance set
-        # output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="write_output")
-        # InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=output_iset_rv,
-        #                       class_name=self.source_flow.flowtype)
+        output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="output_input")
+        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=output_iset_rv,
+                              class_name=self.source_flow.flowtype)
 
-        if len(self.source_flow.value) > 1:
+        qty_instances_to_write = Relation.cardinality(db=self.domdb, rname=output_iset_rv)
+        if qty_instances_to_write > 1:
             msg = f"Write to multiple instances not yet supported"
             raise MXException(msg)
 
@@ -98,9 +96,12 @@ class Write(ActionExecution):
             # TODO: Fix PyRAL updateone so that we don't need to convert to snake case here
             write_attr = access['Attribute'].replace(' ', '_')
             class_name = access['Class'].replace(' ', '_')
-            Relvar.updateone(db=self.domdb, relvar_name=class_name, id=self.source_flow.value,
+            # TODO: NOW self.source_flow.value is now an rv name, need to resolve that to id value
+            source_iref_str = Relation.get_rval_string(db=self.domdb, variable_name=self.source_flow.value)
+            source_iref_t_dict = Relation.make_pyrel(source_iref_str).body[0]
+
+            Relvar.updateone(db=self.domdb, relvar_name=class_name, id=source_iref_t_dict,
                              update={write_attr: new_value})
-            pass
             # # attr_value_r = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
             # #                                 relation=output_iset_rv)
             # attr_value = attr_value_r.body[0][access["Attribute"]]
@@ -109,6 +110,8 @@ class Write(ActionExecution):
             # self.activity.xe.mxlog.log_sflow(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT,
             #                                  flow_type=atypes[access["Attribute"]], activity=self.activity)
             # self.activity.xe.mxlog.log(message=f"Scalar value: [{attr_value}]")
+        if __debug__:
+            Relation.print(db=self.domdb, variable_name='Accessible Shaft Level')
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
         # And since we are outputing a scalar flow, there is no domain rv output to preserve

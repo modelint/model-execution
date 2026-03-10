@@ -50,16 +50,31 @@ class StateActivityExecution(ActivityExecution):
                          parameters=state_machine.active_event.params)
         self.enable_initial_flows()
         self.execute()
-        # Relation.free_rvs(db=mmdb, owner=self.owner_name)
-        # Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
+        Relation.free_rvs(db=mmdb, owner=self.owner_name)
+        Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
+        pass
 
     def enable_initial_flows(self):
         """
         Set the values of any initially available flows in this State Activity
         """
         # Executing instance flow (if this is a Lifecycle state activity)
+        domdb = self.state_machine.domain.alias
         if self.xi_flow_name:
-            self.flows[self.xi_flow_name] = ActiveFlow(value=self.state_machine.instance_id, flowtype=self.state_machine.state_model)
+            class_name = self.state_machine.state_model
+            instance_id = self.state_machine.instance_id
+            xi_flow_value_rv = Relation.declare_rv(
+                db=domdb, owner=self.owner_name, name="xi_flow_value"
+            )
+            # Convert identifier to a restriction phrase
+            R = ", ".join(f"{k}:<{v}>" for k, v in instance_id.items())
+            # Set a relation variable name for the xi flow value
+            Relation.restrict(db=domdb, relation=class_name, restriction=R)
+            id_attr_names = tuple(k for k in instance_id.keys())
+            Relation.project(db=domdb, attributes=id_attr_names, svar_name=xi_flow_value_rv)
+
+            # Set the xi flow value to a relation variable holding a single instance reference for the xi
+            self.flows[self.xi_flow_name] = ActiveFlow(value=xi_flow_value_rv, flowtype=class_name)
 
         # Any Scalar Value (constant) flows
         # These are flows whose value is specified in the activity such as 'Stop requested = TRUE'

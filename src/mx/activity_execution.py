@@ -67,6 +67,11 @@ class ActivityExecution(ABC):
         self.owner_name = owner_name
         self.rv_name = rv_name
 
+        R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
+        action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
+        self.unexecuted_actions = {t['ID'] for t in action_r.body}
+        self.enabled_actions = None
+
     def next_action(self) -> str | None:
         """
         Select the next action to execute and return its action id
@@ -74,22 +79,22 @@ class ActivityExecution(ABC):
         Returns:
             The action ID as a string
         """
+        # Step 1: Create current set of enabled actions
         # Check the Flow Dependency instances, are there any?
         R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
         fdep_r = Relation.restrict(db=mmdb, relation="Flow Dependency", restriction=R)
         if not fdep_r.body:
-            # There are no flow dependencies, so we can just execute the actions in any order
-            R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
-            enabled_action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
-            # Put all actions in this Activity into the set of ready actions
-            for a in enabled_action_r.body:
-                self.ready_actions.add(a["ID"])
+            self.enabled_actions = {a for a in self.unexecuted_actions}
         else:
             # Process dependencies
             pass
         # All actions in the set are ready to execute, so it doesn't matter in what order we process them
 
-        return self.ready_actions.pop() if self.ready_actions else None
+        # Step 2: Select one enabled action and remove it from the set of unexecuted actions
+        next_action = self.enabled_actions.pop()
+        self.unexecuted_actions.discard(next_action)
+
+        return next_action if self.enabled_actions else None
 
     def execute(self):
         """
