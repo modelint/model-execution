@@ -24,7 +24,6 @@ from mx.lifecycle_state_machine import LifecycleStateMachine
 from mx.db_names import mmdb
 from mx.initial_states import InitialStateContext
 # from mx.exceptions import *
-from mx.rvname import RVN
 from mx.mxtypes import snake
 
 
@@ -76,9 +75,6 @@ class Domain:
         self.lifecycle_initial_states = is_context.lifecycle_istates
         self.massigner_initial_states = is_context.ma_istates
         # TODO: Single assigner initial states not yet specified in the sip file syntax
-
-        # Initialize the variable name counter
-        RVN.init_for_db(db=self.alias)
 
         # Load the domain database
         Database.open_session(name=self.alias)

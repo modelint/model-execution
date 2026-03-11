@@ -21,6 +21,8 @@ from mx.system import System
 from mx import version
 from mx.mdb_types import *
 from mx.mxtypes import *
+from mx.db_names import mmdb
+from mx.utility import print_models
 
 _logpath = Path("mx.log")
 _progname = 'Blueprint Model Execution'
@@ -50,7 +52,7 @@ def main():
     s.initialize(system_path=system_path, verbose=False, debug=True)
 
     # Try printing it out
-    s.print_models(class_names=['Class', 'Attribute'], output_file='class.txt')
+    print_models(db=mmdb, class_names=['Class', 'Attribute'], output_file='class.txt')
 
     s.load_domains(playground='one_bank_one_shaft')
 
@@ -81,8 +83,6 @@ def main():
     ]
 
     system_responses = s.inject(stimulus=interactions[0], responses=[interactions[1]])
-    pass
-
 
     print("\nNo problemo")  # Comment this line out before release
 

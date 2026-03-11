@@ -15,10 +15,8 @@ from pyral.relvar import Relvar
 from mx.interaction_event import InteractionEvent
 from mx.domain import Domain
 from mx.db_names import mmdb
-from mx.rvname import RVN
 from mx.exceptions import *
 from mx.mdb_types import *
-# from mx.mx_logger import MXLogger
 
 _logger = logging.getLogger(__name__)
 
@@ -51,7 +49,6 @@ class System:
         self.verbose = False
         self.playground = None  # This is a set of populated domain dbs and compatible scenarios
         self.response_monitor = None
-        # self.mxlog = MXLogger()
 
     def initialize(self, system_path: Path, verbose: bool, debug: bool):
         """
@@ -66,14 +63,11 @@ class System:
         self.path = system_path
         self.set_mmdb_path()  # Sets self.mmdb_path
 
-
         # Load a metamodel file populated with the system as one or more modeled domains
         _logger.info(f"Loading the metamodel database from: [{self.mmdb_path.name}]")
         Database.open_session(name=mmdb)
         Database.load(db=mmdb, fname=str(self.mmdb_path))
 
-        # Initialize the variable name counter
-        RVN.init_for_db(db=mmdb)
         # Get the System name from the populated metamodel
         system_i = Relation.restrict(db=mmdb, relation='System')
         if not system_i.body:
@@ -82,16 +76,6 @@ class System:
             raise MXUserDBException(msg)
 
         self.name = system_i.body[0]['Name']
-
-    @classmethod
-    def print_models(self, class_names=None, output_file=DEFAULT_MODEL_OUTPUT_NAME, display=False, save=True):
-        with open(output_file, 'w') as f:
-            with redirect_stdout(f):
-                if not class_names:
-                    Relvar.printall(db=mmdb)
-                else:
-                    for c in class_names:
-                        Relation.print(db=mmdb, variable_name=c)
 
     def load_domains(self, playground: str):
         """
