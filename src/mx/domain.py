@@ -30,6 +30,7 @@ from mx.mxtypes import snake
 _logger = logging.getLogger(__name__)
 
 MultipleAssigner = NamedTuple("MultipleAssigner", rnum=str, pclass=str)
+MAPartitionClassID = NamedTuple('MAPartitionClassID', pclass=str, id_attrs=list[str])
 
 
 class Domain:
@@ -65,8 +66,7 @@ class Domain:
         self.pclasses: dict[str, list[str]] = {}
         self.methods = None
         # self.flows = activity: flow id, flow type(scalar, inst1, instM, table, tuple), data type(scalar, table, class)
-        MultAssignerPartition = NamedTuple('MultAssignerPartion', pclass=str, id_attrs=dict[str, list[str]])
-        self.mult_assigner_partitions: dict[str, MultAssignerPartition] = {}
+        self.ma_partitions: dict[str, MAPartitionClassID] = {}
 
         self.file_path = self.system.playground / 'population' / f"{self.alias}.ral"  # Path to the domain database file
 
@@ -89,6 +89,7 @@ class Domain:
         # self.lifecycles: dict[str, list[LifecycleStateMachine]] = {}
         # self.assigners: dict[str, list[AssignerStateMachine]] = {}
         self.initiate_lifecycles()  # Create a lifecycle statemachine for each class with a lifecycle
+        pass
         self.initiate_assigners()  # Create an assigner statemachine for each relationship managed by an assigner
         # self.initiate_methods()
 
@@ -135,44 +136,42 @@ class Domain:
         For each relationship that uses one, create a single assigner
         """
         R = f"Domain:<{self.name}>"
-        result = Relation.restrict(db=mmdb, relation='Single_Assigner', restriction=R)
-        self.single_assigners = [t['rnum'] for t in result.body]
+        single_assigner_r = Relation.restrict(db=mmdb, relation='Single_Assigner', restriction=R)
+        self.single_assigners = [t['rnum'] for t in single_assigner_r.body]
 
     def find_mult_assigners(self):
         """
-        For each
+        For each multiple assigner, record the rnum, partitioning class, and the identifier attributes
+        of the partitioning class primary identifier
         """
-        # Get the names of each partitioning class in this domain
+        # Get all of the multiple assigners in this domain
         R = f"Domain:<{self.name}>"
-        p_result = Relation.restrict(db=mmdb, relation='Multiple_Assigner', restriction=R)
-        pclass_names = [t['Partitioning_class'] for t in p_result.body]
+        multiple_assigner_r = Relation.restrict(db=mmdb, relation='Multiple Assigner', restriction=R)
 
-        # Now get the identifier attributes of all of these classes
+        # Map each rnum -> partitioning class name
+        pclass_by_rnum: dict[str, str] = {
+            ma_t['Rnum']: ma_t['Partitioning_class']
+            for ma_t in multiple_assigner_r.body
+        }
+
+        # Collect identifier attributes of the primary identifier of each partitioning class
         R = f"Domain:<{self.name}>, Identifier:<1>"
-        Relation.join(db=mmdb, rname2='Identifier_Attribute', rname1='Multiple_Assigner',
-                      attrs={'Partitioning_class': 'Class', 'Domain': 'Domain'}, svar_name='id_pall')
-        # id_pall relation has all identifier attributes for all partitioning classes
+        Relation.restrict(db=mmdb, restriction=R, relation='Identifier Attribute', svar_name='primary_id_attr')
+        ipa = Relation.join(db=mmdb, rname2='primary_id_attr', rname1='Multiple Assigner',
+                            attrs={'Partitioning_class': 'Class', 'Domain': 'Domain'})
 
-        # Save the primary identifier for each partitioning class
-        for c in pclass_names:
-            R = f"Partitioning_class:<{c}>"
-            id_result = Relation.restrict(db=mmdb, restriction=R, relation='id_pall')
-            c_id_attrs = [t['Attribute'] for t in id_result.body]  # id attributes for the current class
-            self.pclasses[c] = c_id_attrs
+        # We just need the rnum and the list of identifying attributes of the partitioning class
+        id_attrs_by_rnum: dict[str, list[str]] = defaultdict(list)
+        for t in ipa.body:
+            id_attrs_by_rnum[t['Rnum']].append(t['Attribute'])
 
-        R = f"Domain:<{self.name}>"
-        result = Relation.restrict(db=mmdb, relation='Multiple_Assigner', restriction=R)
-        self.mult_assigner_partitions = [MultipleAssigner(rnum=t['Rnum'], pclass=t['Partitioning_class'])
-                                         for t in result.body]
-
-    def print_classes(self, class_names=None, output_file: Optional[str] = None, display=False, save=True):
-        with open(output_file, 'w') as f:
-            with redirect_stdout(f):
-                if not class_names:
-                    self.display()
-                else:
-                    for c in class_names:
-                        Relation.print(db=self.alias, variable_name=c)
+        # Now we can arrange the partitioning class name and identifier attributes in a named tuple
+        # mapped to the rnum key
+        self.ma_partitions = {
+            rnum: MAPartitionClassID(pclass=pclass, id_attrs=id_attrs_by_rnum[rnum])
+            for rnum, pclass in pclass_by_rnum.items()
+        }
+        pass
 
     def display(self):
         """
@@ -220,7 +219,7 @@ class Domain:
         """
         Initiates any single and multiple assigner state machines
         """
-        return
+        pass
         # for ma in self.mult_assigner_partitions:
         #     pclass_id = self.pclasses[ma.pclass]
         #     result = Relation.restrict(db=self.alias, relation=ma.pclass)
@@ -230,6 +229,7 @@ class Domain:
         #         istate = self.massigner_initial_states[ma.rnum].state
         #         self.mult_assigners.setdefault(ma, {})[MultipleAssignerStateMachine(
         #             ma_sm_id=, current_state=istate, rnum=ma.rnum, pclass_name=ma.pclass, instance_id=id_val, domain=self.name))
+        return
     #
     #     for sa in self.db.single_assigners:
     #         # TODO: Support single assigners
