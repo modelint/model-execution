@@ -156,13 +156,13 @@ class Domain:
 
         # Collect identifier attributes of the primary identifier of each partitioning class
         R = f"Domain:<{self.name}>, Identifier:<1>"
-        Relation.restrict(db=mmdb, restriction=R, relation='Identifier Attribute', svar_name='primary_id_attr')
-        ipa = Relation.join(db=mmdb, rname2='primary_id_attr', rname1='Multiple Assigner',
-                            attrs={'Partitioning_class': 'Class', 'Domain': 'Domain'})
+        Relation.restrict(db=mmdb, restriction=R, relation='Identifier Attribute')
+        ma__idattrs = Relation.join(db=mmdb, rname2='Multiple Assigner',
+                                    attrs={'Class': 'Partitioning_class', 'Domain': 'Domain'})
 
         # We just need the rnum and the list of identifying attributes of the partitioning class
         id_attrs_by_rnum: dict[str, list[str]] = defaultdict(list)
-        for t in ipa.body:
+        for t in ma__idattrs.body:
             id_attrs_by_rnum[t['Rnum']].append(t['Attribute'])
 
         # Now we can arrange the partitioning class name and identifier attributes in a named tuple
@@ -171,7 +171,6 @@ class Domain:
             rnum: MAPartitionClassID(pclass=pclass, id_attrs=id_attrs_by_rnum[rnum])
             for rnum, pclass in pclass_by_rnum.items()
         }
-        pass
 
     def display(self):
         """
