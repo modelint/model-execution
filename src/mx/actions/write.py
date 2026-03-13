@@ -20,18 +20,21 @@ from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.exceptions import *
 
+if __debug__:
+    from mx.utility import *
+
 # See comment in scalar_switch.py
-class RVs(NamedTuple):
+class MMRVs(NamedTuple):
     this_write_action: str
     attr_write_accesses: str
     attributes: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
-def declare_my_module_rvs(db: str, owner: str) -> RVs:
-    rvs = declare_rvs(db, owner, "this_write_action",
+def declare_mm_rvs(owner: str) -> MMRVs:
+    rvs = declare_rvs(mmdb, owner, "this_write_action",
                       "attr_write_accesses", "attributes")
-    return RVs(*rvs)
+    return MMRVs(*rvs)
 
 class Write(ActionExecution):
 
@@ -50,7 +53,7 @@ class Write(ActionExecution):
             return
 
         # Get a NamedTuple with a field for each relation variable name
-        rv = declare_my_module_rvs(db=mmdb, owner=self.rvp)
+        rv = declare_mm_rvs(owner=self.rvp)
 
         # Lookup the Action instance
         Relation.semijoin(db=mmdb, rname1=self.activity_execution.rv_name, rname2="Write Action")

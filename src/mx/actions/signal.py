@@ -33,9 +33,11 @@ class Signal(ActionExecution):
 
         send_signal_action_rv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="send_signal_action")
         # Determine the type of signal to be generated
-        send_signal_r = Relation.semijoin(db=mmdb, rname1=self.activity_execution.rv_name, rname2="Send Signal Action",
-                                          svar_name=send_signal_action_rv)
-        if send_signal_r.body:
+        send_signal_r = Relation.semijoin(db=mmdb, rname1=self.activity_execution.rv_name, rname2="Send Signal Action")
+        # Narrow it down to this Read Action instance
+        R = f"ID:<{action_id}>"
+        send_signal_t = Relation.restrict(db=mmdb, restriction=R, svar_name=send_signal_action_rv)
+        if send_signal_t.body:
             # Get the parameters
             # TODO: Process signal with parameters when we have an example
             # supplied_parameter_value_r = Relation.semijoin(db=mmdb, rname1=send_signal_action_rv,

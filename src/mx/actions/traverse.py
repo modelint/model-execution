@@ -4,7 +4,7 @@
 from typing import TYPE_CHECKING, Callable, NamedTuple
 
 if TYPE_CHECKING:
-    from mx.method_execution import MethodExecution  # TOOD: Replace with Activity after refactoring State/Assigner Activities
+    from mx.activity_execution import ActivityExecution
 
 # Model Integration
 from pyral.relation import Relation
@@ -16,6 +16,9 @@ from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.instance_set import InstanceSet
+
+if __debug__:
+    from mx.utility import *
 
 # Tuple generator and rv class for Metamodel Database (mmdb)
 class MMRVs(NamedTuple):
@@ -42,7 +45,7 @@ def declare_dom_rvs(db: str, owner: str) -> DomRVs:
 
 class Traverse(ActionExecution):
 
-    def __init__(self, action_id: str, activity: "MethodExecution"):
+    def __init__(self, action_id: str, activity_execution: "ActivityExecution"):
         """
         Perform the Traverse Action on a domain model.
 
@@ -51,22 +54,26 @@ class Traverse(ActionExecution):
         :param action_id:  The ACTN<n> value identifying each Action instance
         :param activity: The A<n> Activity ID (for Method and State Activities)
         """
-        super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
+        super().__init__(activity_execution=activity_execution, action_id=action_id)
 
         # Do not execute this Action if it is not enabled, see comment in Action class
         if self.disabled:
             return
 
-        _rv_before_mmdb = Database.get_rv_names(db=mmdb)
-        _rv_before_dom = Database.get_rv_names(db=self.domdb)
+        # TODO: NOW It looks like rv_names for ACTN40 where not cleared out
+        if __debug__:
+            _rv_before_mmdb = Database.get_rv_names(db=mmdb)
+            _rv_before_dom = Database.get_rv_names(db=self.domdb)
 
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(owner=self.rvp)
         self.domrv = declare_dom_rvs(db=self.domdb, owner=self.rvp)
         mmrv = self.mmrv
         domrv = self.domrv
-        _rv_after_mmdbdec = Database.get_rv_names(db=mmdb)
-        _rv_after_domdec = Database.get_rv_names(db=self.domdb)
+
+        if __debug__:
+            _rv_after_mmdbdec = Database.get_rv_names(db=mmdb)
+            _rv_after_domdec = Database.get_rv_names(db=self.domdb)
 
         # We define a distinct method to trace each subclass of Hop
         execute_hop: dict[str, Callable[..., str]] = {  # The only type hint that seems to work with PyCharm
@@ -78,26 +85,26 @@ class Traverse(ActionExecution):
 
         # Lookup this Action instance
         # Start with all Traverse actions in this Activity
-        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Traverse_Action",
+        Relation.semijoin(db=mmdb, rname1=activity_execution.rv_name, rname2="Traverse_Action",
                           svar_name=mmrv.activity_traverse_actions)
         # Narrow it down to this Traverse Action instance
         R = f"ID:<{action_id}>"
         traverse_action_r = Relation.restrict(db=mmdb, restriction=R, svar_name=mmrv.this_traverse_action)
         traverse_action_t = traverse_action_r.body[0]
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.this_traverse_action)
-        self.activity.xe.mxlog.log(message=f"- Path: {traverse_action_t["Path"]}")
-        self.activity.xe.mxlog.log(message="Flows")
+        # if self.activity.xe.debug:
+        #     Relation.print(db=mmdb, variable_name=mmrv.this_traverse_action)
+        # self.activity.xe.mxlog.log(message=f"- Path: {traverse_action_t["Path"]}")
+        # self.activity.xe.mxlog.log(message="Flows")
 
         # Extract input and output flows required by the Traversal Action
         # ---
         # Get the name of the input flow (F1, F2, etc)
         self.source_flow_name = traverse_action_t["Source_flow"]
         # Save the content of that flow (value, type)
-        self.source_flow = self.activity.flows[self.source_flow_name]
-        self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-                                          flow_type=self.source_flow.flowtype, activity=self.activity,
-                                          db=self.domdb, rv_name=self.source_flow.value)
+        self.source_flow = self.activity_execution.flows[self.source_flow_name]
+        # self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+        #                                   flow_type=self.source_flow.flowtype, activity=self.activity_execution,
+        #                                   db=self.domdb, rv_name=self.source_flow.value)
         # The name of the class we are currently hopping from, we will update as we hop
         # Initialize it on the class (type) of the source flow
         self.hop_from_class = self.source_flow.flowtype
@@ -139,18 +146,20 @@ class Traverse(ActionExecution):
 
         # Extract instance references
         InstanceSet.irefs(db=self.domdb, iset_rv=hop_from_rv, irefs_rv=domrv.output_irefs,
-                          class_name=self.hop_from_class, domain_name=self.activity.domain_name)
+                          class_name=self.hop_from_class, domain_name=self.activity_execution.domain.name)
 
         output_flow_content = ActiveFlow(value=domrv.output_irefs, flowtype=self.hop_from_class)
         self.activity.flows[self.dest_flow_name] = output_flow_content
-        self.activity.xe.mxlog.log_nsflow(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
-                                          flow_type=self.hop_from_class, activity=self.activity,
-                                          db=self.domdb, rv_name=domrv.output_irefs)
-        if self.activity.xe.debug:
+        # self.activity.xe.mxlog.log_nsflow(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
+        #                                   flow_type=self.hop_from_class, activity=self.activity,
+        #                                   db=self.domdb, rv_name=domrv.output_irefs)
+        if __debug__:
             Relation.print(db=self.domdb, variable_name=domrv.output_irefs)
         Relation.free_rvs(db=mmdb, owner=self.rvp)
-        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
-        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
+
+        if __debug__:
+            _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
+            _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
 
         pass  # All hops completed
 
