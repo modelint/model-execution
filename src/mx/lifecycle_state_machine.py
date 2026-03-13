@@ -30,4 +30,3 @@ class LifecycleStateMachine(StateMachine):
         self.instance_id = instance_id
         self.class_name = class_name
 
-        pass

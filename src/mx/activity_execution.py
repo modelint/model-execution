@@ -66,11 +66,42 @@ class ActivityExecution(ABC):
         self.flows: dict[str, ActiveFlow | None] = {}
         self.owner_name = owner_name
         self.rv_name = rv_name
+        self.unexecuted_actions: set[str] | None = None
 
+        self.enabled_actions = None
+        self.enable_initial_actions()
+
+    def enable_initial_actions(self):
+        """
+        Produce the set of actions that are initially executable.
+
+        These will be any actions that do not require input from another action, but may receive
+        one or more inputs that are initially available when execution begins.
+
+        Cases:
+           Rare: Action takes no input at all (random number generator)
+
+           Or takes immediately available input:
+
+           1. Class Accessor flow (reads attribute values from one or more classes)
+           2. The executing (lifecycle) or partitioning (multiple assigner) instance flow
+           3. Input parameter flow
+           4. Scalar Value (flow with literal value specified in action language)
+        """
+        # First let's mark all actions as unexecuted
         R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
         action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
         self.unexecuted_actions = {t['ID'] for t in action_r.body}
-        self.enabled_actions = None
+
+        # Subtract the set of actions dependent on action flows from the set of unexecuted actions to
+        # obtain the set of non dependent actions which we can mark as enabled (immediately executable)
+
+        # Join the unexecuted actions with Flow Dependency on the To_action (flow destination)
+        # to obtain all dependent actions
+        dependent_action_r = Relation.semijoin(db=mmdb, rname2='Flow Dependency',
+                                               attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'})
+        dependent_actions = {t['To_action'] for t in dependent_action_r.body}
+        self.enabled_actions = self.unexecuted_actions - dependent_actions
 
     def next_action(self) -> str | None:
         """
@@ -79,22 +110,25 @@ class ActivityExecution(ABC):
         Returns:
             The action ID as a string
         """
-        # Step 1: Create current set of enabled actions
-        # Check the Flow Dependency instances, are there any?
-        R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
-        fdep_r = Relation.restrict(db=mmdb, relation="Flow Dependency", restriction=R)
-        if not fdep_r.body:
-            self.enabled_actions = {a for a in self.unexecuted_actions}
-        else:
-            # Process dependencies
-            pass
-        # All actions in the set are ready to execute, so it doesn't matter in what order we process them
+        if self.enabled_actions:
+            next_action = self.enabled_actions.pop()  # Any enabled action will do
+            self.unexecuted_actions.discard(next_action)  # Unmark it as unexecuted
+            return next_action
 
-        # Step 2: Select one enabled action and remove it from the set of unexecuted actions
-        next_action = self.enabled_actions.pop()
-        self.unexecuted_actions.discard(next_action)
+        return None  # None were enabled, so we must be done
 
-        return next_action if self.enabled_actions else None
+    def update_enabled_actions(self):
+        """
+        Having executed some action, check flow dependencies to determine if there are any
+        actions that now have all of their required inputs enabled and add them to the set of
+        enabled actions.
+        """
+        # If the current set of enabled actions equals the set of unexecuted actions
+        # there are no more actions to enable
+        if self.enabled_actions == self.unexecuted_actions:
+            return
+
+        # TODO: When we get to a more interesting Activity, expand the logic
 
     def execute(self):
         """
@@ -108,5 +142,6 @@ class ActivityExecution(ABC):
             action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
             action_type = action_r.body[0]["Type"]
             current_x_action = ActivityExecution.execute_action[action_type](activity_execution=self, action_id=action_id)
+            self.update_enabled_actions()
             pass
         pass

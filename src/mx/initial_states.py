@@ -15,7 +15,7 @@ from sip_parser.parser import SIParser
 # Model Execution
 from mx.exceptions import *
 
-MultipleAssignerInitialState = NamedTuple('MultipleAssignerInitialState', pclass=str, state=str)
+# MultipleAssignerInitialState = NamedTuple('MultipleAssignerInitialState', pclass=str, state=str)
 
 _logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class InitialStateContext:
         :param domain:  The subject matter domain being populated
         """
         self.lifecycle_istates: dict[str, str] = {}
-        self.ma_istates: dict[str, MultipleAssignerInitialState] = {}
+        self.ma_istates: dict[str, str] = {}
 
         context_dir = domain.system.playground / 'population'
         sip_files = list(context_dir.glob("*.sip"))
@@ -71,5 +71,5 @@ class InitialStateContext:
                         self.lifecycle_istates[class_name] = s[0]
                     if len(s) == 2:
                         # index by rnum and save partitioning class and initial state
-                        self.ma_istates[s[0]] = MultipleAssignerInitialState(pclass=class_name, state=s[1])
+                        self.ma_istates[s[0]] = s[1]
 

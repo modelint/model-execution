@@ -120,6 +120,7 @@ class StateMachine:
                                          svar_name=transition_rv)
         if transition_r.body:
             self.transition(transition_rv=transition_rv)
+            Relation.free_rvs(db=mmdb, owner=self.sm_id, names=("transition",))
             return
 
         # Process non-transition

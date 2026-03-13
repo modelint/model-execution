@@ -22,7 +22,7 @@ from mx import version
 from mx.mdb_types import *
 from mx.mxtypes import *
 from mx.db_names import mmdb
-from mx.utility import print_models
+from mx.utility import print_classes
 
 _logpath = Path("mx.log")
 _progname = 'Blueprint Model Execution'
@@ -52,11 +52,11 @@ def main():
     s.initialize(system_path=system_path, verbose=False, debug=True)
 
     # Try printing it out
-    print_models(db=mmdb, class_names=['Class', 'Attribute'], output_file='class.txt')
+    print_classes(db=mmdb, class_names=['Class', 'Attribute'], output_file='class.txt')
 
     s.load_domains(playground='one_bank_one_shaft')
 
-    s.domains['EVMAN'].print_classes(class_names=['Cabin', 'Door'], output_file='evman_cabin_door.txt')
+    print_classes(db='EVMAN', class_names=['Cabin', 'Door'], output_file='evman_cabin_door.txt')
 
 
 # Begin hard coded scenario
