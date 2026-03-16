@@ -13,6 +13,8 @@ from pyral.database import Database
 # MX
 from mx.actions.flow import ActiveFlow
 from mx.activity_execution import ActivityExecution
+from mx.mxtypes import StateMachineType
+from mx.utility import snake
 from db_names import mmdb
 
 class StateActivityExecution(ActivityExecution):
@@ -23,28 +25,28 @@ class StateActivityExecution(ActivityExecution):
         self.xi_flow_name = None
         from mx.lifecycle_state_machine import LifecycleStateMachine
         from mx.assigner_state_machine import AssignerStateMachine
-        if isinstance(self.state_machine, LifecycleStateMachine):
-            self.instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
-            owner_name = f"{anum}_{self.instance_id_value}"
-            rv_name = Relation.declare_rv(db=mmdb, owner=owner_name, name="lifecycle_name")
-            R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
-            Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
-            lifecycle_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=rv_name)
-            self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
-            pass
-            # if not method_i.body:
-            #     msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
-            #     _logger.error(msg)
-            #     raise MXMetamodelDBException(msg)
-        elif isinstance(self.state_machine, AssignerStateMachine):
-            # Single assigner is just the rnum
-            owner_name = ""  # TODO: Fill this in
-            rv_name = Relation.declare_rv(db=mmdb, owner=owner_name, name="single_assigner_name")
-        else:
-            # It must be a multiple assigner state machine
-            # we need the rnum plus the partitioning instance
-            owner_name = ""  # TODO: Fill this in
-            rv_name = Relation.declare_rv(db=mmdb, owner=owner_name, name="multiple_assigner_name")
+        match self.state_machine.sm_type:
+            case StateMachineType.LIFECYCLE:
+                self.instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
+                owner_name = f"LSM_{self.state_machine.state_model}_{anum}_inst_{self.instance_id_value}"
+                rv_name = Relation.declare_rv(db=mmdb, owner=owner_name, name="lifecycle_name")
+                R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
+                Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
+                lifecycle_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=rv_name)
+                self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
+                # if not method_i.body:
+                #     msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
+                #     _logger.error(msg)
+                #     raise MXMetamodelDBException(msg)
+            case StateMachineType.SA:
+                # Single assigner is just the rnum
+                owner_name = f"SASM_{self.state_machine.state_model}_{anum}"
+                rv_name = Relation.declare_rv(db=mmdb, owner=owner_name, name="single_assigner_name")
+            case StateMachineType.MA:
+                # It must be a multiple assigner state machine
+                # we need the rnum plus the partitioning instance
+                owner_name = f"MASM_{self.state_machine.state_model}_{anum}_inst_"  # TODO: add partitioning inst id
+                rv_name = Relation.declare_rv(db=mmdb, owner=owner_name, name="multiple_assigner_name")
 
         super().__init__(domain=state_machine.domain, anum=anum, owner_name=owner_name, rv_name=rv_name,
                          parameters=state_machine.active_event.params)

@@ -141,15 +141,15 @@ class Traverse(ActionExecution):
             # Execute the hop and set input to next hop as output from this hop
             hop_from_rv = execute_hop[hop_type](hop_t=h, hop_rv=mmrv.this_hop, hop_from_rv=hop_from_rv)
 
-        if self.activity.xe.debug:
-            Relation.print(db=self.domdb, variable_name=hop_from_rv)
+        # if self.activity.xe.debug:
+        #     Relation.print(db=self.domdb, variable_name=hop_from_rv)
 
         # Extract instance references
         InstanceSet.irefs(db=self.domdb, iset_rv=hop_from_rv, irefs_rv=domrv.output_irefs,
                           class_name=self.hop_from_class, domain_name=self.activity_execution.domain.name)
 
         output_flow_content = ActiveFlow(value=domrv.output_irefs, flowtype=self.hop_from_class)
-        self.activity.flows[self.dest_flow_name] = output_flow_content
+        self.activity_execution.flows[self.dest_flow_name] = output_flow_content
         # self.activity.xe.mxlog.log_nsflow(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
         #                                   flow_type=self.hop_from_class, activity=self.activity,
         #                                   db=self.domdb, rv_name=domrv.output_irefs)

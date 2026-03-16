@@ -62,6 +62,7 @@ class Domain:
         self.lifecycle_ids: dict[str, list[str]] = {}
         self.ma_partitions: dict[str, MAPartitionClassID] = {}
         self.methods = None
+        self.rv_owner = f"_{alias}_domain"
 
         self.file_path = self.system.playground / 'population' / f"{self.alias}.ral"  # Path to the domain database file
 
@@ -85,6 +86,9 @@ class Domain:
         # self.initiate_sa_state_machines()
         # self.initiate_methods()
 
+        # Clear out any mmdb rvs defined by this domain during initialization
+        Relation.free_rvs(db=mmdb, owner=self.rv_owner)
+
     @property
     def busy(self) -> bool:
         return self.events_pending or self.activity_executing
@@ -93,7 +97,8 @@ class Domain:
         """
         Run all state machines
 
-        :return:
+        Returns:
+            True if there is still work remaining (unprocessed events)
         """
         for class_name, instance in self.lifecycles.items():
             for inst_id, sm in instance.items():
@@ -112,16 +117,18 @@ class Domain:
         class_names = [t['Class'] for t in lifecycle_i.body]
 
         # Now get the identifier attributes of all of these classes
+        rv_id_all = Relation.declare_rv(db=mmdb, owner=self.rv_owner, name="id_all")
         R = f"Domain:<{self.name}>, Identifier:<1>"
-        Relation.join(db=mmdb, rname2='Identifier_Attribute', rname1='Lifecycle', svar_name='id_all')
+        Relation.join(db=mmdb, rname2='Identifier_Attribute', rname1='Lifecycle', svar_name=rv_id_all)
         # id_all relation has all identifier attributes for all classes with lifecycles
 
         # Save the primary identifier for each class with a lifecycle
         for c in class_names:
             R = f"Class:<{c}>, Identifier:<{1}>"
-            id_result = Relation.restrict(db=mmdb, restriction=R, relation='id_all')
+            id_result = Relation.restrict(db=mmdb, restriction=R, relation=rv_id_all)
             c_id_attrs = [t['Attribute'] for t in id_result.body]  # id attributes for the current class
             self.lifecycle_ids[c] = c_id_attrs
+
 
     def find_single_assigners(self):
         """

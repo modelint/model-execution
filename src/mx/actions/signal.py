@@ -31,7 +31,11 @@ class Signal(ActionExecution):
         if self.disabled:
             return
 
-        send_signal_action_rv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="send_signal_action")
+        if __debug__:
+            _rv_before_mmdb = Database.get_rv_names(db=mmdb)
+            _rv_before_dom = Database.get_rv_names(db=self.domdb)
+
+        send_signal_action_rv = Relation.declare_rv(db=mmdb, owner=self.owner, name="send_signal_action")
         # Determine the type of signal to be generated
         send_signal_r = Relation.semijoin(db=mmdb, rname1=self.activity_execution.rv_name, rname2="Send Signal Action")
         # Narrow it down to this Read Action instance
@@ -57,6 +61,7 @@ class Signal(ActionExecution):
                                     class_name=activity_execution.state_machine.state_model,
                                     instance_id=self.activity_execution.state_machine.instance_id)
                                 )
+            Relation.free_rvs(db=mmdb, owner=self.owner)
         pass
         # R = f"ID:<{self.action_id}>, Activity:<{anum}>, Domain:<{domain}>"
         # labeled_flow_r = Relation.restrict(db=mmdb, relation="Labeled Flow", restriction=R)
@@ -73,5 +78,3 @@ class Signal(ActionExecution):
         # for Signal Completion Action case
         # We know it will be queued for the xi (if lifecycle)
         # Send Signal Action has the ev spec
-
-        pass

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.database import Database
 
 # MX
 from mx.exceptions import *
@@ -35,7 +36,7 @@ sm_id_map = {}  # Map of identifier values to state machine instances
 
 class StateMachine:
 
-    def __init__(self, sm_id: str, current_state: str, state_model: str, sm_type: StateMachineType, domain: "Domain"):
+    def __init__(self, sm_id: str, rv_owner: str, current_state: str, state_model: str, sm_type: StateMachineType, domain: "Domain"):
         """
         Initialize a state machine with a current state
 
@@ -46,6 +47,7 @@ class StateMachine:
             domain:
         """
         self.sm_id = sm_id  # State machine id (unique across all state machine types in this domain)
+        self.rv_owner = rv_owner
         self.sm_type = sm_type
         self.activity_executing = False
         self.current_state = current_state
@@ -113,14 +115,13 @@ class StateMachine:
 
         # Check for transition
 
-        transition_rv = Relation.declare_rv(db=mmdb, owner=self.sm_id, name="transition")
+        transition_rv = Relation.declare_rv(db=mmdb, owner=self.rv_owner, name="transition")
         R = (f"From_state:<{self.current_state}>, Event:<{self.active_event.event_spec}>, "
              f"State_model:<{self.state_model}>, Domain:<{self.domain.name}>")
         transition_r = Relation.restrict(db=mmdb, relation="Transition", restriction=R,
                                          svar_name=transition_rv)
         if transition_r.body:
             self.transition(transition_rv=transition_rv)
-            Relation.free_rvs(db=mmdb, owner=self.sm_id, names=("transition",))
             return
 
         # Process non-transition
@@ -172,6 +173,7 @@ class StateMachine:
         dest_real_state_r = Relation.semijoin(db=mmdb, rname1=transition_rv, rname2="Real State",
                                               attrs= {"To_state": "Name", "State_model": "State_model",
                                                       "Domain": "Domain"})
+        Relation.free_rvs(db=mmdb, owner=self.rv_owner, names=("transition",))
         dest_real_state_t = dest_real_state_r.body[0]
         self.current_state = dest_real_state_t["Name"]
         StateActivityExecution(anum=dest_real_state_t["Activity"], state_machine=self)

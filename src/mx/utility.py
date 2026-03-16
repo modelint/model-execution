@@ -5,6 +5,9 @@ from contextlib import redirect_stdout
 from pyral.relation import Relation
 from pyral.relvar import Relvar
 
+def snake(name: str) -> str:
+    return name.replace(' ', '_')
+
 def print_classes(db: str, class_names=None, output_file=None, name=''):
     """
     Prints out model information either to a file or the console.

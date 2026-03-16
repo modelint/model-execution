@@ -53,7 +53,7 @@ class Write(ActionExecution):
             return
 
         # Get a NamedTuple with a field for each relation variable name
-        rv = declare_mm_rvs(owner=self.rvp)
+        rv = declare_mm_rvs(owner=self.owner)
 
         # Lookup the Action instance
         Relation.semijoin(db=mmdb, rname1=self.activity_execution.rv_name, rname2="Write Action")
@@ -85,7 +85,7 @@ class Write(ActionExecution):
                                    svar_name=rv.attributes)
 
         # Expand irefs to instance set
-        output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="output_input")
+        output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="output_input")
         InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=output_iset_rv,
                               class_name=self.source_flow.flowtype)
 
@@ -116,7 +116,7 @@ class Write(ActionExecution):
         if __debug__:
             Relation.print(db=self.domdb, variable_name='Accessible Shaft Level')
         # This action's mmdb rvs are no longer needed)
-        Relation.free_rvs(db=mmdb, owner=self.rvp)
+        Relation.free_rvs(db=mmdb, owner=self.owner)
         # And since we are outputing a scalar flow, there is no domain rv output to preserve
         # In fact, we didn't define any domain rv's at all, so there are none to free
 

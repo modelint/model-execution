@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.database import Database
 
 # MX
 from mx.actions.flow import ActiveFlow
