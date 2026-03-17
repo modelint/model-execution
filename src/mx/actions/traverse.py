@@ -66,8 +66,8 @@ class Traverse(ActionExecution):
             _rv_before_dom = Database.get_rv_names(db=self.domdb)
 
         # Get a NamedTuple with a field for each relation variable name
-        self.mmrv = declare_mm_rvs(owner=self.rvp)
-        self.domrv = declare_dom_rvs(db=self.domdb, owner=self.rvp)
+        self.mmrv = declare_mm_rvs(owner=self.owner)
+        self.domrv = declare_dom_rvs(db=self.domdb, owner=self.owner)
         mmrv = self.mmrv
         domrv = self.domrv
 
@@ -155,7 +155,7 @@ class Traverse(ActionExecution):
         #                                   db=self.domdb, rv_name=domrv.output_irefs)
         if __debug__:
             Relation.print(db=self.domdb, variable_name=domrv.output_irefs)
-        Relation.free_rvs(db=mmdb, owner=self.rvp)
+        Relation.free_rvs(db=mmdb, owner=self.owner)
 
         if __debug__:
             _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
@@ -174,7 +174,7 @@ class Traverse(ActionExecution):
         """
         drv = self.domrv
         # Get the referential attributes, source and target classes
-        ref_attrs_rv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="ref_attrs")
+        ref_attrs_rv = Relation.declare_rv(db=mmdb, owner=self.owner, name="ref_attrs")
         hop_attr_refs_r = Relation.semijoin(db=mmdb, rname1=hop_rv, rname2="Attribute_Reference",
                                             attrs={"Domain": "Domain", "Class_step": "To_class", "Rnum": "Rnum"},
                                             svar_name=ref_attrs_rv)
@@ -193,7 +193,7 @@ class Traverse(ActionExecution):
         #     print("\nFrom Asymmetric Association Class Hop output")
         #     Relation.print(db=self.domdb, variable_name=drv.hopped)
         self.hop_from_class = hop_to_class
-        Relation.free_rvs(db=mmdb, owner=self.rvp, names=("ref_attrs",))
+        Relation.free_rvs(db=mmdb, owner=self.owner, names=("ref_attrs",))
         return drv.hopped
 
     def to_association_class_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
@@ -208,7 +208,7 @@ class Traverse(ActionExecution):
         drv = self.domrv
         mrv = self.mmrv
         # Get the referential attributes, source and target classes
-        ref_attrs_rv = Relation.declare_rv(db=mmdb, owner=self.rvp, name="ref_attrs")
+        ref_attrs_rv = Relation.declare_rv(db=mmdb, owner=self.owner, name="ref_attrs")
         Relation.semijoin(db=mmdb, rname1=mrv.this_hop, rname2="Attribute_Reference",
                           attrs={"Domain": "Domain", "Class_step": "From_class", "Rnum": "Rnum"},
                           svar_name=ref_attrs_rv)
@@ -233,7 +233,7 @@ class Traverse(ActionExecution):
         #     print("\nTo Association Class Hop output")
         #     Relation.print(db=self.domdb, variable_name=drv.hopped)
         self.hop_from_class = hop_to_class
-        Relation.free_rvs(db=mmdb, owner=self.rvp, names=("ref_attrs",))
+        Relation.free_rvs(db=mmdb, owner=self.owner, names=("ref_attrs",))
         return drv.hopped
 
     def straight_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
@@ -258,7 +258,7 @@ class Traverse(ActionExecution):
         # Convert each attribute reference to a join pair
         join_pairs = {aref["From_attribute"]: aref["To_attribute"] for aref in hop_attr_refs_r.body}
 
-        source_inst_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="source_inst")
+        source_inst_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="source_inst")
         Relation.join(db=self.domdb, rname1=hop_from_rv, rname2=self.hop_from_class, svar_name=source_inst_rv)
         # if self.activity.xe.debug:
         #     print("\nHopping from instances:")
@@ -271,7 +271,7 @@ class Traverse(ActionExecution):
         #     print("\nStraight Hop output")
         #     Relation.print(db=self.domdb, variable_name=drv.hopped)
         self.hop_from_class = hop_to_class
-        Relation.free_rvs(db=self.domdb, owner=self.rvp, names=("source_inst",))
+        Relation.free_rvs(db=self.domdb, owner=self.owner, names=("source_inst",))
         return drv.hopped
 
     def find_hop_type(self, hop_rv: str) -> str:

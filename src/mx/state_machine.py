@@ -112,6 +112,9 @@ class StateMachine:
         self.active_event = self.select_next_event()
         if not self.active_event:
             return
+        if isinstance(self.active_event, CompletionEvent):
+            self.completion_event = None
+
 
         # Check for transition
 
@@ -122,21 +125,29 @@ class StateMachine:
                                          svar_name=transition_rv)
         if transition_r.body:
             self.transition(transition_rv=transition_rv)
-            return
+        else:
+            # Process non-transition
+            R = (f"State:<{self.current_state}>, Event:<{self.active_event.event_spec}>, "
+                 f"State_model:<{self.state_model}>, Domain:<{self.domain.name}>")
+            non_transition_r = Relation.restrict(db=mmdb, relation="Transition", restriction=R)
+            if not non_transition_r:
+                pass  # TODO: This is an exception, bad mmdb_elevator data
 
-        # Process non-transition
-        R = (f"State:<{self.current_state}>, Event:<{self.active_event.event_spec}>, "
-             f"State_model:<{self.state_model}>, Domain:<{self.domain.name}>")
-        non_transition_r = Relation.restrict(db=mmdb, relation="Transition", restriction=R)
-        if not non_transition_r:
-            pass  # TODO: This is an exception, bad mmdb_elevator data
+            # TODO: Process ignore or can't happen behavior
+            pass
 
-        # TODO: Process ignore or can't happen behavior
+        # Delete Active Event
+        self.active_event = None
         pass
 
     def select_next_event(self) -> DispatchedEvent | None:
         """
-        Returns a Dispatched Event if one is pending
+        Select the next Active Event to process.
+        Always select the Completion Event if one is pending.
+        Otherwise, any pending Interaction Event may be selected.
+
+        Returns:
+            Dispatched Event if one is pending, otherwise None
         """
         return (
             self.completion_event if self.completion_event else
@@ -152,23 +163,6 @@ class StateMachine:
         self.interaction_events.append(event)
         self.domain.events_pending = True
 
-    def check_input(self) -> bool:
-        """
-        Select a pending event, if any
-
-        :return: True if an event was selected
-        """
-        if self.completion_events:
-            self.active_event = self.completion_events.pop(0)
-            return True
-
-        if self.interaction_events:
-            self.active_event = random.choice(self.interaction_events)
-            # self.active_event = self.interaction_events.pop(0) TODO: Make this an option
-            return True
-
-        return False
-
     def transition(self, transition_rv: str):
         dest_real_state_r = Relation.semijoin(db=mmdb, rname1=transition_rv, rname2="Real State",
                                               attrs= {"To_state": "Name", "State_model": "State_model",
@@ -177,6 +171,7 @@ class StateMachine:
         dest_real_state_t = dest_real_state_r.body[0]
         self.current_state = dest_real_state_t["Name"]
         StateActivityExecution(anum=dest_real_state_t["Activity"], state_machine=self)
+        pass
         # start activity execution and wait for completion
 
     def ignore(self):
