@@ -39,17 +39,20 @@ _logger = logging.getLogger(__name__)
 # Tuple generator and rv class for Metamodel Database (mmdb)
 class MMRVs(NamedTuple):
     unexecuted_actions_full: str  # All unexecuted actions with full header
+    action_states: str # All actions with execution status
     unexecuted_actions: str  # Unexecuted actions projected on ID
     enabled_actions: str  # Actions that can be executed
     dependent_actions: str  # Actions dependent on some unexecuted action
     next_action: str  # Next action to be enabled
+    executed_actions: str  # These actions have been executed
+    unenabled_actions: str # Unexecuted actions that have not yet been enabled
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
-    rvs = declare_rvs(mmdb, owner, "unexecuted_actions_full", "unexecuted_actions",
-                      "enabled_actions", "dependent_actions", "next_action")
+    rvs = declare_rvs(mmdb, owner, "unexecuted_actions_full", "action_states", "unexecuted_actions",
+                      "enabled_actions", "dependent_actions", "next_action", "executed_actions", "unenabled_actions")
     return MMRVs(*rvs)
 
 class ActivityExecution(ABC):
@@ -98,6 +101,7 @@ class ActivityExecution(ABC):
         self.enabled_actions = None
         self.enable_initial_actions()
 
+
     def enable_initial_actions(self):
         """
         Produce the set of actions that are initially executable.
@@ -120,11 +124,23 @@ class ActivityExecution(ABC):
         # First let's mark all actions as unexecuted
         R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
         action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R, svar_name=mmrv.unexecuted_actions_full)
-        _logger.info(f"x unexecuted_actions_full set")
         self.unexecuted_actions = {t['ID'] for t in action_r.body}
         # And save as a relational value as well
         Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
-        _logger.info(f"x unexecuted_actions set")
+        # The "U" state means "unexecuted"
+        Relation.extend(db=mmdb, attrs={'State': 'U'}, svar_name=mmrv.action_states)
+        # And these also start off as unenabled
+        Relation.restrict(db=mmdb, relation=mmrv.unexecuted_actions, svar_name=mmrv.unenabled_actions)
+
+        # Initialize executed actions relation to empty set
+        R = f"ID:'X'"
+        Relation.restrict(db=mmdb, restriction=R, svar_name=mmrv.executed_actions)
+        # if __debug__:
+        #     Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions)
+        #     Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
+        #     Relation.print(db=mmdb, variable_name=mmrv.executed_actions)
+        # pass
+
 
         # Subtract the set of actions dependent on action flows from the set of unexecuted actions to
         # obtain the set of non dependent actions which we can mark as enabled (immediately executable)
@@ -135,17 +151,29 @@ class ActivityExecution(ABC):
                                                attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'})
         Relation.project(db=mmdb, attributes=("To_action",))
         Relation.rename(db=mmdb, names={"To_action": "ID"}, svar_name=mmrv.dependent_actions)
-        _logger.info(f"x dependent_actions set")
         Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2=mmrv.dependent_actions,
                           svar_name=mmrv.enabled_actions)
-        _logger.info(f"x enabled_actions set")
+        # Now update status of these in action_states to E
+        Relation.semiminus(db=mmdb, rname1=mmrv.enabled_actions, rname2=mmrv.action_states, svar_name="unchanged")
+        Relation.print(db=mmdb, variable_name="unchanged")
+        Relation.semijoin(db=mmdb, rname1=mmrv.action_states, rname2=mmrv.enabled_actions, svar_name="sj")
+        Relation.print(db=mmdb, variable_name="sj")
+        Relation.extend(db=mmdb, attrs={"State": "E"}, svar_name="enable_states")
+        Relation.print(db=mmdb, variable_name="enable_states")
+        Relation.union(db=mmdb, relations=("enable_states", "unchanged"), svar_name=mmrv.action_states)
+        Relation.print(db=mmdb, variable_name=mmrv.action_states)
+        # From action_states remove all E actions and add
         dependent_actions = {t['To_action'] for t in dependent_action_r.body}
         self.enabled_actions = self.unexecuted_actions - dependent_actions
+
         if __debug__:
+            Relation.print(db=mmdb, variable_name=mmrv.action_states)
             Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions)
+            Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
             Relation.print(db=mmdb, variable_name=mmrv.dependent_actions)
             Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
         pass
+
 
     def next_action(self) -> str | None:
         """
@@ -196,15 +224,16 @@ class ActivityExecution(ABC):
         # if self.enabled_actions == self.unexecuted_actions:
         #     return
 
-        unenabled_actions = self.unexecuted_actions - self.enabled_actions
-        # Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2=mmrv.enabled_actions,
-        #                   svar_name=mmrv.unenabled_actions)
+        # unenabled_actions = self.unexecuted_actions - self.enabled_actions
+        Relation.declare_rv(db=mmdb, owner=self.owner_name, name="unenabled_actions")
+        Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2="unenabled_actions",
+                          svar_name="unenabled_actions")
         if __debug__:
             Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions)
             Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
-            # Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
+            Relation.print(db=mmdb, variable_name="unenabled_actions")
         pass
-        # Per each a in unabled_actions
+        # Per each a in unenabled_actions
         # Get the set of from_actions
         # if all of the from_actions are a subset of self.executed_actions
         # add that a to the set of self.enabled_actions and remove it from
