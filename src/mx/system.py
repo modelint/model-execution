@@ -17,6 +17,7 @@ from mx.domain import Domain
 from mx.db_names import mmdb
 from mx.exceptions import *
 from mx.mdb_types import *
+from mx.mxtypes import ExternalAddress
 
 _logger = logging.getLogger(__name__)
 
@@ -60,6 +61,8 @@ class System:
             verbose:  If true, we may log to the console
             debug: If true, we do some diagnostic activity
         """
+        _logger.info("---")
+        _logger.info(f"System Initialization from path [{system_path}]")
         self.path = system_path
         self.set_mmdb_path()  # Sets self.mmdb_path
 
@@ -76,6 +79,7 @@ class System:
             raise MXUserDBException(msg)
 
         self.name = system_i.body[0]['Name']
+        _logger.info(f"System [{self.name}] located from populated metamodel")
 
     def load_domains(self, playground: str):
         """
@@ -86,6 +90,7 @@ class System:
         """
         # Set path to the selected playground
         self.playground = self.path / 'playgrounds' / playground
+        _logger.info(f"Loading modeled domains from playground: [{playground}]")
 
         Relation.restrict(db=mmdb, relation='Modeled Domain')
         domain_i = Relation.semijoin(db=mmdb, rname2='Domain')
@@ -96,11 +101,17 @@ class System:
 
         # Initialize modeled domains only
         self.domains = {d['Alias']: Domain(name=d['Name'], alias=d['Alias'], system=self) for d in domain_i.body}
+        _logger.info("All modeled domains loaded")
+        _logger.info("===")
+        _logger.info("")
+        pass
+
 
     def go(self):
         work_remaining = True  # Assume there is work to be done
         while work_remaining:
             for d in self.domains.values():
+                _logger.info(f"Executing domain: {d.alias}")
                 work_remaining = d.go()  # We'll stay in the loop as long as at least one domain reports true
 
     def set_mmdb_path(self):
@@ -159,6 +170,9 @@ class System:
                 pass
 
         # Now resume the system
+        _logger.info("Transferring control from scenario to system")
+        _logger.info("MDB --> SYS")
+        _logger.info("---")
         suspend_status = self.go()
         # the suspend status tells us why the system stopped
         # monitor tripped, terminal condition
@@ -169,6 +183,11 @@ class System:
         pass
 
     def process_signal_instance(self, s: Interaction):
+        _logger.info("Injecting signal")
+        if isinstance(s.source, ExternalAddress):
+            _logger.info(f"{s.source.domain} >|| {s.target.domain} : {s.name} -> {s.target.class_name} <{s.target.instance_id}>")
+        else:
+            pass
         target_domain = self.domains[s.target.domain]
         params = s.parameters if s.parameters else {}
         ie = InteractionEvent.to_lifecycle(event_spec=s.name, source=s.source,

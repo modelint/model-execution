@@ -73,6 +73,8 @@ class Domain:
         # TODO: Single assigner initial states not yet specified in the sip file syntax
 
         # Load the domain database
+        _logger.info(f"---")
+        _logger.info(f"Loading {self.alias} domain database")
         Database.open_session(name=self.alias)
         Database.load(db=self.alias, fname=str(self.file_path))
         if self.system.verbose:
@@ -87,7 +89,12 @@ class Domain:
         # self.initiate_methods()
 
         # Clear out any mmdb rvs defined by this domain during initialization
+        _logger.info(f"Clearing out metamodel rvs for {self.rv_owner}...")
+        _logger.info(f"    Before: {Database.get_rv_names(db=mmdb)}")
         Relation.free_rvs(db=mmdb, owner=self.rv_owner)
+        _logger.info(f"    After: {Database.get_rv_names(db=mmdb)}")
+        _logger.info(f"---")
+        pass
 
     @property
     def busy(self) -> bool:
@@ -111,6 +118,7 @@ class Domain:
         Find each class with a lifecycle defined and save its name and I1 identifier.
         We use this information later when we populate the initial state of each lifecycle statemachine.
         """
+        _logger.info(f"Gathering lifecycle info")
         # Get the names of each class in this domain with a lifecycle defined
         R = f"Domain:<{self.name}>"
         lifecycle_i = Relation.restrict(db=mmdb, relation='Lifecycle', restriction=R)
@@ -128,12 +136,14 @@ class Domain:
             id_result = Relation.restrict(db=mmdb, restriction=R, relation=rv_id_all)
             c_id_attrs = [t['Attribute'] for t in id_result.body]  # id attributes for the current class
             self.lifecycle_ids[c] = c_id_attrs
+            _logger.info(f"    Setting {c} id to {c_id_attrs}")
 
 
     def find_single_assigners(self):
         """
         For each relationship that uses one, create a single assigner
         """
+        _logger.info(f"Gathering single assigner info")
         R = f"Domain:<{self.name}>"
         single_assigner_r = Relation.restrict(db=mmdb, relation='Single_Assigner', restriction=R)
         self.single_assigners = [t['rnum'] for t in single_assigner_r.body]
@@ -143,6 +153,7 @@ class Domain:
         For each multiple assigner, record the rnum, partitioning class, and the identifier attributes
         of the partitioning class primary identifier
         """
+        _logger.info(f"Gathering multiple assigner info")
         # Get all of the multiple assigners in this domain
         R = f"Domain:<{self.name}>"
         multiple_assigner_r = Relation.restrict(db=mmdb, relation='Multiple Assigner', restriction=R)
@@ -170,15 +181,19 @@ class Domain:
             rnum: MAPartitionClassID(pclass=pclass, id_attrs=id_attrs_by_rnum[rnum])
             for rnum, pclass in pclass_by_rnum.items()
         }
+        _logger.info(f"    {self.ma_partitions}")
 
     def initiate_lifecycles(self):
         """
         Create a State Machine for each Instance of a Class with a modeled Lifecycle
         """
+        _logger.info(f"Initiating lifecycles...")
         istates = self.lifecycle_initial_states
 
         # Get each class_name and its primary id for each lifecycle
         for class_name, id_attrs in self.lifecycle_ids.items():
+
+            _logger.info(f"    Lifecycles for: {class_name}")
 
             # Tag the class relvar so that each instance has an arbitrary integer id 0..n
             class_i_rv = f"{snake(class_name)}_i"
@@ -204,15 +219,20 @@ class Domain:
                     class_name=class_name,
                     domain=self
                 )
+                _logger.info(f"       sm id: {i["_instance"]} current state: [{istate}] inst id: {inst_id}")
 
     def initiate_ma_state_machines(self):
         """
         Create a State Machine for each Instance of a Multiple Assigner partitioning Class
         """
+        _logger.info(f"Initiating multiple assigners...")
         istates = self.ma_initial_states
 
         # Get each class_name and its primary id for each lifecycle
         for rnum, partition in self.ma_partitions.items():
+
+            _logger.info(f"    {rnum} paritioned by: {partition}")
+
             id_attrs = partition.id_attrs
             class_name = partition.pclass
 
@@ -242,6 +262,7 @@ class Domain:
                     instance_id=inst_id,
                     pclass_name=class_name
                 )
+                _logger.info(f"       sm id: {i["_instance"]} current state: [{istate}] inst id: {inst_id}")
 
     def initiate_sa_assigners(self):
         """

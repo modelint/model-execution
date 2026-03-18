@@ -82,10 +82,15 @@ def main():
 
     ]
 
+    logger.info(f"Beginning scenario: {s.playground.name}")
+
     system_responses = s.inject(stimulus=interactions[0], responses=[interactions[1]])
 
-    print("\nNo problemo")  # Comment this line out before release
+    np = "\n***\nNo problemo"
+    logger.info(f"Beginning scenario: {s.playground.name}")
 
+    logger.info(np)
+    print(np)  # Comment this line out before release
 
 if __name__ == "__main__":
     main()

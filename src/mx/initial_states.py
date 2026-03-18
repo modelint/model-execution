@@ -27,17 +27,10 @@ class InitialStateContext:
 
     def __init__(self, domain: "Domain"):
         """
-        We see that there is an R1 ref.  We need to find the target attributes and class
-        The metamodel gives us Shaft.Bank -> Bank.Name
+        Load initial states from the scenario (sip) file
 
-        We proceed for each instance of Shaft taking the R1 ref (L, P, or F)
-        And go find the Bank population
-        We find the L instance
-        Now we grab the Name value and add it to our Shaft table by adding a key.
-        And, at this point, we are building the relation.create command
-        When we get all the values, we commit and move on to the next instance
-
-        :param domain:  The subject matter domain being populated
+        Args:
+            domain: The subject matter domain being populated
         """
         self.lifecycle_istates: dict[str, str] = {}
         self.ma_istates: dict[str, str] = {}
@@ -53,15 +46,16 @@ class InitialStateContext:
         sip_file = sip_files[0]
 
         # Parse the starting_context's initial population file (*.sip file)
-        _logger.info(f"Parsing sip: [{sip_file}]")
+        _logger.info(f"Parsing scenario population from file: [{sip_file}]")
         parse_result = SIParser.parse_file(file_input=sip_file, debug=False)
         self.name = parse_result.name  # Name of this starting_context
         self.pop = parse_result.classes  # Dictionary of initial instance populations keyed by class name
         self.relations = dict()  # The set of relations keyed by relvar name ready for insertion into the user db
 
-        _logger.info(f"Sip parsed, loading initial instance population into user db")
         # Process each class (c) and its initial instance specification (i)
+        _logger.info("Initial states for scenario")
         for class_name, i_spec in self.pop.items():
+            _logger.info(f"{class_name}")
             for irow in i_spec.population:
                 # save any initial states for classes and multiple assigners
                 # TODO: Support single assigners (after SIP support added)
@@ -69,7 +63,9 @@ class InitialStateContext:
                     if len(s) == 1:
                         # save initial state for this class
                         self.lifecycle_istates[class_name] = s[0]
+                        _logger.info(f"    {irow['row']} : [{s[0]}]")
                     if len(s) == 2:
                         # index by rnum and save partitioning class and initial state
                         self.ma_istates[s[0]] = s[1]
+                        _logger.info(f"    MA {s[0]} : [{s[1]}]")
 

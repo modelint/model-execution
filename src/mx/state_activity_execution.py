@@ -1,7 +1,7 @@
 """ state_activity_execution.py -- A metamodel StateActivity """
 
+import logging
 from typing import TYPE_CHECKING
-
 
 if TYPE_CHECKING:
     from mx.state_machine import StateMachine
@@ -16,6 +16,8 @@ from mx.activity_execution import ActivityExecution
 from mx.mxtypes import StateMachineType
 from mx.utility import snake
 from db_names import mmdb
+
+_logger = logging.getLogger(__name__)
 
 class StateActivityExecution(ActivityExecution):
 
@@ -34,6 +36,8 @@ class StateActivityExecution(ActivityExecution):
                 Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
                 lifecycle_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=rv_name)
                 self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
+                pass
+                _logger.info(f"Executing activity: {anum} with xi flow {self.xi_flow_name}")
                 # if not method_i.body:
                 #     msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
                 #     _logger.error(msg)
@@ -52,6 +56,8 @@ class StateActivityExecution(ActivityExecution):
                          parameters=state_machine.active_event.params)
         self.enable_initial_flows()
         self.execute()
+        if __debug__:
+            print(Database.get_all_rv_names())
         Relation.free_rvs(db=mmdb, owner=self.owner_name)
         Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
         pass

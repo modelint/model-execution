@@ -95,6 +95,16 @@ class StateMachine:
         Returns:
 
         """
+        match self.sm_type:
+            case StateMachineType.LIFECYCLE:
+                sm_info = f"{self.sm_type.name}: {self.state_model} [{self.current_state}] <{self.instance_id}>"
+            case StateMachineType.MA:
+                sm_info = f"{self.sm_type.name}: {self.state_model} [{self.current_state}] P<{self.instance_id}>"
+            case StateMachineType.SA:
+                sm_info = f"{self.sm_type.name}: {self.state_model} [{self.current_state}]"
+
+        _logger.info(f"{sm_info} checking events")
+
         self.max_int_events = max_int_events
         self.max_comp_events = max_comp_events
         # Reset counter
@@ -115,6 +125,7 @@ class StateMachine:
         if isinstance(self.active_event, CompletionEvent):
             self.completion_event = None
 
+        _logger.info(f"Active event: {self.active_event.event_spec}")
 
         # Check for transition
 
@@ -160,7 +171,9 @@ class StateMachine:
 
         :param event: A dispatched non-self-directed event
         """
+        _logger.info(f"Event {event.event_spec} dispatched to <{self.instance_id}>")
         self.interaction_events.append(event)
+        _logger.info(f"Interaction events pending: {len(self.interaction_events)}")
         self.domain.events_pending = True
 
     def transition(self, transition_rv: str):
@@ -170,6 +183,7 @@ class StateMachine:
         Relation.free_rvs(db=mmdb, owner=self.rv_owner, names=("transition",))
         dest_real_state_t = dest_real_state_r.body[0]
         self.current_state = dest_real_state_t["Name"]
+        _logger.info(f"transitioning to [{self.current_state}]")
         StateActivityExecution(anum=dest_real_state_t["Activity"], state_machine=self)
         pass
         # start activity execution and wait for completion

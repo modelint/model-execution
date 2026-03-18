@@ -1,6 +1,7 @@
 """ activity_execution.py -- A metamodel Activity """
 
 # System
+import logging
 from typing import TYPE_CHECKING, Callable, NamedTuple
 from abc import ABC, abstractmethod
 
@@ -33,19 +34,22 @@ from mx.actions.signal import Signal
 from mx.db_names import mmdb
 from mx.rvname import declare_rvs
 
+_logger = logging.getLogger(__name__)
+
 # Tuple generator and rv class for Metamodel Database (mmdb)
 class MMRVs(NamedTuple):
     unexecuted_actions_full: str  # All unexecuted actions with full header
     unexecuted_actions: str  # Unexecuted actions projected on ID
     enabled_actions: str  # Actions that can be executed
     dependent_actions: str  # Actions dependent on some unexecuted action
+    unenabled_actions: str  # Unexecuted actions that are not yet enabled
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner, "unexecuted_actions_full", "unexecuted_actions",
-                      "enabled_actions", "dependent_actions")
+                      "enabled_actions", "dependent_actions", "unenabled_actions")
     return MMRVs(*rvs)
 
 class ActivityExecution(ABC):
@@ -86,6 +90,8 @@ class ActivityExecution(ABC):
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         self.rv_name = rv_name
+        _logger.info(f"owner: {self.owner_name}")
+        _logger.info(f"rv_name: {self.rv_name}")
         self.unexecuted_actions: set[str] | None = None
 
         self.enabled_actions = None
@@ -144,9 +150,18 @@ class ActivityExecution(ABC):
         Returns:
             The action ID as a string
         """
+        mmrv = self.mmrv
+
         if self.enabled_actions:
             next_action = self.enabled_actions.pop()  # Any enabled action will do
+
+            # Get the corresponding relation for that next action so we can subtract it
+            R = f"ID:<{next_action}>"
+            Relation.restrict(db=mmdb, relation=mmrv.unexecuted_actions, restriction=R)
+
+            # Subtract it
             self.unexecuted_actions.discard(next_action)  # Unmark it as unexecuted
+            Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, svar_name=mmrv.unexecuted_actions)
             return next_action
 
         return None  # None were enabled, so we must be done
@@ -157,13 +172,20 @@ class ActivityExecution(ABC):
         actions that now have all of their required inputs enabled and add them to the set of
         enabled actions.
         """
+        mmrv = self.mmrv
+
         # If the current set of enabled actions equals the set of unexecuted actions
         # there are no more actions to enable
         if self.enabled_actions == self.unexecuted_actions:
             return
 
         unenabled_actions = self.unexecuted_actions - self.enabled_actions
-        Relation.semijoin(db=mmdb, rname1=self.rv_name, rname2="Action", )
+        # Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2=mmrv.enabled_actions,
+        #                   svar_name=mmrv.unenabled_actions)
+        if __debug__:
+            Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions)
+            Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
+            # Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
         pass
         # Per each a in unabled_actions
         # Get the set of from_actions
