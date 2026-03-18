@@ -28,15 +28,13 @@ if __debug__:
 
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
-    this_write_action: str
     attr_write_accesses: str
     attributes: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
-    rvs = declare_rvs(mmdb, owner, "this_write_action",
-                      "attr_write_accesses", "attributes")
+    rvs = declare_rvs(mmdb, owner, "attr_write_accesses", "attributes")
     return MMRVs(*rvs)
 
 class Write(ActionExecution):
@@ -62,10 +60,7 @@ class Write(ActionExecution):
         Relation.semijoin(db=mmdb, rname1=self.activity_execution.rv_name, rname2="Write Action")
         # Narrow it down to this Read Action instance
         R = f"ID:<{action_id}>"
-        write_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name=rv.this_write_action)
-        _logger.info(f"x rv this_write_action")
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=rv.this_write_action)
+        write_action_t = Relation.restrict(db=mmdb, restriction=R)
 
         self.source_flow_name = write_action_t.body[0]["Instance_flow"]
         self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
@@ -74,11 +69,10 @@ class Write(ActionExecution):
         # self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
         #                                   flow_type=self.source_flow.flowtype, activity=self.activity,
         #                                   db=self.domdb, rv_name=self.source_flow.value)
-        attribute_write_accesses_r = Relation.semijoin(db=mmdb, rname1=rv.this_write_action,
-                                                      rname2="Attribute Write Access",
-                                                      attrs={"ID": "Write_action",
-                                                             "Activity": "Activity", "Domain": "Domain"},
-                                                      svar_name=rv.attr_write_accesses)
+        attribute_write_accesses_r = Relation.semijoin(db=mmdb, rname2="Attribute Write Access",
+                                                       attrs={"ID": "Write_action",
+                                                              "Activity": "Activity", "Domain": "Domain"},
+                                                       svar_name=rv.attr_write_accesses)
         _logger.info(f"x rv attr_write_accesses")
         if __debug__:
             Relation.print(db=mmdb, variable_name=rv.attr_write_accesses)
@@ -93,6 +87,7 @@ class Write(ActionExecution):
         output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="output_input")
         InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=output_iset_rv,
                               class_name=self.source_flow.flowtype)
+        _logger.info(f"x rv output_input")
 
         qty_instances_to_write = Relation.cardinality(db=self.domdb, rname=output_iset_rv)
         if qty_instances_to_write > 1:
@@ -122,6 +117,8 @@ class Write(ActionExecution):
             Relation.print(db=self.domdb, variable_name='Accessible Shaft Level')
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.owner)
+        Relation.free_rvs(db=self.domdb, owner=self.owner)
+        _logger.info(f"o rv output_input")
         # And since we are outputing a scalar flow, there is no domain rv output to preserve
         # In fact, we didn't define any domain rv's at all, so there are none to free
 

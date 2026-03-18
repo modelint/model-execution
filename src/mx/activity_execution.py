@@ -42,14 +42,14 @@ class MMRVs(NamedTuple):
     unexecuted_actions: str  # Unexecuted actions projected on ID
     enabled_actions: str  # Actions that can be executed
     dependent_actions: str  # Actions dependent on some unexecuted action
-    unenabled_actions: str  # Unexecuted actions that are not yet enabled
+    next_action: str  # Next action to be enabled
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner, "unexecuted_actions_full", "unexecuted_actions",
-                      "enabled_actions", "dependent_actions", "unenabled_actions")
+                      "enabled_actions", "dependent_actions", "next_action")
     return MMRVs(*rvs)
 
 class ActivityExecution(ABC):
@@ -158,14 +158,22 @@ class ActivityExecution(ABC):
 
         if self.enabled_actions:
             next_action = self.enabled_actions.pop()  # Any enabled action will do
-
-            # Get the corresponding relation for that next action so we can subtract it
+            # Update the relation
+            if __debug__:
+                Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
             R = f"ID:<{next_action}>"
-            Relation.restrict(db=mmdb, relation=mmrv.unexecuted_actions, restriction=R)
+            Relation.restrict(db=mmdb, relation=mmrv.enabled_actions, restriction=R, svar_name=mmrv.next_action)
+            Relation.subtract(db=mmdb, rname1=mmrv.enabled_actions, rname2=mmrv.next_action,
+                              svar_name=mmrv.enabled_actions)
+            Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2=mmrv.next_action,
+                              svar_name=mmrv.unexecuted_actions)
+            if __debug__:
+                Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
+                Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions)
+            pass
 
             # Subtract it
             self.unexecuted_actions.discard(next_action)  # Unmark it as unexecuted
-            Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, svar_name=mmrv.unexecuted_actions)
             return next_action
 
         return None  # None were enabled, so we must be done
@@ -180,8 +188,13 @@ class ActivityExecution(ABC):
 
         # If the current set of enabled actions equals the set of unexecuted actions
         # there are no more actions to enable
-        if self.enabled_actions == self.unexecuted_actions:
+        if __debug__:
+            Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions)
+            Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
+        if Relation.compare(db=mmdb, op='==', rname1=mmrv.enabled_actions, rname2=mmrv.unexecuted_actions):
             return
+        # if self.enabled_actions == self.unexecuted_actions:
+        #     return
 
         unenabled_actions = self.unexecuted_actions - self.enabled_actions
         # Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2=mmrv.enabled_actions,
