@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 # Model Integration
 from pyral.relation import Relation
 from pyral.relvar import Relvar
+from pyral.database import Database
 
 # MX
 from mx.dispatched_event import DispatchedEvent

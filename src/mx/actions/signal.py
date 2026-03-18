@@ -1,6 +1,7 @@
 """ signal_action.py -- Executes a Signal Action as defined in the SM Metamodel """
 
 # System
+import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 from mx.mxtypes import StateMachineType
@@ -18,6 +19,8 @@ from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow
 from mx.completion_event import CompletionEvent
 from mx.mxtypes import *
+
+_logger = logging.getLogger(__name__)
 
 class Signal(ActionExecution):
 
@@ -41,6 +44,7 @@ class Signal(ActionExecution):
         # Narrow it down to this Read Action instance
         R = f"ID:<{action_id}>"
         send_signal_t = Relation.restrict(db=mmdb, restriction=R, svar_name=send_signal_action_rv)
+        _logger.info(f"x rv send_signal_action")
         if send_signal_t.body:
             # Get the parameters
             # TODO: Process signal with parameters when we have an example
@@ -62,6 +66,7 @@ class Signal(ActionExecution):
                                     instance_id=self.activity_execution.state_machine.instance_id)
                                 )
             Relation.free_rvs(db=mmdb, owner=self.owner)
+            _logger.info(f"o rv send_signal_action")
         pass
         # R = f"ID:<{self.action_id}>, Activity:<{anum}>, Domain:<{domain}>"
         # labeled_flow_r = Relation.restrict(db=mmdb, relation="Labeled Flow", restriction=R)

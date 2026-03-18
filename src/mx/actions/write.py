@@ -1,6 +1,7 @@
 """ write.py  -- execute an attribute write action """
 
 # System
+import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 from mx.instance_set import InstanceSet
@@ -19,6 +20,8 @@ from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.exceptions import *
+
+_logger = logging.getLogger(__name__)
 
 if __debug__:
     from mx.utility import *
@@ -60,12 +63,12 @@ class Write(ActionExecution):
         # Narrow it down to this Read Action instance
         R = f"ID:<{action_id}>"
         write_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name=rv.this_write_action)
+        _logger.info(f"x rv this_write_action")
         if __debug__:
             Relation.print(db=mmdb, variable_name=rv.this_write_action)
 
         self.source_flow_name = write_action_t.body[0]["Instance_flow"]
         self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
-        pass
 
         # self.activity.xe.mxlog.log(message="Flows")
         # self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
@@ -76,6 +79,7 @@ class Write(ActionExecution):
                                                       attrs={"ID": "Write_action",
                                                              "Activity": "Activity", "Domain": "Domain"},
                                                       svar_name=rv.attr_write_accesses)
+        _logger.info(f"x rv attr_write_accesses")
         if __debug__:
             Relation.print(db=mmdb, variable_name=rv.attr_write_accesses)
 
@@ -83,6 +87,7 @@ class Write(ActionExecution):
         attr_r = Relation.semijoin(db=mmdb, rname1=rv.attr_write_accesses, rname2="Attribute",
                                    attrs={"Attribute": "Name", "Class": "Class", "Domain": "Domain"},
                                    svar_name=rv.attributes)
+        _logger.info(f"x rv attributes")
 
         # Expand irefs to instance set
         output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="output_input")
@@ -122,3 +127,4 @@ class Write(ActionExecution):
 
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
+        pass

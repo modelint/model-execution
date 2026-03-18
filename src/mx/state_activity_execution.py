@@ -35,9 +35,10 @@ class StateActivityExecution(ActivityExecution):
                 R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
                 Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
                 lifecycle_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=rv_name)
+                _logger.info(f"x lifecycle_name rv set for state activity {anum}")
                 self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
-                pass
                 _logger.info(f"Executing activity: {anum} with xi flow {self.xi_flow_name}")
+                pass
                 # if not method_i.body:
                 #     msg = f"Method [{domain_name}:{self.class_name}.{self.name}] not found in metamodel db"
                 #     _logger.error(msg)
@@ -80,6 +81,7 @@ class StateActivityExecution(ActivityExecution):
             Relation.restrict(db=domdb, relation=class_name, restriction=R)
             id_attr_names = tuple(k for k in instance_id.keys())
             Relation.project(db=domdb, attributes=id_attr_names, svar_name=xi_flow_value_rv)
+            _logger.info(f"x xi_flow_value set")
 
             # Set the xi flow value to a relation variable holding a single instance reference for the xi
             self.flows[self.xi_flow_name] = ActiveFlow(value=xi_flow_value_rv, flowtype=class_name)
@@ -94,6 +96,7 @@ class StateActivityExecution(ActivityExecution):
                 sval = sv_i['Name']
                 sval_type = sv_i['Type']
                 self.flows[sv_flow_name] = ActiveFlow(value=sval, flowtype=sval_type)
+                _logger.info(f"initial Scalar Value Flow {sv_flow_name} set to value {sval} type {sval_type}")
                 pass
 
         # All input parameter flows

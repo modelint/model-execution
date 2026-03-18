@@ -89,9 +89,10 @@ class ActivityExecution(ABC):
         self.flows: dict[str, ActiveFlow | None] = {}
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
+        _logger.info(f"d Declared rvs: {Database.get_all_rv_names()}")
         self.rv_name = rv_name
-        _logger.info(f"owner: {self.owner_name}")
-        _logger.info(f"rv_name: {self.rv_name}")
+        # _logger.info(f"owner: {self.owner_name}")
+        # _logger.info(f"rv_name: {self.rv_name}")
         self.unexecuted_actions: set[str] | None = None
 
         self.enabled_actions = None
@@ -119,10 +120,11 @@ class ActivityExecution(ABC):
         # First let's mark all actions as unexecuted
         R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
         action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R, svar_name=mmrv.unexecuted_actions_full)
+        _logger.info(f"x unexecuted_actions_full set")
         self.unexecuted_actions = {t['ID'] for t in action_r.body}
         # And save as a relational value as well
         Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
-        pass
+        _logger.info(f"x unexecuted_actions set")
 
         # Subtract the set of actions dependent on action flows from the set of unexecuted actions to
         # obtain the set of non dependent actions which we can mark as enabled (immediately executable)
@@ -133,8 +135,10 @@ class ActivityExecution(ABC):
                                                attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'})
         Relation.project(db=mmdb, attributes=("To_action",))
         Relation.rename(db=mmdb, names={"To_action": "ID"}, svar_name=mmrv.dependent_actions)
+        _logger.info(f"x dependent_actions set")
         Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2=mmrv.dependent_actions,
                           svar_name=mmrv.enabled_actions)
+        _logger.info(f"x enabled_actions set")
         dependent_actions = {t['To_action'] for t in dependent_action_r.body}
         self.enabled_actions = self.unexecuted_actions - dependent_actions
         if __debug__:
@@ -262,12 +266,14 @@ class ActivityExecution(ABC):
         Execute an Activity
         """
         # We keep executing ready actions until there are no more
+        _logger.info(f"Executing activity {self.anum} actions")
         while (action_id := self.next_action()) is not None:
             # Lookup the action type
             R = (f"ID:<{action_id}>, Activity:<{self.anum}>, "
                  f"Domain:<{self.domain.name}>")
             action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
             action_type = action_r.body[0]["Type"]
+            _logger.info(f"Executing action {action_id}-{action_type}")
             current_x_action = ActivityExecution.execute_action[action_type](activity_execution=self,
                                                                              action_id=action_id)
             self.update_enabled_actions()

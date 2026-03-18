@@ -16,6 +16,9 @@ import atexit
 from collections import namedtuple
 from enum import Enum
 
+# Model Integration
+from pyral.database import Database
+
 # MX
 from mx.system import System
 from mx import version

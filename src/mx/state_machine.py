@@ -128,12 +128,12 @@ class StateMachine:
         _logger.info(f"Active event: {self.active_event.event_spec}")
 
         # Check for transition
-
         transition_rv = Relation.declare_rv(db=mmdb, owner=self.rv_owner, name="transition")
         R = (f"From_state:<{self.current_state}>, Event:<{self.active_event.event_spec}>, "
              f"State_model:<{self.state_model}>, Domain:<{self.domain.name}>")
         transition_r = Relation.restrict(db=mmdb, relation="Transition", restriction=R,
                                          svar_name=transition_rv)
+        _logger.info(f"x transition rv set")
         if transition_r.body:
             self.transition(transition_rv=transition_rv)
         else:
@@ -181,6 +181,7 @@ class StateMachine:
                                               attrs= {"To_state": "Name", "State_model": "State_model",
                                                       "Domain": "Domain"})
         Relation.free_rvs(db=mmdb, owner=self.rv_owner, names=("transition",))
+        _logger.info(f"o transition rv cleared")
         dest_real_state_t = dest_real_state_r.body[0]
         self.current_state = dest_real_state_t["Name"]
         _logger.info(f"transitioning to [{self.current_state}]")
