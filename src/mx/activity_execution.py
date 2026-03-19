@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from mx.domain import Domain
 
 # Model Integration
+from pyral.relvar import Relvar
 from pyral.relation import Relation
 from pyral.database import Database
 from pyral.rtypes import *
@@ -99,11 +100,21 @@ class ActivityExecution(ABC):
         self.rv_name = rv_name
         # _logger.info(f"owner: {self.owner_name}")
         # _logger.info(f"rv_name: {self.rv_name}")
+        # self.action_states_name = self.owner_name + "_Action_States"
         self.unexecuted_actions: set[str] | None = None
 
         self.enabled_actions = None
+        # Here we create a temporary relvar in PyRAL to track the execution state of this Activity's Actions
+        # during execution
+        # We set the name of this relvar so we can access and update the relvar content
+        self.action_states = f"{self.owner_name}_Action_States"
+        # And here we define the empty relvar in PyRAL
+        Relvar.create_relvar(db=mmdb, name=self.action_states, attrs=[
+            Attribute(name='ID', type='string'),
+            Attribute(name='State', type='string'),
+        ], ids={1: ['ID']})
+        # TODO: Remember to unset this relvar after the Activity completes execution
         self.enable_initial_actions()
-
 
     def enable_initial_actions(self):
         """
@@ -125,15 +136,16 @@ class ActivityExecution(ABC):
         mmrv = self.mmrv
 
         # First let's mark all actions as unexecuted (U)
-        R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
-        action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R, svar_name=mmrv.unexecuted_actions_full)
-        # We only need the action ids for this activity
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions_full)
-        Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
-        Relation.extend(db=mmdb, attrs={'State': 'U'}, svar_name=mmrv.action_states)
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=mmrv.action_states)
+        # R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
+        # action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R, svar_name=mmrv.unexecuted_actions_full)
+        # # We only need the action ids for this activity
+        # if __debug__:
+        #     Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions_full)
+        # Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
+        # Relation.extend(db=mmdb, attrs={'State': 'U'})
+        # Relvar.set(db=mmdb, relvar=self.action_states_relvar)
+        # if __debug__:
+        #     Relation.print(db=mmdb, variable_name=mmrv.action_states)
 
         # Now determine which actions have their flows available initially and enable them
         #
