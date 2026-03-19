@@ -181,27 +181,32 @@ class ActivityExecution(ABC):
         """
         mmrv = self.mmrv
 
-        if self.enabled_actions:
-            next_action = self.enabled_actions.pop()  # Any enabled action will do
-            # Update the relation
-            if __debug__:
-                Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
-            R = f"ID:<{next_action}>"
-            Relation.restrict(db=mmdb, relation=mmrv.enabled_actions, restriction=R, svar_name=mmrv.next_action)
-            Relation.subtract(db=mmdb, rname1=mmrv.enabled_actions, rname2=mmrv.next_action,
-                              svar_name=mmrv.enabled_actions)
-            Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2=mmrv.next_action,
-                              svar_name=mmrv.unexecuted_actions)
-            if __debug__:
-                Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
-                Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions)
-            pass
+        # Enabled actions are all actions in (E) state
+        R = f"State:E"
+        enabled_actions_r = Relation.restrict(db=mmdb, relation=mmrv.action_states, restriction=R)
+        if not len(enabled_actions_r.body):
+            # There are no more enabled actions to execute
+            return None
 
-            # Subtract it
-            self.unexecuted_actions.discard(next_action)  # Unmark it as unexecuted
-            return next_action
+        # There is at least one enabled action ready to go, chose any of them
+        next_action_r = Relation.rank_restrict(db=mmdb, attr_name='ID', extent=Extent.LEAST, card=Card.ONE,
+                                               svar_name=mmrv.change_actions)
+        next_action = next_action_r.body[0]["ID"]
+        # Now we have the Action ID to return, but we need to update our chosen Action to the executiong (X) state
+        # Temporarily remove it from the action states relation
+        Relation.subtract(db=mmdb, rname1=mmrv.action_states, rname2=mmrv.change_actions,
+                          svar_name=mmrv.action_states)
+        # Update its status tuple
+        Relation.project(db=mmdb, relation=mmrv.change_actions, attributes=("ID",))
+        Relation.extend(db=mmdb, attrs={"State": "X"}, svar_name=mmrv.change_actions)
+        # Now added it back into the action status relation
+        Relation.union(db=mmdb, relations=(mmrv.action_states, mmrv.change_actions), svar_name=mmrv.action_states)
+        if __debug__:
+            print(f"\nAction: {next_action} chosen for execution, status update:")
+            Relation.print(db=mmdb, variable_name=mmrv.action_states)
 
-        return None  # None were enabled, so we must be done
+        return next_action
+
 
     def update_enabled_actions(self):
         """
