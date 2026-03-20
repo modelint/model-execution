@@ -166,8 +166,7 @@ class ActivityExecution(ABC):
         mmrv = self.mmrv
 
         # We change the state of the executed action to completed
-        R = f"State:X"
-        x_action_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=R)
+        x_action_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=f"State:X")
         x_action = x_action_r.body[0]['ID']
         Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': x_action}, update={'State': 'C'})
         if __debug__:
@@ -175,8 +174,8 @@ class ActivityExecution(ABC):
         pass
 
         # Now we select any remaining unenabled actions to see if we can enable them
-        R = f"State:U"
-        unenabled_actions_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=R, svar_name=mmrv.unenabled_actions)
+        Relation.restrict(db=mmdb, relation=self.action_states, restriction=f"State:U",
+                          svar_name=mmrv.unenabled_actions)
 
         if not Relation.cardinality(db=mmdb, rname=mmrv.unenabled_actions):
             # There are none, so we just proceed with activity execution
@@ -186,111 +185,43 @@ class ActivityExecution(ABC):
         # If each of these actions has reached the C (completed) state, the unenabled action moves to the
         # E (enabled) state.
 
+        # We only need the from and to actions from our flow dependencies for this Activity
         Relation.project(db=mmdb, relation=mmrv.flow_deps, attributes=("From_action", "To_action",),
                          svar_name=mmrv.flow_deps)
-        Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
-        Relation.print(db=mmdb, variable_name=mmrv.flow_deps)
+        if __debug__:
+            Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
+            Relation.print(db=mmdb, variable_name=mmrv.flow_deps)
 
-        # Test to derive sum_expr expr
-        # Get the to actions for the unabled action
-        Relation.join(db=mmdb, rname1=mmrv.unenabled_actions, rname2=mmrv.flow_deps, attrs={'ID': 'To_action'})
-        Relation.print(db=mmdb, table_name="Join1: Get From")
-        # Get the action states entry for the to actions
-        Relation.print(db=mmdb, variable_name=self.action_states)
-        Relation.semijoin(db=mmdb, rname2=self.action_states, attrs={'From_action': 'ID'})
-        Relation.print(db=mmdb, table_name="Join2: Get status")
-        # Make sure they are all C
-        R = f"NOT State:C"
-        Relation.restrict(db=mmdb, restriction=R)
-        Relation.print(db=mmdb, table_name="Not completed")
-        pass
-
+        # This is the summarize expression which defines a sequence of relational operations
+        # that will be applied per each unenabled action id
         sum_expr = Relation.build_expr(commands=[
+            # Summarize creates the "s" tuple to represent the current unenabled action
+            # and we join it as the To action in the flow dep
             JoinCmd(rname1="s", rname2=mmrv.flow_deps, attrs={'ID': 'To_action'}),
+            # We join the resulting relation to get all From actions that "s" is dependent on
             SemiJoinCmd(rname1=None, rname2=self.action_states, attrs={'From_action': 'ID'}),
+            # We look through the resulting relation for any of these that have NOT completed execution
             RestrictCmd(relation=None, restriction="NOT State:C"),
+            # We then take the cardinality of that output relation
+            # 0 cardinality means that there are no uncompleted From Actions
             CardinalityCmd(rname=None)
         ])
 
+        # For each unenabled action id, summarize extends our relation with a new "Complete" column
+        # with the sum_expr output which will be the integer result of the cardinality operation
         Relation.summarize(db=mmdb, relation=mmrv.unenabled_actions, per_attrs=("ID",),
-                               summaries=(SumExpr(attr=Attribute(name="Complete", type="int"), expr=sum_expr),),
-                               svar_name="solution")
+                           summaries=(SumExpr(attr=Attribute(name="Complete", type="int"), expr=sum_expr),))
+        # Each unenabled action with 0 unexecuted From Actions, can be advanced to the E (enabled) state
+        completed_from_actions_r = Relation.restrict(db=mmdb, restriction=f"Complete:<0>")
+        for unenabled_action in completed_from_actions_r.body:
+            # Mark it as enabled
+            Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': unenabled_action["ID"]},
+                             update={'State': 'E'})
 
-
-        Relation.print(db=mmdb, table_name="solution")
-        R = f"Complete:<0>"
-        e_r = Relation.restrict(db=mmdb, restriction=R)
-        for a in e_r.body:
-            aid = a["ID"]
-            Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': aid}, update={'State':'E'})
-        Relation.print(db=mmdb, variable_name=self.action_states)
+        # And now the our action_states relvar has been updated with the latest newly enabled actions
+        if __debug__:
+            Relation.print(db=mmdb, variable_name=self.action_states)
         pass
-
-
-
-        # --- Copied from old wave computation in xuml_populate ---
-        # Proceeding from the Actions completed in the prior Wave,
-        # enable the set of Flows output from those Actions
-        # and make those the new wave_enabled_flows (replacing the prior set of flows)
-        # self.enable_action_outputs(source_action_relation="executable_actions")
-
-        # The total set of enabled flows becomes the new wave_enabled_flows relation value added to
-        # all earlier enabled flows in the enabled_flows relation value
-        # Relation.union(db=mmdb, relations=("enabled_flows", "wave_enabled_flows"),
-        #                svar_name="enabled_flows")
-        # Relation.print(db=mmdb, variable_name="enabled_flows")
-
-        # Now for the fun part:
-        # For each unexecuted Action, see if its total set of required input Flows is a subset
-        # of the currently enabled Flows. If so, this Action can execute and be assigned to the current Wave.
-
-        # We use the summarize command to do the relational magic.
-        # The idea is to go through the unexecuted_actions relation value and, for each Action ID
-        # execute the sum_expr (summarization expression) yielding a true or false result.
-        # Either the Action can or cannot execute. The unexecuted_actions relation is extended with an extra
-        # column that holds this boolean result.
-        # Then we'll restrict that table to find only the true results and throw away the extra column
-        # in the process so that we just end up with a new set of executable_actions (replacing the previous
-        # relation value of the same name).
-
-        # Taking it step by step, here we build the sum_expr
-        # sum_expr = Relation.build_expr(commands=[
-            # the temporary s (summarize) relation represents the current unexecuted action
-            # We join it with the Flow Dependencies for this Activity as the To_action
-            # to obtain the set of action generated inputs it requires.
-            # (we don't care about the non-action generated initial_pseudo_state flows since we know these are always
-            # available)
-        #     JoinCmd(rname1="s", rname2="fd", attrs={"ID": "To_action"}),
-        #     ProjectCmd(attributes=("Flow",), relation=None),
-        #     # And here we see if those flows are a subset of the enabled flows (true or false)
-        #     SetCompareCmd(rname2="enabled_flows", op=SetOp.subset, rname1=None)
-        # ])
-        # Now we embed the sum_expr in our summarize command
-        # Relation.summarize(db=mmdb, relation="unexecuted_actions", per_attrs=("ID",),
-        #                    summaries=(
-        #                        SumExpr(attr=Attribute(name="Can_execute", type="boolean"), expr=sum_expr),), )
-        # R = f"Can_execute:<{1}>"  # True is 1, False is 0 in TclRAL and we just want the 1's
-        # Relation.restrict(db=mmdb, restriction=R)
-        # Just take the ID attributes.  After the restrict we don't need the extra boolean attribute anymore
-        # xactions = Relation.project(db=mmdb, attributes=("ID",), svar_name="executable_actions")
-        # Relation.print(db=mmdb, variable_name="executable_actions")
-        # And here we replace the set of completed_actions with our new batch of executable_actions
-        # Relation.restrict(db=mmdb, relation="executable_actions", svar_name="completed_actions")
-
-    # Having processed either the initial_pseudo_state or subsequent waves, we do the same work
-    # Add all Action IDs in the executable_actions relation into the current Wave, and increment the counter
-    # self.waves[self.wave_ctr] = [t['ID'] for t in xactions.body]
-    # self.wave_ctr += 1
-    # print(f"Wave --- [{self.wave_ctr}] ---")
-    # Finally, remove the latest completed actions from the set of unexecuted_actions
-    # unex_actions = Relation.subtract(db=mmdb, rname1="unexecuted_actions", rname2="completed_actions",
-    #                                  svar_name="unexecuted_actions")
-
-    # Relation.print(db=mmdb, variable_name="unexecuted_actions")
-    # Rinse and repeat until all the actions are completed
-    # ^^^ Copied from old wave computation in xuml_populate ^^^
-
-    # TODO: When we get to a more interesting Activity, expand the logic
 
     def execute(self):
         """
