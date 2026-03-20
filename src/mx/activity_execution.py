@@ -40,6 +40,8 @@ _logger = logging.getLogger(__name__)
 # Tuple generator and rv class for Metamodel Database (mmdb)
 class MMRVs(NamedTuple):
     unexecuted_actions: str  # Unexecuted actions projected on ID
+    unenabled_actions: str  # Remaining actions that are unenabled (U)
+    flow_deps: str  # This activity's flow dependencies
     # action_states: str # All actions with execution status
     # actions_to_enable: str  # Actions that are to be enabled
     # next_action: str  # Next action to be enabled
@@ -52,9 +54,9 @@ class MMRVs(NamedTuple):
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner,
-                      "unexecuted_actions",
+                      "unexecuted_actions", "unenabled_actions", "flow_deps"
                       # "action_states",
-                      # "next_action", "executed_actions", "unenabled_actions", "unchanged_actions", "change_actions"
+                      # "next_action", "executed_actions", "unchanged_actions", "change_actions"
                       )
     return MMRVs(*rvs)
 
@@ -97,12 +99,6 @@ class ActivityExecution(ABC):
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         _logger.info(f"d Declared rvs: {Database.get_all_rv_names()}")
         self.activity_rvn = activity_rvn
-        # _logger.info(f"owner: {self.owner_name}")
-        # _logger.info(f"rv_name: {self.rv_name}")
-        # self.action_states_name = self.owner_name + "_Action_States"
-        self.unexecuted_actions: set[str] | None = None
-
-        self.enabled_actions = None
         # Here we create a temporary relvar in PyRAL to track the execution state of this Activity's Actions
         # during execution
         # We set the name of this relvar so we can access and update the relvar content
@@ -168,6 +164,8 @@ class ActivityExecution(ABC):
         enabled actions.
         """
         mmrv = self.mmrv
+
+        # We change the state of the executed action to completed
         R = f"State:X"
         x_action_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=R)
         x_action = x_action_r.body[0]['ID']
@@ -176,38 +174,59 @@ class ActivityExecution(ABC):
             Relation.print(db=mmdb, variable_name=self.action_states)
         pass
 
-        # First update the executing action status
+        # Now we select any remaining unenabled actions to see if we can enable them
         R = f"State:U"
-        Relation.restrict(db=mmdb, relation=self.action_states, restriction=R)
-        num_unenabled_actions = Relation.cardinality(db=mmdb)
-        if not num_unenabled_actions:
+        unenabled_actions_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=R, svar_name=mmrv.unenabled_actions)
+
+        if not Relation.cardinality(db=mmdb, rname=mmrv.unenabled_actions):
+            # There are none, so we just proceed with activity execution
             return
+
+        # For each U (uenabled action), get the set of From_actions from the Flow Dependency relvar.
+        # If each of these actions has reached the C (completed) state, the unenabled action moves to the
+        # E (enabled) state.
+
+        Relation.project(db=mmdb, relation=mmrv.flow_deps, attributes=("From_action", "To_action",),
+                         svar_name=mmrv.flow_deps)
+        Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
+        Relation.print(db=mmdb, variable_name=mmrv.flow_deps)
+
+        # Test to derive sum_expr expr
+        # Get the to actions for the unabled action
+        Relation.join(db=mmdb, rname1=mmrv.unenabled_actions, rname2=mmrv.flow_deps, attrs={'ID': 'To_action'})
+        Relation.print(db=mmdb, table_name="Join1: Get From")
+        # Get the action states entry for the to actions
+        Relation.print(db=mmdb, variable_name=self.action_states)
+        Relation.semijoin(db=mmdb, rname2=self.action_states, attrs={'From_action': 'ID'})
+        Relation.print(db=mmdb, table_name="Join2: Get status")
+        # Make sure they are all C
+        R = f"NOT State:C"
+        Relation.restrict(db=mmdb, restriction=R)
+        Relation.print(db=mmdb, table_name="Not completed")
         pass
 
-        # If the current set of enabled actions equals the set of unexecuted actions
-        # there are no more actions to enable
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions)
-            Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
-        if Relation.compare(db=mmdb, op='==', rname1=mmrv.enabled_actions, rname2=mmrv.unexecuted_actions):
-            return
-        # if self.enabled_actions == self.unexecuted_actions:
-        #     return
+        sum_expr = Relation.build_expr(commands=[
+            JoinCmd(rname1="s", rname2=mmrv.flow_deps, attrs={'ID': 'To_action'}),
+            SemiJoinCmd(rname1=None, rname2=self.action_states, attrs={'From_action': 'ID'}),
+            RestrictCmd(relation=None, restriction="NOT State:C"),
+            CardinalityCmd(rname=None)
+        ])
 
-        # unenabled_actions = self.unexecuted_actions - self.enabled_actions
-        Relation.declare_rv(db=mmdb, owner=self.owner_name, name="unenabled_actions")
-        Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2="unenabled_actions",
-                          svar_name="unenabled_actions")
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions)
-            Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
-            Relation.print(db=mmdb, variable_name="unenabled_actions")
+        Relation.summarize(db=mmdb, relation=mmrv.unenabled_actions, per_attrs=("ID",),
+                               summaries=(SumExpr(attr=Attribute(name="Complete", type="int"), expr=sum_expr),),
+                               svar_name="solution")
+
+
+        Relation.print(db=mmdb, table_name="solution")
+        R = f"Complete:<0>"
+        e_r = Relation.restrict(db=mmdb, restriction=R)
+        for a in e_r.body:
+            aid = a["ID"]
+            Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': aid}, update={'State':'E'})
+        Relation.print(db=mmdb, variable_name=self.action_states)
         pass
-        # Per each a in unenabled_actions
-        # Get the set of from_actions
-        # if all of the from_actions are a subset of self.executed_actions
-        # add that a to the set of self.enabled_actions and remove it from
-        # the set of self.unexecuted actions
+
+
 
         # --- Copied from old wave computation in xuml_populate ---
         # Proceeding from the Actions completed in the prior Wave,
@@ -236,7 +255,7 @@ class ActivityExecution(ABC):
 
         # Taking it step by step, here we build the sum_expr
         # sum_expr = Relation.build_expr(commands=[
-            # the temproary s (summarize) relation represents the current unexecuted action
+            # the temporary s (summarize) relation represents the current unexecuted action
             # We join it with the Flow Dependencies for this Activity as the To_action
             # to obtain the set of action generated inputs it requires.
             # (we don't care about the non-action generated initial_pseudo_state flows since we know these are always

@@ -101,7 +101,8 @@ class StateActivityExecution(ActivityExecution):
         R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
         Relation.restrict(db=mmdb, relation="Action", restriction=R)
         Relation.semijoin(db=mmdb, rname2='Flow Dependency',
-                          attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'})
+                          attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'},
+                          svar_name=mmrv.flow_deps)  # We use this later to choose actions to enable
         # And now we just take the To_action column and rename it to ID to get something we can subtract
         Relation.project(db=mmdb, attributes=("To_action",))
         Relation.rename(db=mmdb, names={"To_action": "ID"})
