@@ -39,8 +39,6 @@ _logger = logging.getLogger(__name__)
 
 # Tuple generator and rv class for Metamodel Database (mmdb)
 class MMRVs(NamedTuple):
-    unexecuted_actions_full: str  # All unexecuted actions with full header
-    action_states: str # All actions with execution status
     unexecuted_actions: str  # Unexecuted actions projected on ID
     # action_states: str # All actions with execution status
     # actions_to_enable: str  # Actions that are to be enabled
@@ -54,7 +52,6 @@ class MMRVs(NamedTuple):
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner,
-                      "unexecuted_actions_full",
                       "unexecuted_actions",
                       # "action_states",
                       # "next_action", "executed_actions", "unenabled_actions", "unchanged_actions", "change_actions"
@@ -116,10 +113,10 @@ class ActivityExecution(ABC):
             Attribute(name='State', type='string'),
         ], ids={1: ['ID']})
         # TODO: Remember to unset this relvar after the Activity completes execution
-        self.enable_initial_actions()
+        self.action_states = self.enable_initial_actions()
 
     @abstractmethod
-    def enable_initial_actions(self):
+    def enable_initial_actions(self) -> str:
         """
         Produce the set of actions that are initially executable.
 
@@ -135,6 +132,9 @@ class ActivityExecution(ABC):
            2. The executing (lifecycle) or partitioning (multiple assigner) instance flow
            3. Input parameter flow
            4. Scalar Value (flow with literal value specified in action language)
+
+        Returns:
+            Name of the relvar showing the state of each of this Activity's Actions
         """
         pass
 
@@ -145,34 +145,21 @@ class ActivityExecution(ABC):
         Returns:
             The action ID as a string
         """
-        mmrv = self.mmrv
-
         # Enabled actions are all actions in (E) state
         R = f"State:E"
-        enabled_actions_r = Relation.restrict(db=mmdb, relation=mmrv.action_states, restriction=R)
+        enabled_actions_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=R)
         if not len(enabled_actions_r.body):
             # There are no more enabled actions to execute
             return None
 
         # There is at least one enabled action ready to go, chose any of them
-        next_action_r = Relation.rank_restrict(db=mmdb, attr_name='ID', extent=Extent.LEAST, card=Card.ONE,
-                                               svar_name=mmrv.change_actions)
+        next_action_r = Relation.rank_restrict(db=mmdb, attr_name='ID', extent=Extent.LEAST, card=Card.ONE)
         next_action = next_action_r.body[0]["ID"]
-        # Now we have the Action ID to return, but we need to update our chosen Action to the executiong (X) state
-        # Temporarily remove it from the action states relation
-        Relation.subtract(db=mmdb, rname1=mmrv.action_states, rname2=mmrv.change_actions,
-                          svar_name=mmrv.action_states)
-        # Update its status tuple
-        Relation.project(db=mmdb, relation=mmrv.change_actions, attributes=("ID",))
-        Relation.extend(db=mmdb, attrs={"State": "X"}, svar_name=mmrv.change_actions)
-        # Now added it back into the action status relation
-        Relation.union(db=mmdb, relations=(mmrv.action_states, mmrv.change_actions), svar_name=mmrv.action_states)
+        # Now change that action's status to X (executing)
+        Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': next_action}, update={'State': 'X'})
         if __debug__:
-            print(f"\nAction: {next_action} chosen for execution, status update:")
-            Relation.print(db=mmdb, variable_name=mmrv.action_states)
-
+            Relation.print(db=mmdb, variable_name=self.action_states)
         return next_action
-
 
     def update_enabled_actions(self):
         """
@@ -181,6 +168,21 @@ class ActivityExecution(ABC):
         enabled actions.
         """
         mmrv = self.mmrv
+        R = f"State:X"
+        x_action_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=R)
+        x_action = x_action_r.body[0]['ID']
+        Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': x_action}, update={'State': 'C'})
+        if __debug__:
+            Relation.print(db=mmdb, variable_name=self.action_states)
+        pass
+
+        # First update the executing action status
+        R = f"State:U"
+        Relation.restrict(db=mmdb, relation=self.action_states, restriction=R)
+        num_unenabled_actions = Relation.cardinality(db=mmdb)
+        if not num_unenabled_actions:
+            return
+        pass
 
         # If the current set of enabled actions equals the set of unexecuted actions
         # there are no more actions to enable
