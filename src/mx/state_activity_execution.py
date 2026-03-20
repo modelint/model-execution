@@ -77,16 +77,16 @@ class StateActivityExecution(ActivityExecution):
         Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
         pass
 
-    def enable_initial_actions(self):
+    def enable_initial_actions(self) -> str:
         """
         See description in ActivityExecution abstract method
         """
         mmrv = self.mmrv
-        state_actions = self.state_machine.actions[self.anum]
+        action_states = self.state_machine.actions[self.anum]
 
         # Get all unexecuted actions
         R = f"State:U"
-        Relation.restrict(db=mmdb, relation=state_actions, restriction=R)
+        Relation.restrict(db=mmdb, relation=action_states, restriction=R)
         Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
         pass
 
@@ -109,11 +109,12 @@ class StateActivityExecution(ActivityExecution):
         enable_r = Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions)
         # For each action to enable, we change its state from U (unexecuted) to E (enabled)
         for a in enable_r.body:
-            Relvar.updateone(db=mmdb, relvar_name=state_actions, id={'ID': a['ID']}, update={'State': 'E'})
+            Relvar.updateone(db=mmdb, relvar_name=action_states, id={'ID': a['ID']}, update={'State': 'E'})
 
         if __debug__:
-            Relation.print(db=mmdb, variable_name=state_actions)
+            Relation.print(db=mmdb, variable_name=action_states)
         pass
+        return action_states
 
     def enable_initial_flows(self):
         """
