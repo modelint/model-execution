@@ -85,7 +85,7 @@ class Traverse(ActionExecution):
 
         # Lookup this Action instance
         # Start with all Traverse actions in this Activity
-        Relation.semijoin(db=mmdb, rname1=activity_execution.rv_name, rname2="Traverse_Action",
+        Relation.semijoin(db=mmdb, rname1=activity_execution.activity_rvn, rname2="Traverse_Action",
                           svar_name=mmrv.activity_traverse_actions)
         # Narrow it down to this Traverse Action instance
         R = f"ID:<{action_id}>"

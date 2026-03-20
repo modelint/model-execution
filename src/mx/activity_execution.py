@@ -42,21 +42,23 @@ class MMRVs(NamedTuple):
     unexecuted_actions_full: str  # All unexecuted actions with full header
     action_states: str # All actions with execution status
     unexecuted_actions: str  # Unexecuted actions projected on ID
-    enabled_actions: str  # Actions that can be executed
-    dependent_actions: str  # Actions dependent on some unexecuted action
-    next_action: str  # Next action to be enabled
-    executed_actions: str  # These actions have been executed
-    unenabled_actions: str # Unexecuted actions that have not yet been enabled
-    unchanged_actions: str  # Actions unaffected by state change
-    change_actions: str  # These Actions will change state to E, X, or D
+    # action_states: str # All actions with execution status
+    # actions_to_enable: str  # Actions that are to be enabled
+    # next_action: str  # Next action to be enabled
+    # executed_actions: str  # These actions have been executed
+    # unchanged_actions: str  # Actions unaffected by state change
+    # change_actions: str  # These Actions will change state to E, X, or D
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
-    rvs = declare_rvs(mmdb, owner, "unexecuted_actions_full", "action_states", "unexecuted_actions",
-                      "enabled_actions", "dependent_actions", "next_action", "executed_actions", "unenabled_actions",
-                      "unchanged_actions", "change_actions")
+    rvs = declare_rvs(mmdb, owner,
+                      "unexecuted_actions_full",
+                      "unexecuted_actions",
+                      # "action_states",
+                      # "next_action", "executed_actions", "unenabled_actions", "unchanged_actions", "change_actions"
+                      )
     return MMRVs(*rvs)
 
 class ActivityExecution(ABC):
@@ -78,14 +80,14 @@ class ActivityExecution(ABC):
         "write": Write,
     }
 
-    def __init__(self, domain: 'Domain', anum: str, owner_name: str, rv_name: str, parameters: NamedValues):
+    def __init__(self, domain: 'Domain', anum: str, owner_name: str, activity_rvn: str, parameters: NamedValues):
         """
 
         Args:
             domain: The local domain object
             anum: This activity's identifier
             owner_name: String that uniquely identifies this activity and executing instance or rnum
-            rv_name: Relational variable name holding this activity's metamodel data
+            activity_rvn: Relational variable name holding this activity's metamodel data
             parameters: Possibly an empty dictionary of parameter values conforming to the Activity's signature
         """
         self.domain = domain
@@ -97,7 +99,7 @@ class ActivityExecution(ABC):
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         _logger.info(f"d Declared rvs: {Database.get_all_rv_names()}")
-        self.rv_name = rv_name
+        self.activity_rvn = activity_rvn
         # _logger.info(f"owner: {self.owner_name}")
         # _logger.info(f"rv_name: {self.rv_name}")
         # self.action_states_name = self.owner_name + "_Action_States"
@@ -116,6 +118,7 @@ class ActivityExecution(ABC):
         # TODO: Remember to unset this relvar after the Activity completes execution
         self.enable_initial_actions()
 
+    @abstractmethod
     def enable_initial_actions(self):
         """
         Produce the set of actions that are initially executable.
@@ -133,56 +136,7 @@ class ActivityExecution(ABC):
            3. Input parameter flow
            4. Scalar Value (flow with literal value specified in action language)
         """
-        mmrv = self.mmrv
-
-        # First let's mark all actions as unexecuted (U)
-        # R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
-        # action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R, svar_name=mmrv.unexecuted_actions_full)
-        # # We only need the action ids for this activity
-        # if __debug__:
-        #     Relation.print(db=mmdb, variable_name=mmrv.unexecuted_actions_full)
-        # Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
-        # Relation.extend(db=mmdb, attrs={'State': 'U'})
-        # Relvar.set(db=mmdb, relvar=self.action_states_relvar)
-        # if __debug__:
-        #     Relation.print(db=mmdb, variable_name=mmrv.action_states)
-
-        # Now determine which actions have their flows available initially and enable them
-        #
-        # Find all the actions that are dependent on flows from other actions
-        # Subtract these dependent actions from our set of unexecuted (U) actions
-        # and we get have set of non-dependent actions to enable (E)
-
-        # Join the unexecuted actions with Flow Dependency on the To_action (flow destination)
-        # to obtain all dependent actions
-        Relation.semijoin(db=mmdb, rname1=mmrv.unexecuted_actions_full, rname2='Flow Dependency',
-                                               attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'})
-        Relation.project(db=mmdb, attributes=("To_action",))
-        Relation.rename(db=mmdb, names={"To_action": "ID"}, svar_name=mmrv.dependent_actions)
-        Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions, rname2=mmrv.dependent_actions,
-                          svar_name=mmrv.enabled_actions)
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=mmrv.enabled_actions)
-
-        # We need to advance these enabled_actions from U -> E (unexecuted to enabled)
-        # Use semiminus to subtract out any actions that aren't going to be enabled now
-        Relation.semiminus(db=mmdb, rname1=mmrv.enabled_actions, rname2=mmrv.action_states,
-                           svar_name=mmrv.unchanged_actions)
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=mmrv.unchanged_actions)
-        # The semijoin gives usa column of action ids that move to the (E) enabled state
-        Relation.semijoin(db=mmdb, rname1=mmrv.action_states, rname2=mmrv.enabled_actions)
-        Relation.extend(db=mmdb, attrs={"State": "E"}, svar_name=mmrv.change_actions)
-
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=mmrv.change_actions)
-        # Now update our action states by combining unchanged and changed states
-        Relation.union(db=mmdb, relations=(mmrv.change_actions, mmrv.unchanged_actions), svar_name=mmrv.action_states)
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=mmrv.action_states)
-
         pass
-
 
     def next_action(self) -> str | None:
         """

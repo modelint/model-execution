@@ -57,7 +57,7 @@ class Write(ActionExecution):
         rv = declare_mm_rvs(owner=self.owner)
 
         # Lookup the Action instance
-        Relation.semijoin(db=mmdb, rname1=self.activity_execution.rv_name, rname2="Write Action")
+        Relation.semijoin(db=mmdb, rname1=self.activity_execution.activity_rvn, rname2="Write Action")
         # Narrow it down to this Read Action instance
         R = f"ID:<{action_id}>"
         write_action_t = Relation.restrict(db=mmdb, restriction=R)
