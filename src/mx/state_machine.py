@@ -157,8 +157,6 @@ class StateMachine:
         self.active_event = self.select_next_event()
         if not self.active_event:
             return
-        if isinstance(self.active_event, CompletionEvent):
-            self.completion_event = None
 
         _logger.info(f"Active event: {self.active_event.event_spec}")
 
@@ -195,10 +193,13 @@ class StateMachine:
         Returns:
             Dispatched Event if one is pending, otherwise None
         """
-        return (
-            self.completion_event if self.completion_event else
-            self.interaction_events.pop(0) if self.interaction_events else None
-        )
+        if self.completion_event:
+            active_event = self.completion_event
+            self.completion_event = None
+            return active_event
+
+        if self.interaction_events:
+            return self.interaction_events.pop(0)
 
     def accept_interaction_event(self, event: InteractionEvent):
         """

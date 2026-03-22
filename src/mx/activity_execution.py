@@ -34,6 +34,7 @@ from mx.actions.rank_restrict import RankRestrict
 from mx.actions.signal import Signal
 from mx.db_names import mmdb
 from mx.rvname import declare_rvs
+from mx.mxtypes import ActionState
 
 _logger = logging.getLogger(__name__)
 
@@ -142,8 +143,7 @@ class ActivityExecution(ABC):
             The action ID as a string
         """
         # Enabled actions are all actions in (E) state
-        R = f"State:E"
-        enabled_actions_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=R)
+        enabled_actions_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=ActionState.E)
         if not len(enabled_actions_r.body):
             # There are no more enabled actions to execute
             return None
@@ -166,7 +166,7 @@ class ActivityExecution(ABC):
         mmrv = self.mmrv
 
         # We change the state of the executed action to completed
-        x_action_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=f"State:X")
+        x_action_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=ActionState.X)
         x_action = x_action_r.body[0]['ID']
         Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': x_action}, update={'State': 'C'})
         if __debug__:
@@ -174,7 +174,7 @@ class ActivityExecution(ABC):
         pass
 
         # Now we select any remaining unenabled actions to see if we can enable them
-        Relation.restrict(db=mmdb, relation=self.action_states, restriction=f"State:U",
+        Relation.restrict(db=mmdb, relation=self.action_states, restriction=ActionState.U,
                           svar_name=mmrv.unenabled_actions)
 
         if not Relation.cardinality(db=mmdb, rname=mmrv.unenabled_actions):

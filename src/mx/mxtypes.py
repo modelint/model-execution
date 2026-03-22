@@ -4,7 +4,14 @@
 # System
 from typing import NamedTuple, Dict, Any, TypeAlias, Union
 from collections import namedtuple
-from enum import Enum
+from enum import Enum, StrEnum
+
+class ActionState(StrEnum):
+    U = "State:U"  # Unexecuted action
+    E = "State:E"  # Enabled action
+    X = "State:X"  # Executing action
+    C = "State:C"  # Completed action
+    D = "State:D"  # Disabled action
 
 InstanceAddress = namedtuple('mx_InstanceAddress', 'domain class_name instance_id')
 AssignerAddress = namedtuple('mx_AssignerAddress', 'domain rel_name instance_id')

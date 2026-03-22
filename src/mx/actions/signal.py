@@ -75,10 +75,10 @@ class Signal(ActionExecution):
         """
         mmrv = self.mmrv
 
-        Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id})
         # Determine the type of signal to be generated
-        send_signal_t = Relation.semijoin(db=mmdb, rname1=self.activity_execution.activity_rvn,
-                                          rname2="Send Signal Action", svar_name=mmrv.send_signal_action_rv)
+        # and extend our activity with our action id to semijoin to the our action only
+        Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id})
+        send_signal_t = Relation.semijoin(db=mmdb, rname2="Send Signal Action", svar_name=mmrv.send_signal_action_rv)
         if send_signal_t.body:
             self.process_send_signal()
         else:
@@ -111,7 +111,7 @@ class Signal(ActionExecution):
             svar_name=mmrv.signal_instance_action_rv
         )
         if signal_instance_action_r.body:
-            self.signal_assigner(mmrv.signal_instance_action_rv)
+            self.signal_assigner()
             return
 
         # Signal Assigner State Machine (single or multiple)
@@ -120,7 +120,7 @@ class Signal(ActionExecution):
             svar_name=mmrv.signal_assigner_action_rv
         )
         if signal_assigner_action_r.body:
-            self.signal_assigner(mmrv.signal_assigner_action_rv)
+            self.signal_assigner()
             return
 
         # Initial Signal
@@ -129,17 +129,25 @@ class Signal(ActionExecution):
             svar_name=mmrv.initial_signal_action_rv
         )
         if signal_instance_action_r.body:
-            self.signal_assigner(mmrv.initial_signal_action_rv)
+            self.signal_assigner()
             return
 
 
-    def signal_instance(self, signal_instance_rv: str):
+    def signal_instance(self):
         pass
 
-    def initial_signal(self, initial_signal_rv: str):
+    def initial_signal(self):
         pass
 
-    def signal_assigner(self, signal_assigner_rv: str):
+    def signal_assigner(self):
+        mmrv = self.mmrv
+        signal_assigner_action_t = Relation.semijoin(db=mmdb, rname1=mmrv.signal_assigner_action_rv, rname2="Signal Assigner Action")
+        rnum = signal_assigner_action_t.body[0]['Association']
+        ma_partition_instance_t = Relation.semijoin(db=mmdb, rname2="Multiple Assigner Partition Instance")
+        partition_flow = None if not ma_partition_instance_t.body else ma_partition_instance_t.body[0]["Partition"]
+        if partition_flow:
+            pflow_value = self.activity_execution.flows[partition_flow].value
+            Relation.print(db=self.domdb, variable_name=pflow_value)
         pass
 
     def signal_completion(self, event_spec_name: str):

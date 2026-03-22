@@ -17,6 +17,7 @@ from mx.activity_execution import ActivityExecution
 from mx.mxtypes import StateMachineType
 from mx.utility import snake
 from mx.db_names import mmdb
+from mx.mxtypes import ActionState
 
 _logger = logging.getLogger(__name__)
 
@@ -85,10 +86,8 @@ class StateActivityExecution(ActivityExecution):
         action_states = self.state_machine.actions[self.anum]
 
         # Get all unexecuted actions
-        R = f"State:U"
-        Relation.restrict(db=mmdb, relation=action_states, restriction=R)
+        Relation.restrict(db=mmdb, relation=action_states, restriction=ActionState.U)
         Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
-        pass
 
         # Determine which actions have their flows available initially and enable them
         #
