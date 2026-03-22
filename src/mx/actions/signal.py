@@ -18,12 +18,34 @@ from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow
 from mx.completion_event import CompletionEvent
+from mx.rvname import declare_rvs
 from mx.mxtypes import *
 
 _logger = logging.getLogger(__name__)
 
-class Signal(ActionExecution):
+class MMRVs(NamedTuple):
+    send_signal_action_rv : str
+    signal_assigner_action_rv : str
+    signal_instance_action_rv : str
+    initial_signal_action_rv : str
 
+# This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
+# variables above as a member.
+def declare_mm_rvs(owner: str) -> MMRVs:
+    rvs = declare_rvs(mmdb, owner,
+                      "send_signal_action",
+                      "signal_assigner_action",
+                      "signal_instance_action",
+                      "initial_signal_action",
+                      )
+    return MMRVs(*rvs)
+
+class Signal(ActionExecution):
+    """
+    See the Signal Action subsystem class model to find all referenced classes in the comments
+    in this python module.
+    """
+    # Default model debugger monitoring options
     monitor_external = False
     monitor_internal = False
 
@@ -34,52 +56,109 @@ class Signal(ActionExecution):
         if self.disabled:
             return
 
+        # Get a NamedTuple with a field for each relation variable name
+        self.mmrv = declare_mm_rvs(owner=self.owner)
+
         if __debug__:
-            _rv_before_mmdb = Database.get_rv_names(db=mmdb)
-            _rv_before_dom = Database.get_rv_names(db=self.domdb)
+            _logger.info(f"    RVS begin signal action:")
+            _logger.info(f"    {Database.get_all_rv_names()}")
 
-        send_signal_action_rv = Relation.declare_rv(db=mmdb, owner=self.owner, name="send_signal_action")
+        self.supplied_params: NamedValues = {}
+
+        self.process_signal()
+
+        Relation.free_rvs(db=mmdb, owner=self.owner)
+
+    def process_signal(self):
+        """
+        Determine whether this Signal Action actually sends a signal or if it is cancelling a delayed event.
+        """
+        mmrv = self.mmrv
+
+        Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id})
         # Determine the type of signal to be generated
-        send_signal_r = Relation.semijoin(db=mmdb, rname1=self.activity_execution.activity_rvn, rname2="Send Signal Action")
-        # Narrow it down to this Read Action instance
-        R = f"ID:<{action_id}>"
-        send_signal_t = Relation.restrict(db=mmdb, restriction=R, svar_name=send_signal_action_rv)
-        _logger.info(f"x rv send_signal_action")
+        send_signal_t = Relation.semijoin(db=mmdb, rname1=self.activity_execution.activity_rvn,
+                                          rname2="Send Signal Action", svar_name=mmrv.send_signal_action_rv)
         if send_signal_t.body:
-            # Get the parameters
-            # TODO: Process signal with parameters when we have an example
-            # supplied_parameter_value_r = Relation.semijoin(db=mmdb, rname1=send_signal_action_rv,
-            #                                                rname2="Supplied Parameter Value")
-            supplied_params = {}  # TODO: Placeholder for above
-            # Send the signal
-            signal_completion_action_r = Relation.join(db=mmdb, rname1=send_signal_action_rv,
-                                                       rname2="Signal Completion Action")
-            if signal_completion_action_r.body:
-                # This is a signal completion action
-                event_spec=signal_completion_action_r.body[0]["Event_spec"]
-                CompletionEvent(sm_type=self.activity_execution.state_machine.sm_type,
-                                event_spec=event_spec, params=supplied_params,
-                                domain=self.activity_execution.domain,
-                                source=InstanceAddress(
-                                    domain=self.activity_execution.domain.name,
-                                    class_name=activity_execution.state_machine.state_model,
-                                    instance_id=self.activity_execution.state_machine.instance_id)
-                                )
-            Relation.free_rvs(db=mmdb, owner=self.owner)
-            _logger.info(f"o rv send_signal_action")
+            self.process_send_signal()
+        else:
+            self.process_cancel_delay()
+
+    def process_send_signal(self):
+        """
+        Here we determine the type of destination and process accordingly.
+        Each subclass of Send Signal Action defines a possible destination.
+        """
+        mmrv = self.mmrv
+
+        # Get any supplied parameters
+        self.set_supplied_params()
+
+        # Mutually exclusive destination cases
+
+        # Signal Completion Action (self)
+        signal_completion_action_r = Relation.join(db=mmdb, rname1=mmrv.send_signal_action_rv,
+                                                   rname2="Signal Completion Action")
+        if signal_completion_action_r.body:
+            self.signal_completion(
+                event_spec_name=signal_completion_action_r.body[0]["Event_spec"],
+            )
+            return
+
+        # Signal Instance
+        signal_instance_action_r = Relation.join(
+            db=mmdb, rname1=mmrv.send_signal_action_rv, rname2="Signal Instance Action",
+            svar_name=mmrv.signal_instance_action_rv
+        )
+        if signal_instance_action_r.body:
+            self.signal_assigner(mmrv.signal_instance_action_rv)
+            return
+
+        # Signal Assigner State Machine (single or multiple)
+        signal_assigner_action_r = Relation.join(
+            db=mmdb, rname1=mmrv.send_signal_action_rv, rname2="Signal Assigner Action",
+            svar_name=mmrv.signal_assigner_action_rv
+        )
+        if signal_assigner_action_r.body:
+            self.signal_assigner(mmrv.signal_assigner_action_rv)
+            return
+
+        # Initial Signal
+        initial_signal_action_r = Relation.join(
+            db=mmdb, rname1=mmrv.send_signal_action_rv, rname2="Initial Signal Action",
+            svar_name=mmrv.initial_signal_action_rv
+        )
+        if signal_instance_action_r.body:
+            self.signal_assigner(mmrv.initial_signal_action_rv)
+            return
+
+
+    def signal_instance(self, signal_instance_rv: str):
         pass
-        # R = f"ID:<{self.action_id}>, Activity:<{anum}>, Domain:<{domain}>"
-        # labeled_flow_r = Relation.restrict(db=mmdb, relation="Labeled Flow", restriction=R)
-        # if not flow_r.body:
-        #     msg = f"Flow {fid} in {anum}:{domain} not found"
-        #     _logger.error(msg)
-        # raise FlowException(msg)
 
-        # Determine the signal type
-        # Is it a Send Signal Action?
-        #   If so, is it a Signal Completion Action?
-        # Else Canceled Delayed Signal Action
+    def initial_signal(self, initial_signal_rv: str):
+        pass
 
-        # for Signal Completion Action case
-        # We know it will be queued for the xi (if lifecycle)
-        # Send Signal Action has the ev spec
+    def signal_assigner(self, signal_assigner_rv: str):
+        pass
+
+    def signal_completion(self, event_spec_name: str):
+        CompletionEvent(sm_type=self.activity_execution.state_machine.sm_type,
+                        event_spec=event_spec_name, params=self.supplied_params,
+                        domain=self.activity_execution.domain,
+                        source=InstanceAddress(
+                            domain=self.activity_execution.domain.name,
+                            class_name=self.activity_execution.state_machine.state_model,
+                            instance_id=self.activity_execution.state_machine.instance_id)
+                        )
+
+    def process_cancel_delay(self):
+        pass
+
+    def set_supplied_params(self):
+        # Get the parameters
+        # TODO: Process signal with parameters when we have an example
+        # supplied_parameter_value_r = Relation.semijoin(db=mmdb, rname1=send_signal_action_rv,
+        #                                                rname2="Supplied Parameter Value")
+
+        pass
