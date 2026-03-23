@@ -78,12 +78,14 @@ class StateActivityExecution(ActivityExecution):
         Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
         pass
 
-    def enable_initial_actions(self) -> str:
+    def enable_initial_actions(self) -> str | None:
         """
         See description in ActivityExecution abstract method
         """
         mmrv = self.mmrv
         action_states = self.state_machine.actions[self.anum]
+        if not action_states:
+            return None
 
         # Get all unexecuted actions
         Relation.restrict(db=mmdb, relation=action_states, restriction=ActionState.U)

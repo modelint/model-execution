@@ -18,6 +18,7 @@ from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow
 from mx.completion_event import CompletionEvent
+from mx.interaction_event import InteractionEvent
 from mx.rvname import declare_rvs
 from mx.mxtypes import *
 
@@ -141,13 +142,36 @@ class Signal(ActionExecution):
 
     def signal_assigner(self):
         mmrv = self.mmrv
+        pass
         signal_assigner_action_t = Relation.semijoin(db=mmdb, rname1=mmrv.signal_assigner_action_rv, rname2="Signal Assigner Action")
         rnum = signal_assigner_action_t.body[0]['Association']
         ma_partition_instance_t = Relation.semijoin(db=mmdb, rname2="Multiple Assigner Partition Instance")
         partition_flow = None if not ma_partition_instance_t.body else ma_partition_instance_t.body[0]["Partition"]
+        pinst_id = None
+        pclass = None
         if partition_flow:
             pflow_value = self.activity_execution.flows[partition_flow].value
-            Relation.print(db=self.domdb, variable_name=pflow_value)
+            pclass = self.activity_execution.flows[partition_flow].flowtype
+            pflow_t = Relation.restrict(db=self.domdb, relation=pflow_value)
+            pinst_id = pflow_t.body[0]
+            pass
+        send_signal_action_t = Relation.restrict(db=mmdb, relation=mmrv.send_signal_action_rv)
+        InteractionEvent(
+            sm_type=StateMachineType.MA if partition_flow else StateMachineType.SA,
+            event_spec=send_signal_action_t.body[0]["Event_spec"],
+            params=self.supplied_params,
+            domain=self.activity_execution.domain,
+            source=InstanceAddress(
+                domain=self.activity_execution.domain.name,
+                class_name=self.activity_execution.state_machine.state_model,
+                instance_id=self.activity_execution.state_machine.instance_id),
+            to_instance=None,
+            to_class=None,
+            partitioning_instance=pinst_id,
+            partitioning_class=pclass,
+            to_rnum=rnum
+        )
+
         pass
 
     def signal_completion(self, event_spec_name: str):
