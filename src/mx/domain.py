@@ -234,15 +234,15 @@ class Domain:
             _logger.info(f"    {rnum} paritioned by: {partition}")
 
             id_attrs = partition.id_attrs
-            class_name = partition.pclass
+            pclass_name = partition.pclass
 
             # Tag the class relvar so that each instance has an arbitrary integer id 0..n
-            class_i_rv = f"{snake(class_name)}_i"
+            rnum_i_rv = f"{rnum}_i"
             # We can use the above formula to obtain this relation variable later for any given class name
-            Relation.tag(db=self.alias, tag_attr_name="_instance", relation=class_name)
+            Relation.tag(db=self.alias, tag_attr_name="_instance", relation=pclass_name)
             # Project on id attrs + the tagged _instance attr to yield the class_i_rv value
             P = tuple(id_attrs + ['_instance'])
-            instance_r = Relation.project(db=self.alias, attributes=P, svar_name=class_i_rv)
+            instance_r = Relation.project(db=self.alias, attributes=P, svar_name=rnum_i_rv)
 
             # Create a Multiple Assigner State Machine for each Instance and index it to its instance id
             for i in instance_r.body:
@@ -254,13 +254,13 @@ class Domain:
                 # Now use the instance id in the inner dictionary (local to class_name)
                 # Ensure the inner dictionary exists for the class_name
                 pass
-                self.mult_assigners.setdefault(class_name, {})[i["_instance"]] = MultipleAssignerStateMachine(
+                self.mult_assigners.setdefault(pclass_name, {})[i["_instance"]] = MultipleAssignerStateMachine(
                     ma_sm_id=i["_instance"],
                     current_state=istate,
                     rnum=rnum,
                     domain=self,
                     instance_id=inst_id,
-                    pclass_name=class_name
+                    pclass_name=pclass_name
                 )
                 _logger.info(f"       sm id: {i["_instance"]} current state: [{istate}] inst id: {inst_id}")
 
