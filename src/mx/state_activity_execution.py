@@ -31,9 +31,15 @@ class StateActivityExecution(ActivityExecution):
             anum:  Activity number identifying the State Activity
             state_machine:  State Machine object (instance specific) executing this State Activity
         """
-
         self.state_machine = state_machine  # The Lifecycle or Assigner State Machine
-        self.xi_flow_name = None  # Holds a value only if this is a Lifecycle State Machine
+
+        # Holds a value only if this is a Lifecycle State Machine
+        self.instance_id_value = None
+        self.xi_flow_name = None
+
+        # Holds a value only if this is a Multiple Assigner State Machine
+        self.pi_flow_name = None
+        self.pi_flow_name = None
 
         # Initialization specific to each type of State Machine
         match self.state_machine.sm_type:
@@ -57,16 +63,33 @@ class StateActivityExecution(ActivityExecution):
                 # just in case our Flow naming scheme changes, we check to be sure
                 self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
 
+            case StateMachineType.MA:
+                # It must be a multiple assigner state machine
+                # we need the rnum plus the partitioning instance
+
+                # There is an instance of the partitioning class input to this State Activity
+                # We flatten the instance id into a string and then use it to define this's ActivityExecution's
+                # owner_name. We'll use that to name any local relational variables that are declared, used, and
+                # freed up during execution of this State Activity.
+                self.pinstance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
+                # The owner_name is passed along to the superclass for initialization as a self variable
+                owner_name = f"MASM_{self.state_machine.state_model}_{anum}_inst_"  # TODO: add partitioning inst id
+                activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="multiple_assigner_name")
+
+                # Now we save our Multiple Assigner Activity instance for use by any executing Action
+                # The activity rv_name is passed along to the superclass
+                R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
+                Relation.restrict(db=mmdb, relation='Multiple Assigner Activity', restriction=R)
+                ma_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=activity_rvn)
+
+                # The name of our executing instance flow. This always ends up as "F1", but
+                # just in case our Flow naming scheme changes, we check to be sure
+                self.pi_flow_name = ma_activity_r.body[0]["Partitioning_instance_flow"]
+
             case StateMachineType.SA:
                 # Single assigner is just the rnum
                 owner_name = f"SASM_{self.state_machine.state_model}_{anum}"
                 activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="single_assigner_name")
-
-            case StateMachineType.MA:
-                # It must be a multiple assigner state machine
-                # we need the rnum plus the partitioning instance
-                owner_name = f"MASM_{self.state_machine.state_model}_{anum}_inst_"  # TODO: add partitioning inst id
-                activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="multiple_assigner_name")
 
         super().__init__(domain=state_machine.domain, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
                          parameters=state_machine.active_event.params)
@@ -136,10 +159,25 @@ class StateActivityExecution(ActivityExecution):
             Relation.restrict(db=domdb, relation=class_name, restriction=R)
             id_attr_names = tuple(k for k in instance_id.keys())
             Relation.project(db=domdb, attributes=id_attr_names, svar_name=xi_flow_value_rv)
-            _logger.info(f"x xi_flow_value set")
 
             # Set the xi flow value to a relation variable holding a single instance reference for the xi
             self.flows[self.xi_flow_name] = ActiveFlow(value=xi_flow_value_rv, flowtype=class_name)
+        elif self.pi_flow_name:
+            pclass_name = self.state_machine.pclass_name
+            pinstance_id = self.state_machine.instance_id
+            pi_flow_value_rv = Relation.declare_rv(
+                db=domdb, owner=self.owner_name, name="pi_flow_value"
+            )
+            # Convert identifier to a restriction phrase
+            R = ", ".join(f"{k}:<{v}>" for k, v in pinstance_id.items())
+            # Set a relation variable name for the pi flow value
+            Relation.restrict(db=domdb, relation=pclass_name, restriction=R)
+            id_attr_names = tuple(k for k in pinstance_id.keys())
+            Relation.project(db=domdb, attributes=id_attr_names, svar_name=pi_flow_value_rv)
+
+            # Set the xi flow value to a relation variable holding a single instance reference for the xi
+            self.flows[self.pi_flow_name] = ActiveFlow(value=pi_flow_value_rv, flowtype=pclass_name)
+            pass
 
         # Any Scalar Value (constant) flows
         # These are flows whose value is specified in the activity such as 'Stop requested = TRUE'

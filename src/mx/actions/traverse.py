@@ -51,8 +51,9 @@ class Traverse(ActionExecution):
 
         Note: For now we are only handling Methods, but State Activities will be incorporated eventually.
 
-        :param action_id:  The ACTN<n> value identifying each Action instance
-        :param activity: The A<n> Activity ID (for Method and State Activities)
+        Args:
+            action_id: The ACTN<n> value identifying each Action instance
+            activity_execution:  The Activity Execution object
         """
         super().__init__(activity_execution=activity_execution, action_id=action_id)
 
@@ -60,10 +61,8 @@ class Traverse(ActionExecution):
         if self.disabled:
             return
 
-        # TODO: NOW It looks like rv_names for ACTN40 where not cleared out
         if __debug__:
-            _rv_before_mmdb = Database.get_rv_names(db=mmdb)
-            _rv_before_dom = Database.get_rv_names(db=self.domdb)
+            _rv_before = Database.get_all_rv_names()
 
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(owner=self.owner)
@@ -72,8 +71,7 @@ class Traverse(ActionExecution):
         domrv = self.domrv
 
         if __debug__:
-            _rv_after_mmdbdec = Database.get_rv_names(db=mmdb)
-            _rv_after_domdec = Database.get_rv_names(db=self.domdb)
+            _rv_before = Database.get_all_rv_names()
 
         # We define a distinct method to trace each subclass of Hop
         execute_hop: dict[str, Callable[..., str]] = {  # The only type hint that seems to work with PyCharm

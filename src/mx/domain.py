@@ -107,10 +107,19 @@ class Domain:
         Returns:
             True if there is still work remaining (unprocessed events)
         """
+        # Process all lifecycles
         for class_name, instance in self.lifecycles.items():
             for inst_id, sm in instance.items():
                 if sm.busy:
                     sm.go()  # Operating at thread granularity 0, 0 max events
+        pass
+        # Process all multiple assigner state machines
+        for pclass_name, p_instance in self.mult_assigners.items():
+            for inst_id, sm in p_instance.items():
+                if sm.busy:
+                    sm.go()
+        # Process all single assigner state machines
+        # TODO: Same for single assigners
         return self.busy
 
     def find_lifecycles(self):
