@@ -32,6 +32,7 @@ from mx.actions.restrict import Restrict
 from mx.actions.gate import Gate
 from mx.actions.rank_restrict import RankRestrict
 from mx.actions.signal import Signal
+from mx.actions.method_call import MethodCall
 from mx.db_names import mmdb
 from mx.rvname import declare_rvs
 from mx.mxtypes import ActionState
@@ -78,6 +79,7 @@ class ActivityExecution(ABC):
         "gate": Gate,
         "signal": Signal,
         "write": Write,
+        "method call": MethodCall,
     }
 
     def __init__(self, domain: 'Domain', anum: str, owner_name: str, activity_rvn: str, parameters: NamedValues):
