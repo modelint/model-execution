@@ -129,33 +129,33 @@ class MethodExecution(ActivityExecution):
         pass
 
         # # Get all unexecuted actions
-        # Relation.restrict(db=mmdb, relation=action_states, restriction=ActionState.U)
-        # Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
+        Relation.restrict(db=mmdb, relation=self.actions, restriction=ActionState.U)
+        Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
+
+        # Determine which actions have their flows available initially and enable them
         #
-        # # Determine which actions have their flows available initially and enable them
-        # #
-        # # Find all the actions that are dependent on flows from other actions
-        # # Subtract these dependent actions from our set of unexecuted (U) actions
-        # # and we get have set of non-dependent actions to enable (E)
-        #
-        # # Join the unexecuted actions with Flow Dependency on the To_action (flow destination)
-        # # to obtain all dependent actions
-        # R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
-        # Relation.restrict(db=mmdb, relation="Action", restriction=R)
-        # Relation.semijoin(db=mmdb, rname2='Flow Dependency',
-        #                   attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'},
-        #                   svar_name=mmrv.flow_deps)  # We use this later to choose actions to enable
-        # # And now we just take the To_action column and rename it to ID to get something we can subtract
-        # Relation.project(db=mmdb, attributes=("To_action",))
-        # Relation.rename(db=mmdb, names={"To_action": "ID"})
-        # # We subtract these from the set of unexecuted actions to obtain those we need to enable
-        # enable_r = Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions)
-        # # For each action to enable, we change its state from U (unexecuted) to E (enabled)
-        # for a in enable_r.body:
-        #     Relvar.updateone(db=mmdb, relvar_name=action_states, id={'ID': a['ID']}, update={'State': 'E'})
-        #
-        # if __debug__:
-        #     Relation.print(db=mmdb, variable_name=action_states)
+        # Find all the actions that are dependent on flows from other actions
+        # Subtract these dependent actions from our set of unexecuted (U) actions
+        # and we get have set of non-dependent actions to enable (E)
+
+        # Join the unexecuted actions with Flow Dependency on the To_action (flow destination)
+        # to obtain all dependent actions
+        R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
+        Relation.restrict(db=mmdb, relation="Action", restriction=R)
+        Relation.semijoin(db=mmdb, rname2='Flow Dependency',
+                          attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'},
+                          svar_name=mmrv.flow_deps)  # We use this later to choose actions to enable
+        # And now we just take the To_action column and rename it to ID to get something we can subtract
+        Relation.project(db=mmdb, attributes=("To_action",))
+        Relation.rename(db=mmdb, names={"To_action": "ID"})
+        # We subtract these from the set of unexecuted actions to obtain those we need to enable
+        enable_r = Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions)
+        # For each action to enable, we change its state from U (unexecuted) to E (enabled)
+        for a in enable_r.body:
+            Relvar.updateone(db=mmdb, relvar_name=self.actions, id={'ID': a['ID']}, update={'State': 'E'})
+
+        if __debug__:
+            Relation.print(db=mmdb, variable_name=self.actions)
         pass
-        return self.action_states
+        return self.actions
         # pass
