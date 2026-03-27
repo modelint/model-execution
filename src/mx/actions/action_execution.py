@@ -1,6 +1,7 @@
 """ action_execution.py -- manages Action execution """
 
 # System
+import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -11,6 +12,8 @@ from pyral.relation import Relation
 
 # MX
 from mx.db_names import mmdb
+
+_logger = logging.getLogger(__name__)
 
 # These actions do not output a non-scalar flow and, thus, do not declare
 # an output database variable to be freed up upon activity completion
@@ -29,6 +32,7 @@ class ActionExecution:
         self.activity_execution = activity_execution
         self.action_id = action_id
         self.action_type = type(self).__name__.lower()
+        _logger.info(f"Executing action: {self.activity_execution.anum}-{action_id}({self.action_type})")
 
         # The domain alias is also the name of the TclRAL domain database session
         self.domdb = self.activity_execution.domain.alias  # Abbreviated access since we use it alot

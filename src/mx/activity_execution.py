@@ -100,8 +100,9 @@ class ActivityExecution(ABC):
         self.flows: dict[str, ActiveFlow | None] = {}
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
-        _logger.info(f"d Declared rvs: {Database.get_all_rv_names()}")
         self.activity_rvn = activity_rvn
+        if __debug__:
+            self.system.mxlogger.log_table(db=mmdb, message="Executing activity", rv_name=self.activity_rvn)
         # Here we create a temporary relvar in PyRAL to track the execution state of this Activity's Actions
         # during execution
         # We set the name of this relvar so we can access and update the relvar content
@@ -156,6 +157,7 @@ class ActivityExecution(ABC):
         # Now change that action's status to X (executing)
         Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': next_action}, update={'State': 'X'})
         if __debug__:
+            self.system.mxlogger.log_table(db=mmdb, message=f"Next action selected", rv_name=self.action_states)
             Relation.print(db=mmdb, variable_name=self.action_states)
         return next_action
 
@@ -237,7 +239,6 @@ class ActivityExecution(ABC):
                  f"Domain:<{self.domain.name}>")
             action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R)
             action_type = action_r.body[0]["Type"]
-            _logger.info(f"Executing action {action_id}-{action_type}")
             current_x_action = ActivityExecution.execute_action[action_type](activity_execution=self,
                                                                              action_id=action_id)
             self.update_enabled_actions()

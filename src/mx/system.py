@@ -18,6 +18,7 @@ from mx.db_names import mmdb
 from mx.exceptions import *
 from mx.mdb_types import *
 from mx.mxtypes import ExternalAddress
+from mx_logger import MXLogger
 
 _logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ class System:
         self.verbose = False
         self.playground = None  # This is a set of populated domain dbs and compatible scenarios
         self.response_monitor = None
+        self.mxlogger = MXLogger()
 
     def initialize(self, system_path: Path, verbose: bool, debug: bool):
         """
@@ -142,9 +144,11 @@ class System:
                 case ActionType.EXTERNAL_EVENT:
                     from mx.actions.signal import Signal
                     Signal.monitor_external = True
+                    _logger.info(f"Setting MDB external event monitor")
                 case ActionType.SIGNAL_INSTANCE:
                     from mx.actions.signal import Signal
                     Signal.monitor_internal = True
+                    _logger.info(f"Setting MDB internal signal monitor")
 
     def inject(self, stimulus: Interaction, responses: list[Interaction]) -> Interaction:
         """
@@ -183,7 +187,7 @@ class System:
         pass
 
     def process_signal_instance(self, s: Interaction):
-        _logger.info("Injecting signal")
+        _logger.info(f"Injecting signal: {s.name}")
         if isinstance(s.source, ExternalAddress):
             _logger.info(f"{s.source.domain} >|| {s.target.domain} : {s.name} -> {s.target.class_name} <{s.target.instance_id}>")
         else:

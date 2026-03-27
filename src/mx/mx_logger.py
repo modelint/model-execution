@@ -21,8 +21,10 @@ class MXLogger:
         self.header()
 
     def header(self):
-        self.file.write(f"Executing scenario: {self.scenario}\n")
         self.file.write("---\n")
+        self.file.write(f"Executing scenario")
+        # TODO: Make header name variable based on scenario name
+        self.file.write("\n---\n\n")
 
     def log(self, message: str, label: Optional[str] = None):
         if label:

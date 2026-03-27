@@ -1,6 +1,7 @@
 """ read.py  -- execute an attribute read action """
 
 # System
+import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 from mx.instance_set import InstanceSet
@@ -18,6 +19,8 @@ from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.mxtypes import *
+
+_logger = logging.getLogger(__name__)
 
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
@@ -103,5 +106,5 @@ class Read(ActionExecution):
         # And since we are outputing a scalar flow, there is no domain rv output to preserve
         # In fact, we didn't define any domain rv's at all, so there are none to free
 
-        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
-        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
+        if __debug__:
+            _rv_after_free = Database.get_all_rv_names()
