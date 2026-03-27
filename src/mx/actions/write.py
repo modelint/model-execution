@@ -4,17 +4,16 @@
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
-from mx.instance_set import InstanceSet
-
 if TYPE_CHECKING:
     from mx.activity_execution import ActivityExecution
 
 # Model Integration
 from pyral.relation import Relation
 from pyral.relvar import Relvar
-from pyral.database import Database  # Diagnostics
+from pyral.database import Database
 
 # MX
+from mx.instance_set import InstanceSet
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
