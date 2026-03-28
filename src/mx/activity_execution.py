@@ -36,6 +36,7 @@ from mx.actions.method_call import MethodCall
 from mx.db_names import mmdb
 from mx.rvname import declare_rvs
 from mx.mxtypes import ActionState
+from mx.utility import *
 
 _logger = logging.getLogger(__name__)
 
@@ -101,8 +102,7 @@ class ActivityExecution(ABC):
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         self.activity_rvn = activity_rvn
-        if __debug__:
-            self.system.mxlogger.log_table(db=mmdb, message="Executing activity", rv_name=self.activity_rvn)
+        logtable(logger=_logger, db=mmdb, variable_name=self.activity_rvn)
         # Here we create a temporary relvar in PyRAL to track the execution state of this Activity's Actions
         # during execution
         # We set the name of this relvar so we can access and update the relvar content
@@ -156,9 +156,8 @@ class ActivityExecution(ABC):
         next_action = next_action_r.body[0]["ID"]
         # Now change that action's status to X (executing)
         Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': next_action}, update={'State': 'X'})
-        if __debug__:
-            self.system.mxlogger.log_table(db=mmdb, message=f"Next action selected", rv_name=self.action_states)
-            Relation.print(db=mmdb, variable_name=self.action_states)
+        _logger.info(f"Next action selected")
+        logtable(logger=_logger, db=mmdb, variable_name=self.action_states)
         return next_action
 
     def update_enabled_actions(self):

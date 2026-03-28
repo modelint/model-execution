@@ -165,7 +165,6 @@ class StateActivityExecution(ActivityExecution):
             self.flows[self.xi_flow_name] = ActiveFlow(value=xi_flow_value_rv, flowtype=class_name)
             _logger.info(f"{self.xi_flow_name} set to executing instance")
             logtable(logger=_logger, db=domdb, variable_name=xi_flow_value_rv, table_name=self.owner_name)
-            pass
         elif self.pi_flow_name:
             pclass_name = self.state_machine.pclass_name
             pinstance_id = self.state_machine.instance_id
