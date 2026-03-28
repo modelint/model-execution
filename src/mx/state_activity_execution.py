@@ -15,7 +15,7 @@ from pyral.database import Database
 from mx.actions.flow import ActiveFlow
 from mx.activity_execution import ActivityExecution
 from mx.mxtypes import StateMachineType
-from mx.utility import snake
+from mx.utility import *
 from mx.db_names import mmdb
 from mx.mxtypes import ActionState
 
@@ -146,6 +146,7 @@ class StateActivityExecution(ActivityExecution):
         Set the values of any initially available flows in this State Activity
         """
         # Executing instance flow (if this is a Lifecycle state activity)
+        _logger.info(f"Enabling initial flows")
         domdb = self.state_machine.domain.alias
         if self.xi_flow_name:
             class_name = self.state_machine.state_model
@@ -162,6 +163,9 @@ class StateActivityExecution(ActivityExecution):
 
             # Set the xi flow value to a relation variable holding a single instance reference for the xi
             self.flows[self.xi_flow_name] = ActiveFlow(value=xi_flow_value_rv, flowtype=class_name)
+            _logger.info(f"{self.xi_flow_name} set to executing instance")
+            logtable(logger=_logger, db=domdb, variable_name=xi_flow_value_rv, table_name=self.owner_name)
+            pass
         elif self.pi_flow_name:
             pclass_name = self.state_machine.pclass_name
             pinstance_id = self.state_machine.instance_id

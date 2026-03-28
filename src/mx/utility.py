@@ -1,5 +1,7 @@
 """ utility.py - Debug utilities """
+# System
 from contextlib import redirect_stdout
+import logging
 
 # Model Integration
 from pyral.relation import Relation
@@ -35,3 +37,8 @@ def print_classes(db: str, class_names=None, output_file=None, name=''):
                 _print_content()
     else:
         _print_content()
+
+def logtable(logger, db: str, variable_name: str, table_name: str | None):
+    t = Relation.print(db=db, variable_name=variable_name, table_name=table_name, printout=True)
+    msg = f"{t}\n"
+    logger.debug(msg)
