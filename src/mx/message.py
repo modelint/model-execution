@@ -25,7 +25,7 @@ def table_msg(db: str, variable_name: str, table_name: str | None = None) -> str
         A formatted string that can be logged or printed to the console
     """
     t = Relation.print(db=db, variable_name=variable_name, table_name=table_name, printout=True)
-    return f"\n{t}\n"
+    return f"\n\n{t}\n"
 
 def nsflow_msg(db: str, flow_name: str, flow_dir: FlowDir, flow_type: str, activity: "ActivityExecution",
                rv_name: str) -> str:
