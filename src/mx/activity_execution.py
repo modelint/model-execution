@@ -5,7 +5,6 @@ import logging
 from typing import TYPE_CHECKING, Callable, NamedTuple
 from abc import ABC, abstractmethod
 
-
 if TYPE_CHECKING:
     from mx.domain import Domain
 
@@ -16,6 +15,7 @@ from pyral.database import Database
 from pyral.rtypes import *
 
 # MX
+from mx.log_table_config import TABLE
 from mx.actions.flow import ActiveFlow
 from mx.actions.action_execution import ActionExecution
 from mx.deprecated.bridge import NamedValues
@@ -37,6 +37,7 @@ from mx.db_names import mmdb
 from mx.rvname import declare_rvs
 from mx.mxtypes import ActionState
 from mx.utility import *
+from mx.message import *
 
 _logger = logging.getLogger(__name__)
 
@@ -102,7 +103,9 @@ class ActivityExecution(ABC):
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         self.activity_rvn = activity_rvn
-        logtable(logger=_logger, db=mmdb, variable_name=self.activity_rvn)
+        msg = table_msg(db=mmdb, variable_name=self.activity_rvn)
+        _logger.log(TABLE, msg)
+        pass
         # Here we create a temporary relvar in PyRAL to track the execution state of this Activity's Actions
         # during execution
         # We set the name of this relvar so we can access and update the relvar content
@@ -157,7 +160,8 @@ class ActivityExecution(ABC):
         # Now change that action's status to X (executing)
         Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': next_action}, update={'State': 'X'})
         _logger.info(f"Next action selected")
-        logtable(logger=_logger, db=mmdb, variable_name=self.action_states)
+        msg = table_msg(db=mmdb, variable_name=self.action_states)
+        _logger.log(TABLE, msg)
         return next_action
 
     def update_enabled_actions(self):

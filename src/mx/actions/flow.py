@@ -22,7 +22,7 @@ class FlowDir(Enum):
     OUT = "out"
 
 def label(name: str, activity: "ActivityExecution") -> str:
-    R = f"ID:<{name}>, Activity:<{activity.anum}>, Domain:<{activity.domain}>"
+    R = f"ID:<{name}>, Activity:<{activity.anum}>, Domain:<{activity.domain.name}>"
     labeled_flow_r = Relation.restrict(db=mmdb, relation='Labeled Flow', restriction=R)
     if labeled_flow_r.body:
         return labeled_flow_r.body[0]["Name"]

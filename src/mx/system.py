@@ -24,21 +24,6 @@ _logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL_OUTPUT_NAME = "model_out.txt"
 
-class TableAwareFormatter(logging.Formatter):
-    """Prefix only the first line of a multi-line record."""
-
-    def format(self, record):
-        original = super().format(record)
-        message = record.getMessage()
-        if '\n' not in message:
-            return original
-        # First line gets the full prefix, rest are undecorated
-        prefix = original[: original.index(message)]
-        lines = message.splitlines()
-        return '\n'.join(
-            [prefix + lines[0]] + ['    ' + l for l in lines[1:]]
-        )
-
 class System:
     """
     This class represents the complete executing system

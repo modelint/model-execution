@@ -13,6 +13,8 @@ from pyral.relvar import Relvar
 from pyral.database import Database
 
 # MX
+from mx.log_table_config import TABLE
+from mx.message import *
 from mx.instance_set import InstanceSet
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
@@ -63,16 +65,17 @@ class Write(ActionExecution):
 
         self.source_flow_name = write_action_t.body[0]["Instance_flow"]
         self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        _logger.info(f"{self.source_flow_name}")
+        _logger.info("Flows")
+        _logger.log(TABLE, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                      flow_type=self.source_flow.flowtype,
+                                      activity=self.activity_execution, rv_name=self.source_flow.value)
+                    )
 
-        # self.activity.xe.mxlog.log(message="Flows")
-        # self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-        #                                   flow_type=self.source_flow.flowtype, activity=self.activity,
-        #                                   db=self.domdb, rv_name=self.source_flow.value)
         attribute_write_accesses_r = Relation.semijoin(db=mmdb, rname2="Attribute Write Access",
                                                        attrs={"ID": "Write_action",
                                                               "Activity": "Activity", "Domain": "Domain"},
                                                        svar_name=rv.attr_write_accesses)
-        _logger.info(f"x rv attr_write_accesses")
         if __debug__:
             Relation.print(db=mmdb, variable_name=rv.attr_write_accesses)
 
@@ -80,13 +83,11 @@ class Write(ActionExecution):
         attr_r = Relation.semijoin(db=mmdb, rname1=rv.attr_write_accesses, rname2="Attribute",
                                    attrs={"Attribute": "Name", "Class": "Class", "Domain": "Domain"},
                                    svar_name=rv.attributes)
-        _logger.info(f"x rv attributes")
 
         # Expand irefs to instance set
         output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="output_input")
         InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=output_iset_rv,
                               class_name=self.source_flow.flowtype)
-        _logger.info(f"x rv output_input")
 
         qty_instances_to_write = Relation.cardinality(db=self.domdb, rname=output_iset_rv)
         if qty_instances_to_write > 1:

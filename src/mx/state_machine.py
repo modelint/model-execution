@@ -24,6 +24,7 @@ from mx.completion_event import CompletionEvent
 from mx.dispatched_event import DispatchedEvent
 from mx.state_activity_execution import StateActivityExecution
 from mx.mxtypes import StateMachineType
+from mx.message import *
 
 
 class EventResponse(Enum):
@@ -220,7 +221,6 @@ class StateMachine:
         self.current_state = dest_real_state_t["Name"]
         msg = f"transitioning to [{self.current_state}]"
         _logger.info(msg)
-        self.domain.system.mxlogger.log(message=msg)
         StateActivityExecution(anum=dest_real_state_t["Activity"], state_machine=self)
         pass
         # start activity execution and wait for completion

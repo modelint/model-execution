@@ -20,6 +20,7 @@ from enum import Enum
 from pyral.database import Database
 
 # MX
+import mx.log_table_config
 from mx.system import System
 from mx import version
 from mx.mdb_types import *

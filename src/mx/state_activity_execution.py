@@ -12,6 +12,8 @@ from pyral.relation import Relation
 from pyral.database import Database
 
 # MX
+from mx.log_table_config import TABLE
+from mx.message import *
 from mx.actions.flow import ActiveFlow
 from mx.activity_execution import ActivityExecution
 from mx.mxtypes import StateMachineType
@@ -164,7 +166,8 @@ class StateActivityExecution(ActivityExecution):
             # Set the xi flow value to a relation variable holding a single instance reference for the xi
             self.flows[self.xi_flow_name] = ActiveFlow(value=xi_flow_value_rv, flowtype=class_name)
             _logger.info(f"{self.xi_flow_name} set to executing instance")
-            logtable(logger=_logger, db=domdb, variable_name=xi_flow_value_rv, table_name=self.owner_name)
+            msg = table_msg(db=domdb, variable_name=xi_flow_value_rv, table_name=self.owner_name)
+            _logger.log(TABLE, msg)
         elif self.pi_flow_name:
             pclass_name = self.state_machine.pclass_name
             pinstance_id = self.state_machine.instance_id
