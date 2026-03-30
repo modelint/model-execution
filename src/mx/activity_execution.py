@@ -46,21 +46,12 @@ class MMRVs(NamedTuple):
     unexecuted_actions: str  # Unexecuted actions projected on ID
     unenabled_actions: str  # Remaining actions that are unenabled (U)
     flow_deps: str  # This activity's flow dependencies
-    # action_states: str # All actions with execution status
-    # actions_to_enable: str  # Actions that are to be enabled
-    # next_action: str  # Next action to be enabled
-    # executed_actions: str  # These actions have been executed
-    # unchanged_actions: str  # Actions unaffected by state change
-    # change_actions: str  # These Actions will change state to E, X, or D
-
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner,
                       "unexecuted_actions", "unenabled_actions", "flow_deps"
-                      # "action_states",
-                      # "next_action", "executed_actions", "unchanged_actions", "change_actions"
                       )
     return MMRVs(*rvs)
 

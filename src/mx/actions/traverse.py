@@ -16,6 +16,7 @@ from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.instance_set import InstanceSet
+from mx.exceptions import *
 
 if __debug__:
     from mx.utility import *
@@ -89,15 +90,19 @@ class Traverse(ActionExecution):
         }
 
         # Lookup this Action instance
-        # Start with all Traverse actions in this Activity
-        Relation.semijoin(db=mmdb, rname1=activity_execution.activity_rvn, rname2="Traverse_Action",
-                          svar_name=mmrv.activity_traverse_actions)
-        # Narrow it down to this Traverse Action instance
-        R = f"ID:<{action_id}>"
-        traverse_action_r = Relation.restrict(db=mmdb, restriction=R, svar_name=mmrv.this_traverse_action)
+        Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id})
+        traverse_action_r = Relation.semijoin(db=mmdb, rname1=activity_execution.activity_rvn,
+                                              rname2="Traverse_Action",
+                                              svar_name=mmrv.this_traverse_action)
+        if not traverse_action_r.body:
+            msg = f"Traverse action {self.activity_execution.anum}-{self.action_id} not found in metamodel"
+            _logger.error(msg)
+            raise MXMetamodelDBException(msg)
+
         traverse_action_t = traverse_action_r.body[0]
+
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.this_traverse_action))
-        _logger.info(f"- Path: {traverse_action_t["Path"]}")
+        _logger.info(f"- Path: {traverse_action_t['Path']}")
         _logger.info("Flows")
 
         # Extract input and output flows required by the Traversal Action

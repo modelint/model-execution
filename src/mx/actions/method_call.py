@@ -58,8 +58,12 @@ class MethodCall(ActionExecution):
 
         # Lookup the Method Call Action
         # This gives us the Method's anum and input instance flow number
-        Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id})
-        method_call_t = Relation.semijoin(db=mmdb, rname2="Method Call", svar_name=mmrv.method_call_action)
+        Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id}, svar_name="_x1")
+        log_table(_logger, table_msg(db=mmdb, variable_name="_x1"))
+        # log_table(_logger, table_msg(db=mmdb, variable_name="Method Call"))
+        method_call_t = Relation.semijoin(db=mmdb, rname2="Method Call",
+                                          attrs={'ID': 'ID', 'Activity': 'Activity', 'Domain': 'Domain'},
+                                          svar_name=mmrv.method_call_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.method_call_action))
         called_method_anum = method_call_t.body[0]['Method']
         called_method_input_fname = method_call_t.body[0]['Instance_flow']
@@ -69,6 +73,7 @@ class MethodCall(ActionExecution):
         # We are careful to do the semijoin using Method and Domain attributes as specified on R1225 in the model
         Relation.semijoin(db=mmdb, rname1=mmrv.method_call_action, rname2="Method",
                           attrs={'Method': 'Anum', 'Domain': 'Domain'}, svar_name=mmrv.method_info)
+        Relation.rename(db=mmdb, names={'Anum': 'Activity'}, relation=mmrv.method_info, svar_name=mmrv.method_info)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.method_info))
 
         # Lookup the Method Call Output

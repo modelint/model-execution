@@ -100,7 +100,7 @@ class MethodExecution(ActivityExecution):
         """
         mmrv = self.mmrv
         method_action_r = Relation.semijoin(db=mmdb, rname1=self.method_rv, rname2='Action',
-                                            attrs={'Anum': 'Activity', 'Domain': 'Domain'})
+                                            attrs={'Activity': 'Activity', 'Domain': 'Domain'})
         pass
 
         # It is possible for a Method, like any Activity, to have no Actions
