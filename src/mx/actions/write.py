@@ -13,6 +13,7 @@ from pyral.relvar import Relvar
 from pyral.database import Database
 
 # MX
+from mx.log_table_config import TABLE, log_table
 from mx.instance_set import InstanceSet
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
@@ -58,13 +59,12 @@ class Write(ActionExecution):
         mmrv = declare_mm_rvs(owner=self.owner)
 
         # Lookup the Action instance
-        Relation.semijoin(db=mmdb, rname1=self.activity_execution.activity_rvn, rname2="Write Action")
-        # Narrow it down to this Write Action instance
-        R = f"ID:<{action_id}>"
-        write_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name=mmrv.write_action)
+        write_action_r = Relation.semijoin(
+            db=mmdb, rname1=self.action_mmrv, rname2="Write Action", svar_name=mmrv.write_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.write_action))
+        write_action_t = write_action_r.body[0]
 
-        self.source_flow_name = write_action_t.body[0]["Instance_flow"]
+        self.source_flow_name = write_action_t["Instance_flow"]
         self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
         _logger.info(f"{self.source_flow_name}")
         _logger.info("Flows")
@@ -96,7 +96,6 @@ class Write(ActionExecution):
 
         for access in attribute_write_accesses_r.body:
             new_value = self.activity_execution.flows[access['Input_flow']].value
-            # TODO: Fix PyRAL updateone so that we don't need to convert to snake case here
             write_attr = access['Attribute'].replace(' ', '_')
             class_name = access['Class'].replace(' ', '_')
             # TODO: NOW self.source_flow.value is now an rv name, need to resolve that to id value
@@ -105,20 +104,11 @@ class Write(ActionExecution):
 
             Relvar.updateone(db=self.domdb, relvar_name=class_name, id=source_iref_t_dict,
                              update={write_attr: new_value})
-            # # attr_value_r = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
-            # #                                 relation=output_iset_rv)
-            # attr_value = attr_value_r.body[0][access["Attribute"]]
-            # self.activity.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
-            # self.activity.xe.mxlog.log(message=f"- Attribute: {access["Attribute"]}")
-            # self.activity.xe.mxlog.log_sflow(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT,
-            #                                  flow_type=atypes[access["Attribute"]], activity=self.activity)
-            # self.activity.xe.mxlog.log(message=f"Scalar value: [{attr_value}]")
+
         log_table(_logger, table_msg(db=self.domdb, variable_name='Accessible Shaft Level'))
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.owner)
         Relation.free_rvs(db=self.domdb, owner=self.owner)
-        # And since we are outputing a scalar flow, there is no domain rv output to preserve
-        # In fact, we didn't define any domain rv's at all, so there are none to free
 
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_after_dom_free = Database.get_rv_names(db=self.domdb)

@@ -14,6 +14,7 @@ from pyral.relation import Relation
 from pyral.database import Database
 
 # MX
+from mx.log_table_config import TABLE, log_table
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir

@@ -76,9 +76,8 @@ class Signal(ActionExecution):
         mmrv = self.mmrv
 
         # Determine the type of signal to be generated
-        # and extend our activity with our action id to semijoin to the our action only
-        Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id})
-        send_signal_t = Relation.semijoin(db=mmdb, rname2="Send Signal Action", svar_name=mmrv.send_signal_action)
+        send_signal_t = Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="Send Signal Action",
+                                          svar_name=mmrv.send_signal_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.send_signal_action))
         if send_signal_t.body:
             self.process_send_signal()

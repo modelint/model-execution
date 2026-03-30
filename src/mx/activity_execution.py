@@ -150,8 +150,7 @@ class ActivityExecution(ABC):
         # Now change that action's status to X (executing)
         Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': next_action}, update={'State': 'X'})
         _logger.info(f"Next action selected")
-        msg = table_msg(db=mmdb, variable_name=self.action_states)
-        _logger.log(TABLE, msg)
+        log_table(_logger, table_msg(db=mmdb, variable_name=self.action_states))
         return next_action
 
     def update_enabled_actions(self):

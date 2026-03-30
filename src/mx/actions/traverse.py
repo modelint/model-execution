@@ -90,9 +90,8 @@ class Traverse(ActionExecution):
         }
 
         # Lookup this Action instance
-        Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id})
-        traverse_action_r = Relation.semijoin(db=mmdb, rname1=activity_execution.activity_rvn,
-                                              rname2="Traverse_Action",
+        traverse_action_r = Relation.semijoin(db=mmdb, rname1=self.action_mmrv,
+                                              rname2="Traverse Action",
                                               svar_name=mmrv.this_traverse_action)
         if not traverse_action_r.body:
             msg = f"Traverse action {self.activity_execution.anum}-{self.action_id} not found in metamodel"

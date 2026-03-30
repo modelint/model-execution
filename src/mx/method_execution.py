@@ -15,6 +15,7 @@ from pyral.database import Database
 from pyral.rtypes import *
 
 # MX
+from mx.log_table_config import TABLE, log_table
 from mx.actions.flow import ActiveFlow
 from mx.activity_execution import ActivityExecution
 from mx.deprecated.bridge import NamedValues

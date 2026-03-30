@@ -58,10 +58,7 @@ class MethodCall(ActionExecution):
 
         # Lookup the Method Call Action
         # This gives us the Method's anum and input instance flow number
-        Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id}, svar_name="_x1")
-        log_table(_logger, table_msg(db=mmdb, variable_name="_x1"))
-        # log_table(_logger, table_msg(db=mmdb, variable_name="Method Call"))
-        method_call_t = Relation.semijoin(db=mmdb, rname2="Method Call",
+        method_call_t = Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="Method Call",
                                           attrs={'ID': 'ID', 'Activity': 'Activity', 'Domain': 'Domain'},
                                           svar_name=mmrv.method_call_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.method_call_action))
