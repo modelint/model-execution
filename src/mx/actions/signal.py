@@ -11,9 +11,12 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.relation import _relation  # For table_msg
 from pyral.database import Database  # Diagnostics
 
 # MX
+from mx.log_table_config import TABLE, log_table
+from mx.message import *
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow
@@ -25,10 +28,10 @@ from mx.mxtypes import *
 _logger = logging.getLogger(__name__)
 
 class MMRVs(NamedTuple):
-    send_signal_action_rv : str
-    signal_assigner_action_rv : str
-    signal_instance_action_rv : str
-    initial_signal_action_rv : str
+    send_signal_action : str
+    signal_assigner_action : str
+    signal_instance_action : str
+    initial_signal_action : str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
@@ -60,10 +63,6 @@ class Signal(ActionExecution):
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(owner=self.owner)
 
-        if __debug__:
-            _logger.info(f"    RVS begin signal action:")
-            _logger.info(f"    {Database.get_all_rv_names()}")
-
         self.supplied_params: NamedValues = {}
 
         self.process_signal()
@@ -79,7 +78,8 @@ class Signal(ActionExecution):
         # Determine the type of signal to be generated
         # and extend our activity with our action id to semijoin to the our action only
         Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id})
-        send_signal_t = Relation.semijoin(db=mmdb, rname2="Send Signal Action", svar_name=mmrv.send_signal_action_rv)
+        send_signal_t = Relation.semijoin(db=mmdb, rname2="Send Signal Action", svar_name=mmrv.send_signal_action)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.send_signal_action))
         if send_signal_t.body:
             self.process_send_signal()
         else:
@@ -98,8 +98,9 @@ class Signal(ActionExecution):
         # Mutually exclusive destination cases
 
         # Signal Completion Action (self)
-        signal_completion_action_r = Relation.join(db=mmdb, rname1=mmrv.send_signal_action_rv,
+        signal_completion_action_r = Relation.join(db=mmdb, rname1=mmrv.send_signal_action,
                                                    rname2="Signal Completion Action")
+        log_table(_logger, table_msg(db=mmdb, variable_name=_relation, table_name="Signal Completion Action"))
         if signal_completion_action_r.body:
             self.signal_completion(
                 event_spec_name=signal_completion_action_r.body[0]["Event_spec"],
@@ -108,31 +109,33 @@ class Signal(ActionExecution):
 
         # Signal Instance
         signal_instance_action_r = Relation.join(
-            db=mmdb, rname1=mmrv.send_signal_action_rv, rname2="Signal Instance Action",
-            svar_name=mmrv.signal_instance_action_rv
+            db=mmdb, rname1=mmrv.send_signal_action, rname2="Signal Instance Action",
+            svar_name=mmrv.signal_instance_action
         )
         if signal_instance_action_r.body:
-            self.signal_assigner()
+            log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.signal_instance_action))
+            self.signal_instance()
             return
 
         # Signal Assigner State Machine (single or multiple)
         signal_assigner_action_r = Relation.join(
-            db=mmdb, rname1=mmrv.send_signal_action_rv, rname2="Signal Assigner Action",
-            svar_name=mmrv.signal_assigner_action_rv
+            db=mmdb, rname1=mmrv.send_signal_action, rname2="Signal Assigner Action",
+            svar_name=mmrv.signal_assigner_action
         )
         if signal_assigner_action_r.body:
+            log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.signal_assigner_action))
             self.signal_assigner()
             return
 
         # Initial Signal
         initial_signal_action_r = Relation.join(
-            db=mmdb, rname1=mmrv.send_signal_action_rv, rname2="Initial Signal Action",
-            svar_name=mmrv.initial_signal_action_rv
+            db=mmdb, rname1=mmrv.send_signal_action, rname2="Initial Signal Action",
+            svar_name=mmrv.initial_signal_action
         )
         if signal_instance_action_r.body:
+            log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.initial_signal_action))
             self.signal_assigner()
             return
-
 
     def signal_instance(self):
         pass
@@ -143,19 +146,19 @@ class Signal(ActionExecution):
     def signal_assigner(self):
         mmrv = self.mmrv
         pass
-        signal_assigner_action_t = Relation.semijoin(db=mmdb, rname1=mmrv.signal_assigner_action_rv, rname2="Signal Assigner Action")
+        signal_assigner_action_t = Relation.semijoin(db=mmdb, rname1=mmrv.signal_assigner_action, rname2="Signal Assigner Action")
         rnum = signal_assigner_action_t.body[0]['Association']
         ma_partition_instance_t = Relation.semijoin(db=mmdb, rname2="Multiple Assigner Partition Instance")
         partition_flow = None if not ma_partition_instance_t.body else ma_partition_instance_t.body[0]["Partition"]
         pinst_id = None
         pclass = None
         if partition_flow:
+            _logger.info(f"Partition flow on multiple assigner: {partition_flow}")
             pflow_value = self.activity_execution.flows[partition_flow].value
             pclass = self.activity_execution.flows[partition_flow].flowtype
             pflow_t = Relation.restrict(db=self.domdb, relation=pflow_value)
             pinst_id = pflow_t.body[0]
-            pass
-        send_signal_action_t = Relation.restrict(db=mmdb, relation=mmrv.send_signal_action_rv)
+        send_signal_action_t = Relation.restrict(db=mmdb, relation=mmrv.send_signal_action)
         InteractionEvent(
             sm_type=StateMachineType.MA if partition_flow else StateMachineType.SA,
             event_spec=send_signal_action_t.body[0]["Event_spec"],

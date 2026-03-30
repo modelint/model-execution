@@ -103,9 +103,7 @@ class ActivityExecution(ABC):
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         self.activity_rvn = activity_rvn
-        tmsg = table_msg(db=mmdb, variable_name=self.activity_rvn)
-        log_table(_logger, tmsg)
-        log_table(_logger, tmsg)
+        log_table(_logger, table_msg(db=mmdb, variable_name=self.activity_rvn))
         pass
         # Here we create a temporary relvar in PyRAL to track the execution state of this Activity's Actions
         # during execution
@@ -178,9 +176,6 @@ class ActivityExecution(ABC):
         x_action = x_action_r.body[0]['ID']
         Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': x_action}, update={'State': 'C'})
         log_table(_logger, table_msg(db=mmdb, variable_name=self.action_states))
-        # if __debug__:
-        #     Relation.print(db=mmdb, variable_name=self.action_states)
-        # pass
 
         # Now we select any remaining unenabled actions to see if we can enable them
         Relation.restrict(db=mmdb, relation=self.action_states, restriction=ActionState.U,
@@ -199,9 +194,6 @@ class ActivityExecution(ABC):
                          svar_name=mmrv.flow_deps)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.unenabled_actions))
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.flow_deps))
-        # if __debug__:
-        #     Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
-        #     Relation.print(db=mmdb, variable_name=mmrv.flow_deps)
 
         # This is the summarize expression which defines a sequence of relational operations
         # that will be applied per each unenabled action id
@@ -231,9 +223,6 @@ class ActivityExecution(ABC):
 
         # And now the our action_states relvar has been updated with the latest newly enabled actions
         log_table(_logger, table_msg(db=mmdb, variable_name=self.action_states))
-        # if __debug__:
-        #     Relation.print(db=mmdb, variable_name=self.action_states)
-        # pass
 
     def execute(self):
         """

@@ -77,12 +77,12 @@ class Write(ActionExecution):
             attrs={"ID": "Write_action", "Activity": "Activity", "Domain": "Domain"},
             svar_name=mmrv.attr_write_accesses
         )
-        _logger.log(TABLE, table_msg(db=mmdb, variable_name=mmrv.attr_write_accesses))
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.attr_write_accesses))
 
         # Get all attributes being written so we can look up each type
         attr_r = Relation.semijoin(db=mmdb, rname1=mmrv.attr_write_accesses, rname2="Attribute",
                                    attrs={"Attribute": "Name", "Class": "Class", "Domain": "Domain"},
-                                   svar_name=rv.attributes)
+                                   svar_name=mmrv.attributes)
 
         # Expand irefs to instance set
         output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="output_input")
@@ -113,12 +113,10 @@ class Write(ActionExecution):
             # self.activity.xe.mxlog.log_sflow(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT,
             #                                  flow_type=atypes[access["Attribute"]], activity=self.activity)
             # self.activity.xe.mxlog.log(message=f"Scalar value: [{attr_value}]")
-        if __debug__:
-            Relation.print(db=self.domdb, variable_name='Accessible Shaft Level')
+        log_table(_logger, table_msg(db=self.domdb, variable_name='Accessible Shaft Level'))
         # This action's mmdb rvs are no longer needed)
         Relation.free_rvs(db=mmdb, owner=self.owner)
         Relation.free_rvs(db=self.domdb, owner=self.owner)
-        _logger.info(f"o rv output_input")
         # And since we are outputing a scalar flow, there is no domain rv output to preserve
         # In fact, we didn't define any domain rv's at all, so there are none to free
 

@@ -60,6 +60,7 @@ class MethodCall(ActionExecution):
         # This gives us the Method's anum and input instance flow number
         Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id})
         method_call_t = Relation.semijoin(db=mmdb, rname2="Method Call", svar_name=mmrv.method_call_action)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.method_call_action))
         called_method_anum = method_call_t.body[0]['Method']
         called_method_input_fname = method_call_t.body[0]['Instance_flow']
 
@@ -68,6 +69,7 @@ class MethodCall(ActionExecution):
         # We are careful to do the semijoin using Method and Domain attributes as specified on R1225 in the model
         Relation.semijoin(db=mmdb, rname1=mmrv.method_call_action, rname2="Method",
                           attrs={'Method': 'Anum', 'Domain': 'Domain'}, svar_name=mmrv.method_info)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.method_info))
 
         # Lookup the Method Call Output
         # This gives us the flow name of any output from the method (may be none)
@@ -85,10 +87,11 @@ class MethodCall(ActionExecution):
         # TODO: We need to make these flows accessible (values/types) to the target method somehow, but need an example
 
         # We need the id of the target method's executing instance
-        Relation.print(db=self.domdb, variable_name=self.activity_execution.flows[called_method_input_fname].value)
         from mx.instance_set import InstanceSet
         target_instance_t = Relation.restrict(db=self.domdb,
                                               relation=self.activity_execution.flows[called_method_input_fname].value)
+        log_table(_logger, table_msg(db=self.domdb,
+                                     variable_name=self.activity_execution.flows[called_method_input_fname].value))
         target_instance_id = target_instance_t.body[0]
 
         # Call the method

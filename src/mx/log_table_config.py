@@ -13,14 +13,6 @@ class ConsoleTableFilter(logging.Filter):
     def filter(self, record):
         return record.levelno == TABLE
 
-
-
-
-
-# class ConsoleFilter(logging.Filter):
-#     def filter(self, record):
-#         return record.levelno == TABLE or record.levelno >= logging.WARNING
-
 class TableAwareFormatter(logging.Formatter):
     def format(self, record):
         original = super().format(record)
