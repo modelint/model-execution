@@ -138,8 +138,9 @@ class StateActivityExecution(ActivityExecution):
         for a in enable_r.body:
             Relvar.updateone(db=mmdb, relvar_name=action_states, id={'ID': a['ID']}, update={'State': 'E'})
 
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=action_states)
+        log_table(_logger, table_msg(db=mmdb, variable_name=action_states))
+        # if __debug__:
+        #     Relation.print(db=mmdb, variable_name=action_states)
         pass
         return action_states
 

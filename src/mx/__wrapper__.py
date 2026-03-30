@@ -25,11 +25,10 @@ from mx.system import System
 from mx import version
 from mx.mdb_types import *
 from mx.mxtypes import *
-from mx.db_names import mmdb
+from mx.db_names import mmdb, PROGRAM_NAME
 from mx.utility import print_classes
 
 _logpath = Path("mx.log")
-_progname = 'Blueprint Model Execution'
 
 def clean_up():
     """Normal and exception exit activities"""
@@ -41,11 +40,15 @@ def get_logger():
     logging.config.fileConfig(fname=log_conf_path, disable_existing_loggers=False)
     return logging.getLogger(__name__)  # Create a logger for this module
 
-
 def main():
     # Start logging
     logger = get_logger()
-    logger.info(f'{_progname} version: {version}')
+
+
+    print('---')
+    print(f'{PROGRAM_NAME} version: {version}')
+    print('---')
+    # logger.info(f'{_progname} version: {version}')
 
     # Here is the path to the mmdb populated with the elevator domain models
     # Normally this is provided by the mdb

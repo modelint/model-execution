@@ -16,6 +16,7 @@ from pyral.rtypes import *
 
 # MX
 from mx.log_table_config import TABLE
+from mx.message import *
 from mx.actions.flow import ActiveFlow
 from mx.actions.action_execution import ActionExecution
 from mx.deprecated.bridge import NamedValues
@@ -37,7 +38,6 @@ from mx.db_names import mmdb
 from mx.rvname import declare_rvs
 from mx.mxtypes import ActionState
 from mx.utility import *
-from mx.message import *
 
 _logger = logging.getLogger(__name__)
 
@@ -103,8 +103,9 @@ class ActivityExecution(ABC):
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         self.activity_rvn = activity_rvn
-        msg = table_msg(db=mmdb, variable_name=self.activity_rvn)
-        _logger.log(TABLE, msg)
+        tmsg = table_msg(db=mmdb, variable_name=self.activity_rvn)
+        log_table(_logger, tmsg)
+        log_table(_logger, tmsg)
         pass
         # Here we create a temporary relvar in PyRAL to track the execution state of this Activity's Actions
         # during execution
@@ -176,9 +177,10 @@ class ActivityExecution(ABC):
         x_action_r = Relation.restrict(db=mmdb, relation=self.action_states, restriction=ActionState.X)
         x_action = x_action_r.body[0]['ID']
         Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': x_action}, update={'State': 'C'})
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=self.action_states)
-        pass
+        log_table(_logger, table_msg(db=mmdb, variable_name=self.action_states))
+        # if __debug__:
+        #     Relation.print(db=mmdb, variable_name=self.action_states)
+        # pass
 
         # Now we select any remaining unenabled actions to see if we can enable them
         Relation.restrict(db=mmdb, relation=self.action_states, restriction=ActionState.U,
@@ -195,9 +197,11 @@ class ActivityExecution(ABC):
         # We only need the from and to actions from our flow dependencies for this Activity
         Relation.project(db=mmdb, relation=mmrv.flow_deps, attributes=("From_action", "To_action",),
                          svar_name=mmrv.flow_deps)
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
-            Relation.print(db=mmdb, variable_name=mmrv.flow_deps)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.unenabled_actions))
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.flow_deps))
+        # if __debug__:
+        #     Relation.print(db=mmdb, variable_name=mmrv.unenabled_actions)
+        #     Relation.print(db=mmdb, variable_name=mmrv.flow_deps)
 
         # This is the summarize expression which defines a sequence of relational operations
         # that will be applied per each unenabled action id
@@ -226,9 +230,10 @@ class ActivityExecution(ABC):
                              update={'State': 'E'})
 
         # And now the our action_states relvar has been updated with the latest newly enabled actions
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=self.action_states)
-        pass
+        log_table(_logger, table_msg(db=mmdb, variable_name=self.action_states))
+        # if __debug__:
+        #     Relation.print(db=mmdb, variable_name=self.action_states)
+        # pass
 
     def execute(self):
         """

@@ -1,6 +1,7 @@
 """ system.py -- Represents the user's entire system """
 
 # System
+import sys
 import logging
 from typing import TYPE_CHECKING, Optional
 from pathlib import Path
@@ -12,13 +13,15 @@ from pyral.relation import Relation
 from pyral.relvar import Relvar
 
 # MX
+from mx import version
 from mx.interaction_event import InteractionEvent
 from mx.domain import Domain
-from mx.db_names import mmdb
+from mx.db_names import mmdb, PROGRAM_NAME
 from mx.exceptions import *
 from mx.mdb_types import *
 from mx.mxtypes import ExternalAddress
 from mx_logger import MXLogger
+from mx.log_table_config import ConsoleTableFilter, ConsoleWarningFilter
 
 _logger = logging.getLogger(__name__)
 
@@ -62,10 +65,19 @@ class System:
             verbose:  If true, we may log to the console
             debug: If true, we do some diagnostic activity
         """
+        for handler in logging.getLogger().handlers:
+            if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+                if handler.stream is sys.stdout:
+                    handler.addFilter(ConsoleTableFilter())
+                elif handler.stream is sys.stderr:
+                    handler.addFilter(ConsoleWarningFilter())
+
+        _logger.info(f'{PROGRAM_NAME} version: {version}')
         _logger.info("---")
         _logger.info(f"System Initialization from path [{system_path}]")
         self.path = system_path
         self.set_mmdb_path()  # Sets self.mmdb_path
+        self.verbose = verbose
 
         # Load a metamodel file populated with the system as one or more modeled domains
         _logger.info(f"Loading the metamodel database from: [{self.mmdb_path.name}]")
@@ -196,3 +208,9 @@ class System:
         ie = InteractionEvent.to_lifecycle(event_spec=s.name, source=s.source,
                                            to_instance=s.target.instance_id, to_class=s.target.class_name,
                                            params=s.parameters, domain=target_domain)
+
+def get() -> System:
+    if System._instance is None:
+        raise RuntimeError("System has not been initialized")
+    return System._instance
+

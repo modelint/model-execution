@@ -8,7 +8,16 @@ from pyral.relation import Relation
 from pyral.relvar import Relvar
 
 # MX
+from mx import system
 from mx.actions.flow import label, FlowDir
+from mx.log_table_config import TABLE
+from mx.message import *
+
+def log_table(logger, tmsg: str):
+    """
+    Convenience function for outputting a formatted table to the log, console or both
+    """
+    logger.log(TABLE, tmsg)
 
 def snake(name: str) -> str:
     return name.replace(' ', '_')

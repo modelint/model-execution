@@ -13,14 +13,13 @@ from pyral.relvar import Relvar
 from pyral.database import Database
 
 # MX
-from mx.log_table_config import TABLE
-from mx.message import *
 from mx.instance_set import InstanceSet
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.exceptions import *
+from mx.utility import *
 
 _logger = logging.getLogger(__name__)
 
@@ -29,13 +28,14 @@ if __debug__:
 
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
+    write_action: str
     attr_write_accesses: str
     attributes: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
-    rvs = declare_rvs(mmdb, owner, "attr_write_accesses", "attributes")
+    rvs = declare_rvs(mmdb, owner, "write_action", "attr_write_accesses", "attributes")
     return MMRVs(*rvs)
 
 class Write(ActionExecution):
@@ -55,32 +55,32 @@ class Write(ActionExecution):
             return
 
         # Get a NamedTuple with a field for each relation variable name
-        rv = declare_mm_rvs(owner=self.owner)
+        mmrv = declare_mm_rvs(owner=self.owner)
 
         # Lookup the Action instance
         Relation.semijoin(db=mmdb, rname1=self.activity_execution.activity_rvn, rname2="Write Action")
-        # Narrow it down to this Read Action instance
+        # Narrow it down to this Write Action instance
         R = f"ID:<{action_id}>"
-        write_action_t = Relation.restrict(db=mmdb, restriction=R)
+        write_action_t = Relation.restrict(db=mmdb, restriction=R, svar_name=mmrv.write_action)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.write_action))
 
         self.source_flow_name = write_action_t.body[0]["Instance_flow"]
         self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
         _logger.info(f"{self.source_flow_name}")
         _logger.info("Flows")
-        _logger.log(TABLE, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
                                       flow_type=self.source_flow.flowtype,
-                                      activity=self.activity_execution, rv_name=self.source_flow.value)
-                    )
+                                      activity=self.activity_execution, rv_name=self.source_flow.value))
 
-        attribute_write_accesses_r = Relation.semijoin(db=mmdb, rname2="Attribute Write Access",
-                                                       attrs={"ID": "Write_action",
-                                                              "Activity": "Activity", "Domain": "Domain"},
-                                                       svar_name=rv.attr_write_accesses)
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=rv.attr_write_accesses)
+        attribute_write_accesses_r = Relation.semijoin(
+            db=mmdb, rname1=mmrv.write_action, rname2="Attribute Write Access",
+            attrs={"ID": "Write_action", "Activity": "Activity", "Domain": "Domain"},
+            svar_name=mmrv.attr_write_accesses
+        )
+        _logger.log(TABLE, table_msg(db=mmdb, variable_name=mmrv.attr_write_accesses))
 
         # Get all attributes being written so we can look up each type
-        attr_r = Relation.semijoin(db=mmdb, rname1=rv.attr_write_accesses, rname2="Attribute",
+        attr_r = Relation.semijoin(db=mmdb, rname1=mmrv.attr_write_accesses, rname2="Attribute",
                                    attrs={"Attribute": "Name", "Class": "Class", "Domain": "Domain"},
                                    svar_name=rv.attributes)
 
