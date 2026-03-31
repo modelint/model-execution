@@ -16,6 +16,7 @@ from pyral.rtypes import *
 
 # MX
 from mx.log_table_config import TABLE, log_table
+from mx.message import *
 from mx.actions.flow import ActiveFlow
 from mx.activity_execution import ActivityExecution
 from mx.deprecated.bridge import NamedValues
@@ -34,25 +35,28 @@ class MethodExecution(ActivityExecution):
 
         Args:
             anum: The activity number of the method to execute
+            method_rv: relational variable with the method information
             domain: In this domain (object)
             instance_id: Method is invoked on this instance, specified by identifier attribute value pairs
             parameters: Parameters and values for this Method's Signature
         """
         self.instance_id = instance_id
-        self.method_rv = method_rv
         self.actions = None  # Here we will maintain the execution state of each action in this Method
 
-        method_t = Relation.restrict(db=mmdb, relation=method_rv)
-        self.class_name = method_t.body[0]['Class']
-        self.method_name = method_t.body[0]['Name']
+        method_r = Relation.restrict(db=mmdb, relation=method_rv)
+        method_t = method_r.body[0]
+        self.class_name = method_t['Class']
+        self.method_name = method_t['Name']
         instance_id_value = '_'.join(v for v in self.instance_id.values())
         owner_name = f"METHOD_{snake(self.class_name)}_{snake(self.method_name)}_{instance_id_value}"
+        activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="method")
+        Relation.restrict(db=mmdb, relation=method_rv, svar_name=activity_rvn)
 
         # The name of our executing instance flow. This always ends up as "F1", but
         # just in case our Flow naming scheme changes, we check to be sure
-        self.xi_flow_name = method_t.body[0]["Executing_instance_flow"]
+        self.xi_flow_name = method_t["Executing_instance_flow"]
 
-        super().__init__(domain=domain, anum=anum, owner_name=owner_name, activity_rvn=method_rv,
+        super().__init__(domain=domain, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
                          parameters=parameters)
         self.enable_initial_flows()
         self.execute()
@@ -100,7 +104,7 @@ class MethodExecution(ActivityExecution):
         See description in ActivityExecution abstract method
         """
         mmrv = self.mmrv
-        method_action_r = Relation.semijoin(db=mmdb, rname1=self.method_rv, rname2='Action',
+        method_action_r = Relation.semijoin(db=mmdb, rname1=self.activity_rvn, rname2='Action',
                                             attrs={'Activity': 'Activity', 'Domain': 'Domain'})
         pass
 
@@ -126,7 +130,7 @@ class MethodExecution(ActivityExecution):
         # Set the initial value of the relvar to
         Relvar.set(db=mmdb, relvar=relvar_name, relation=initial_states_rv)
         self.actions = relvar_name
-        Relation.print(db=mmdb, variable_name=self.actions)
+        log_table(_logger, table_msg(db=mmdb, variable_name=self.actions))
         pass
 
         # # Get all unexecuted actions
@@ -155,8 +159,5 @@ class MethodExecution(ActivityExecution):
         for a in enable_r.body:
             Relvar.updateone(db=mmdb, relvar_name=self.actions, id={'ID': a['ID']}, update={'State': 'E'})
 
-        if __debug__:
-            Relation.print(db=mmdb, variable_name=self.actions)
-        pass
+        log_table(_logger, table_msg(db=mmdb, variable_name=self.actions))
         return self.actions
-        # pass

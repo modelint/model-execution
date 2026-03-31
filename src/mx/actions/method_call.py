@@ -96,6 +96,8 @@ class MethodCall(ActionExecution):
                                      variable_name=self.activity_execution.flows[called_method_input_fname].value))
         target_instance_id = target_instance_t.body[0]
 
+        # TODO : Create owner name
+
         # Call the method
         from mx.method_execution import MethodExecution
         method_activity = MethodExecution(domain=self.activity_execution.domain, method_rv=mmrv.method_info,
