@@ -42,7 +42,6 @@ def nsflow_msg(db: str, flow_name: str, flow_dir: FlowDir, flow_type: str, activ
 
     Returns:
         A formatted string that can be logged or printed to the console
-
     """
     flow_label = label(name=flow_name, activity=activity)
     show_label = f"<{flow_label}>" if flow_label else ""
@@ -50,3 +49,23 @@ def nsflow_msg(db: str, flow_name: str, flow_dir: FlowDir, flow_type: str, activ
     tname = f"{indir} {flow_name} {show_label} {outdir} :: {flow_type}"
     return table_msg(db=db, variable_name=rv_name, table_name=tname)
 
+def sflow_msg(db: str, flow_name: str, flow_dir: FlowDir, flow_type: str, activity: "ActivityExecution",
+              rv_name: str) -> str:
+    """
+
+    Args:
+        db: The database to use
+        flow_name: Name of the data flow (F1, F2, etc)
+        flow_dir: Input or output
+        flow_type: Data type of the flow (class name, table name, scalar, etc)
+        activity: Activity Execution object
+        rv_name:  Name of the relational variable
+
+    Returns:
+        A formatted string that can be logged or printed to the console
+    """
+    flow_label = label(name=flow_name, activity=activity)
+    show_label = f"<{flow_label}>" if flow_label else ""
+    indir, outdir = ("->", "") if flow_dir == FlowDir.IN else ("", "->")
+    tname = f"{indir} {flow_name} {show_label} {outdir} :: {flow_type}"
+    return table_msg(db=db, variable_name=rv_name, table_name=tname)
