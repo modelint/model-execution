@@ -107,6 +107,7 @@ class ActivityExecution(ABC):
         ], ids={1: ['ID']})
         # TODO: Remember to unset this relvar after the Activity completes execution
         self.action_states = self.enable_initial_actions()
+        pass
 
     @abstractmethod
     def enable_initial_actions(self) -> str:
