@@ -65,38 +65,6 @@ class StateMachine:
         self.max_int_events = 0
         self.max_comp_events = 0
         self.active_event = None
-        self.actions = defaultdict(str)
-
-        # Define an action_states relvar per Real State
-
-        # Find all Real States for this State Machine's State Model
-        # Only (Real States) execute Actions
-        R = f"State_model:<{self.state_model}>, Domain:<{self.domain.name}>"
-        real_state_r = Relation.restrict(db=mmdb, relation="Real State", restriction=R)
-        initial_states_rv = Relation.declare_rv(db=mmdb, owner=self.rv_owner, name="initial_sa_relation")
-        for s in real_state_r.body:
-            state_anum = s["Activity"]
-            state_name = s["Name"]
-            # Get all Actions in this State Activity, if any
-            R = f"Activity:<{state_anum}>, Domain:<{self.domain.name}>"
-            state_action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R, svar_name="actions")
-            if state_action_r.body:
-                # There are actions in this Real State
-                # Create a relation and set the execution state of each Action to (U) - unexecuted
-                Relation.project(db=mmdb, attributes=("ID",))
-                Relation.extend(db=mmdb, attrs={'State': 'U'}, svar_name=initial_states_rv)
-                # The relvar name must be unique to each state and instance of this state machine
-                # So we use the activity number, this state machine's instance specific owner name
-                # The state name at the end isn't necessary since we have the anum, but aids in readability
-                relvar_name = f"STATE_ACTIVITY_{state_anum}_{self.rv_owner}_{state_name}"
-                Relvar.create_relvar(db=mmdb, name=relvar_name, attrs=[
-                    Attribute(name='ID', type='string'),
-                    Attribute(name='State', type='string'),
-                ], ids={1: ['ID']})
-                # Set the initial value of the relvar to
-                Relvar.set(db=mmdb, relvar=relvar_name, relation=initial_states_rv)
-                self.actions[state_anum] = relvar_name
-        Relation.free_rvs(db=mmdb, owner=rv_owner, names=("initial_sa_relation",))
 
     def accept_completion_event(self, event: CompletionEvent):
         """
