@@ -179,6 +179,9 @@ class ActivityExecution(ABC):
         log_table(_logger, table_msg(db=mmdb, variable_name=self.action_states))
 
     @abstractmethod
+    def enable_xi_flow(self):
+        pass
+
     def enable_initial_flows(self):
         """
         Set the value and type of each flow that is initially available (Executing instance, input parameter, etc)
@@ -187,9 +190,24 @@ class ActivityExecution(ABC):
         Returns:
 
         """
-        # TODO: It looks like the only difference is the potential for a partitioning instance, so we should
-        # TODO: pull most or all of it into this superclass
-        pass
+        _logger.info(f"Enabling initial flows")
+        self.enable_xi_flow()
+
+        # Any Scalar Value (constant) flows
+        # These are flows whose value is specified in the activity such as 'Stop requested = TRUE'
+        scalar_value_r = Relation.semijoin(db=mmdb, rname1=self.activity_rvn, rname2="Scalar Value")
+        if scalar_value_r.body:
+            sflow_r = Relation.join(db=mmdb, rname2="Scalar Flow")
+            for sv_i in sflow_r.body:
+                sv_flow_name = sv_i['ID']
+                sval = sv_i['Name']
+                sval_type = sv_i['Type']
+                self.flows[sv_flow_name] = ActiveFlow(value=sval, flowtype=sval_type)
+                _logger.info(f"initial Scalar Value Flow {sv_flow_name} set to value {sval} type {sval_type}")
+                pass
+
+        # All input parameter flows
+        # TODO: Set these by referencing method_execution.py file
 
     def next_action(self) -> str | None:
         """
