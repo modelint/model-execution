@@ -95,7 +95,7 @@ class ActivityExecution(ABC):
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         self.activity_rvn = activity_rvn
         log_table(_logger, table_msg(db=mmdb, variable_name=self.activity_rvn))
-        pass
+
         # Here we create a temporary relvar in PyRAL to track the execution state of this Activity's Actions
         # during execution
         # We set the name of this relvar so we can access and update the relvar content
@@ -106,28 +106,29 @@ class ActivityExecution(ABC):
             Attribute(name='ID', type='string'),
             Attribute(name='State', type='string'),
         ], ids={1: ['ID']})
-        if self.initialize_action_states():
-            pass
-        pass
-        # TODO: Remember to unset this relvar after the Activity completes execution
-        self.action_states = self.enable_initial_actions()
 
-        # TODO: Refactor the following from subclasses
-        # self.enable_initial_flows()
-        # self.execute()
-        # if __debug__:
-        #     print(Database.get_all_rv_names())
-        # Relation.free_rvs(db=mmdb, owner=self.owner_name)
-        # Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
-        pass
+        # Set the initial value of the relvar so that all actions, if any, are unenabled (U)
+        if self.initialize_action_states():
+            # Set any initially executable actions to enabled (E)
+            self.enable_initial_actions()
+            self.enable_initial_flows()
+            self.execute()
+        if __debug__:
+            print(Database.get_all_rv_names())
+        Relation.free_rvs(db=mmdb, owner=self.owner_name)
+        Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
 
     @abstractmethod
     def initialize_action_states(self) -> bool:
+        """
+        Actions are looked up differently for each type of Activity (State, Method, ...)
+
+        Returns:
+            False if no actions are defined in the Activity
+        """
         pass
 
-
-    @abstractmethod
-    def enable_initial_actions(self) -> str:
+    def enable_initial_actions(self):
         """
         Produce the set of actions that are initially executable.
 
@@ -147,6 +148,47 @@ class ActivityExecution(ABC):
         Returns:
             Name of the relvar showing the state of each of this Activity's Actions
         """
+        mmrv = self.mmrv
+
+        # Get all unexecuted actions
+        Relation.restrict(db=mmdb, relation=self.action_states, restriction=ActionState.U)
+        Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
+
+        # Determine which actions have their flows available initially and enable them
+        #
+        # Find all the actions that are dependent on flows from other actions
+        # Subtract these dependent actions from our set of unexecuted (U) actions
+        # and we get have set of non-dependent actions to enable (E)
+
+        # Join the unexecuted actions with Flow Dependency on the To_action (flow destination)
+        # to obtain all dependent actions
+        R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
+        Relation.restrict(db=mmdb, relation="Action", restriction=R)
+        Relation.semijoin(db=mmdb, rname2='Flow Dependency',
+                          attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'},
+                          svar_name=mmrv.flow_deps)  # We use this later to choose actions to enable
+        # And now we just take the To_action column and rename it to ID to get something we can subtract
+        Relation.project(db=mmdb, attributes=("To_action",))
+        Relation.rename(db=mmdb, names={"To_action": "ID"})
+        # We subtract these from the set of unexecuted actions to obtain those we need to enable
+        enable_r = Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions)
+        # For each action to enable, we change its state from U (unexecuted) to E (enabled)
+        for a in enable_r.body:
+            Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': a['ID']}, update={'State': 'E'})
+
+        log_table(_logger, table_msg(db=mmdb, variable_name=self.action_states))
+
+    @abstractmethod
+    def enable_initial_flows(self):
+        """
+        Set the value and type of each flow that is initially available (Executing instance, input parameter, etc)
+        Initial flows such as executing instance, partitioning instance
+
+        Returns:
+
+        """
+        # TODO: It looks like the only difference is the potential for a partitioning instance, so we should
+        # TODO: pull most or all of it into this superclass
         pass
 
     def next_action(self) -> str | None:

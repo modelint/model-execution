@@ -107,12 +107,12 @@ class StateActivityExecution(ActivityExecution):
 
     def initialize_action_states(self) -> bool:
         """
-        Initialize value of action_states relvar for the executing Real State
+        Initialize value of action_states relvar for the executing instance's Real State
 
         Returns:
             False if there are no Actions defined in this Real State
         """
-        _logger.info(f"Initializing action states")
+        _logger.info("Initializing this instance's executing State action states to U (unenabled)")
         # We declare a temporary relation to build the relvar value
         action_init_mmrv = Relation.declare_rv(db=mmdb, owner=self.owner_name, name="action_init")
 
@@ -131,49 +131,8 @@ class StateActivityExecution(ActivityExecution):
         Relvar.set(db=mmdb, relvar=self.action_states, relation=action_init_mmrv)
         # And free up the temporary relation variable
         Relation.free_rvs(db=mmdb, owner=self.owner_name, names=(action_init_mmrv,))
-        _logger.info(f"Actions states for Real State [{self.state}] initialized")
+        _logger.info("Actions states initialized")
         return True
-
-    def enable_initial_actions(self) -> str | None:
-        """
-        See description in ActivityExecution abstract method
-        """
-        mmrv = self.mmrv
-        action_states = self.state_machine.actions[self.anum]
-        if not action_states:
-            return None
-
-        # Get all unexecuted actions
-        Relation.restrict(db=mmdb, relation=action_states, restriction=ActionState.U)
-        Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
-
-        # Determine which actions have their flows available initially and enable them
-        #
-        # Find all the actions that are dependent on flows from other actions
-        # Subtract these dependent actions from our set of unexecuted (U) actions
-        # and we get have set of non-dependent actions to enable (E)
-
-        # Join the unexecuted actions with Flow Dependency on the To_action (flow destination)
-        # to obtain all dependent actions
-        R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
-        Relation.restrict(db=mmdb, relation="Action", restriction=R)
-        Relation.semijoin(db=mmdb, rname2='Flow Dependency',
-                          attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'},
-                          svar_name=mmrv.flow_deps)  # We use this later to choose actions to enable
-        # And now we just take the To_action column and rename it to ID to get something we can subtract
-        Relation.project(db=mmdb, attributes=("To_action",))
-        Relation.rename(db=mmdb, names={"To_action": "ID"})
-        # We subtract these from the set of unexecuted actions to obtain those we need to enable
-        enable_r = Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions)
-        # For each action to enable, we change its state from U (unexecuted) to E (enabled)
-        for a in enable_r.body:
-            Relvar.updateone(db=mmdb, relvar_name=action_states, id={'ID': a['ID']}, update={'State': 'E'})
-
-        log_table(_logger, table_msg(db=mmdb, variable_name=action_states))
-        # if __debug__:
-        #     Relation.print(db=mmdb, variable_name=action_states)
-        pass
-        return action_states
 
     def enable_initial_flows(self):
         """

@@ -64,7 +64,7 @@ class MethodExecution(ActivityExecution):
 
     def enable_initial_flows(self):
         """
-        Set the values of any initially available flows in this State Activity
+        Set the values of any initially available flows in this Method Activity
         """
         domdb = self.domain.alias
 
@@ -99,65 +99,38 @@ class MethodExecution(ActivityExecution):
         # All input parameter flows
         # TODO: Set these by referencing method_execution.py file
 
-    def enable_initial_actions(self) -> str | None:
+    def initialize_action_states(self) -> bool:
+
         """
-        See description in ActivityExecution abstract method
+        Initialize value of action_states relvar for the executing instance's Method
+
+        Returns:
+            False if there are no Actions defined in this Method
         """
-        mmrv = self.mmrv
+        _logger.info("Initializing this instance's executing Method action states to U (unenabled)")
+
+        action_init_mmrv = Relation.declare_rv(db=mmdb, owner=self.owner_name, name="action_init")
+
+        # Get all Actions in this Method, if any
         method_action_r = Relation.semijoin(db=mmdb, rname1=self.activity_rvn, rname2='Action',
-                                            attrs={'Activity': 'Activity', 'Domain': 'Domain'})
-        pass
+                                            attrs={'Activity': 'Activity', 'Domain': 'Domain'},
+                                            svar_name=action_init_mmrv)
 
         # It is possible for a Method, like any Activity, to have no Actions
         # That said, an empty State Activity is meaningful during execution, but an empty Method
         # is nothing more than a placeholder during development.  It has no system specification utility.
         if not method_action_r.body:
             _logger.warning(f"Method {self.domain.alias}::{self.class_name}.{self.method_name} specifies no actions.")
-            return None
+            return False
 
         # Create a relation and set the execution state of each Action to (U) - unexecuted
-        initial_states_rv = Relation.declare_rv(db=mmdb, owner=self.owner_name, name="initial_ma_relation")
-        Relation.project(db=mmdb, attributes=("ID",))
-        Relation.extend(db=mmdb, attrs={'State': 'U'}, svar_name=initial_states_rv)
-        # The relvar name must be unique to each state and instance of this state machine
-        # So we use the activity number, this state machine's instance specific owner name
-        # The state name at the end isn't necessary since we have the anum, but aids in readability
-        relvar_name = f"Method_{self.anum}_{self.owner_name}"
-        Relvar.create_relvar(db=mmdb, name=relvar_name, attrs=[
-            Attribute(name='ID', type='string'),
-            Attribute(name='State', type='string'),
-        ], ids={1: ['ID']})
-        # Set the initial value of the relvar to
-        Relvar.set(db=mmdb, relvar=relvar_name, relation=initial_states_rv)
-        self.actions = relvar_name
-        log_table(_logger, table_msg(db=mmdb, variable_name=self.actions))
-        pass
+        Relation.project(db=mmdb, attributes=("ID",), svar_name=action_init_mmrv)
+        Relation.extend(db=mmdb, attrs={'State': 'U'}, svar_name=action_init_mmrv)
 
-        # # Get all unexecuted actions
-        Relation.restrict(db=mmdb, relation=self.actions, restriction=ActionState.U)
-        Relation.project(db=mmdb, attributes=("ID",), svar_name=mmrv.unexecuted_actions)
+        # Now we set the relvar to initial action states
+        Relvar.set(db=mmdb, relvar=self.action_states, relation=action_init_mmrv)
+        # And free up the temporary relation variable
+        Relation.free_rvs(db=mmdb, owner=self.owner_name, names=(action_init_mmrv,))
+        _logger.info("Actions states initialized")
+        return True
 
-        # Determine which actions have their flows available initially and enable them
-        #
-        # Find all the actions that are dependent on flows from other actions
-        # Subtract these dependent actions from our set of unexecuted (U) actions
-        # and we get have set of non-dependent actions to enable (E)
-
-        # Join the unexecuted actions with Flow Dependency on the To_action (flow destination)
-        # to obtain all dependent actions
-        R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
-        Relation.restrict(db=mmdb, relation="Action", restriction=R)
-        Relation.semijoin(db=mmdb, rname2='Flow Dependency',
-                          attrs={'ID': 'To_action', 'Activity': 'Activity', 'Domain': 'Domain'},
-                          svar_name=mmrv.flow_deps)  # We use this later to choose actions to enable
-        # And now we just take the To_action column and rename it to ID to get something we can subtract
-        Relation.project(db=mmdb, attributes=("To_action",))
-        Relation.rename(db=mmdb, names={"To_action": "ID"})
-        # We subtract these from the set of unexecuted actions to obtain those we need to enable
-        enable_r = Relation.subtract(db=mmdb, rname1=mmrv.unexecuted_actions)
-        # For each action to enable, we change its state from U (unexecuted) to E (enabled)
-        for a in enable_r.body:
-            Relvar.updateone(db=mmdb, relvar_name=self.actions, id={'ID': a['ID']}, update={'State': 'E'})
-
-        log_table(_logger, table_msg(db=mmdb, variable_name=self.actions))
-        return self.actions
