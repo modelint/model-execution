@@ -107,6 +107,8 @@ class ActivityExecution(ABC):
             Attribute(name='State', type='string'),
         ], ids={1: ['ID']})
 
+        _logger.info(f"\n\n    vvv ({self.anum}) {self.label} Executing vvv \n")
+
         # Set the initial value of the relvar so that all actions, if any, are unenabled (U)
         if self.initialize_action_states():
             # Set any initially executable actions to enabled (E)
@@ -115,6 +117,7 @@ class ActivityExecution(ABC):
             self.execute()
         Relation.free_rvs(db=mmdb, owner=self.owner_name)
         Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
+        _logger.info(f"\n\n    ^^^ ({self.anum}) {self.label} Complete ^^^ \n")
         pass
 
     @abstractmethod

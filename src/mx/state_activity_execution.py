@@ -34,6 +34,7 @@ class StateActivityExecution(ActivityExecution):
             anum:  Activity number identifying the State Activity
             state_machine:  State Machine object (instance specific) executing this State Activity
         """
+        self.label = f"{state_machine.state_model}->[{state_name}]" # For display in log messages
         self.state = state_name
         self.state_machine = state_machine  # The Lifecycle or Assigner State Machine
 
