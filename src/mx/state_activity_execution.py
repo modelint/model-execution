@@ -97,13 +97,6 @@ class StateActivityExecution(ActivityExecution):
 
         super().__init__(domain=state_machine.domain, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
                          parameters=state_machine.active_event.params)
-        self.enable_initial_flows()
-        self.execute()
-        if __debug__:
-            print(Database.get_all_rv_names())
-        Relation.free_rvs(db=mmdb, owner=self.owner_name)
-        Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
-        pass
 
     def initialize_action_states(self) -> bool:
         """

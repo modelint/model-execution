@@ -58,9 +58,6 @@ class MethodExecution(ActivityExecution):
 
         super().__init__(domain=domain, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
                          parameters=parameters)
-        self.enable_initial_flows()
-        self.execute()
-        pass
 
     def enable_xi_flow(self):
         """

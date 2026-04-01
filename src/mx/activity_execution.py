@@ -113,10 +113,9 @@ class ActivityExecution(ABC):
             self.enable_initial_actions()
             self.enable_initial_flows()
             self.execute()
-        if __debug__:
-            print(Database.get_all_rv_names())
         Relation.free_rvs(db=mmdb, owner=self.owner_name)
         Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
+        pass
 
     @abstractmethod
     def initialize_action_states(self) -> bool:
