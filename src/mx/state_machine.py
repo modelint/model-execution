@@ -88,7 +88,7 @@ class StateMachine:
                 # The relvar name must be unique to each state and instance of this state machine
                 # So we use the activity number, this state machine's instance specific owner name
                 # The state name at the end isn't necessary since we have the anum, but aids in readability
-                relvar_name = f"Activity_{state_anum}_{self.rv_owner}_{state_name}"
+                relvar_name = f"STATE_ACTIVITY_{state_anum}_{self.rv_owner}_{state_name}"
                 Relvar.create_relvar(db=mmdb, name=relvar_name, attrs=[
                     Attribute(name='ID', type='string'),
                     Attribute(name='State', type='string'),
@@ -221,7 +221,7 @@ class StateMachine:
         self.current_state = dest_real_state_t["Name"]
         msg = f"transitioning to [{self.current_state}]"
         _logger.info(msg)
-        StateActivityExecution(anum=dest_real_state_t["Activity"], state_machine=self)
+        StateActivityExecution(state_name=dest_real_state_t["Name"], anum=dest_real_state_t["Activity"], state_machine=self)
         pass
         # start activity execution and wait for completion
 

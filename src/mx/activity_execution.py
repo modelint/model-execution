@@ -99,15 +99,32 @@ class ActivityExecution(ABC):
         # Here we create a temporary relvar in PyRAL to track the execution state of this Activity's Actions
         # during execution
         # We set the name of this relvar so we can access and update the relvar content
-        self.action_states = f"{self.owner_name}_Action_States"
+        self.action_states = Relation.declare_rv(db=mmdb, owner=self.owner_name, name="_Action_States")
+        # self.action_states = f"{self.owner_name}_Action_States"
         # And here we define the empty relvar in PyRAL
         Relvar.create_relvar(db=mmdb, name=self.action_states, attrs=[
             Attribute(name='ID', type='string'),
             Attribute(name='State', type='string'),
         ], ids={1: ['ID']})
+        if self.initialize_action_states():
+            pass
+        pass
         # TODO: Remember to unset this relvar after the Activity completes execution
         self.action_states = self.enable_initial_actions()
+
+        # TODO: Refactor the following from subclasses
+        # self.enable_initial_flows()
+        # self.execute()
+        # if __debug__:
+        #     print(Database.get_all_rv_names())
+        # Relation.free_rvs(db=mmdb, owner=self.owner_name)
+        # Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
         pass
+
+    @abstractmethod
+    def initialize_action_states(self) -> bool:
+        pass
+
 
     @abstractmethod
     def enable_initial_actions(self) -> str:

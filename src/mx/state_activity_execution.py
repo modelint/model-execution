@@ -25,14 +25,16 @@ _logger = logging.getLogger(__name__)
 
 class StateActivityExecution(ActivityExecution):
 
-    def __init__(self, anum: str, state_machine: "StateMachine"):
+    def __init__(self, state_name: str, anum: str, state_machine: "StateMachine"):
         """
         We are here to execute all of the Actions in a State Activity
 
         Args:
+            state_name: Name of the executing state
             anum:  Activity number identifying the State Activity
             state_machine:  State Machine object (instance specific) executing this State Activity
         """
+        self.state = state_name
         self.state_machine = state_machine  # The Lifecycle or Assigner State Machine
 
         # Holds a value only if this is a Lifecycle State Machine
@@ -52,7 +54,7 @@ class StateActivityExecution(ActivityExecution):
                 # freed up during execution of this State Activity.
                 self.instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
                 # The owner_name is passed along to the superclass for initialization as a self variable
-                owner_name = f"LSM_{self.state_machine.state_model}_{anum}_inst_{self.instance_id_value}"
+                owner_name = f"LSM_{self.state_machine.state_model}__{self.state}_{anum}_inst_{self.instance_id_value}"
 
                 # Now we save our Lifecycle Activity instance for use by any executing Action
                 # The activity rv_name is passed along to the superclass
@@ -75,7 +77,7 @@ class StateActivityExecution(ActivityExecution):
                 # freed up during execution of this State Activity.
                 self.pinstance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
                 # The owner_name is passed along to the superclass for initialization as a self variable
-                owner_name = f"MASM_{self.state_machine.state_model}_{anum}_inst_"  # TODO: add partitioning inst id
+                owner_name = f"MASM_{self.state_machine.state_model}__{self.state}_{anum}_inst_"  # TODO: add partitioning inst id
                 activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="multiple_assigner_name")
 
                 # Now we save our Multiple Assigner Activity instance for use by any executing Action
@@ -90,7 +92,7 @@ class StateActivityExecution(ActivityExecution):
 
             case StateMachineType.SA:
                 # Single assigner is just the rnum
-                owner_name = f"SASM_{self.state_machine.state_model}_{anum}"
+                owner_name = f"SASM_{self.state_machine.state_model}__{self.state}_{anum}"
                 activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="single_assigner_name")
 
         super().__init__(domain=state_machine.domain, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
@@ -102,6 +104,35 @@ class StateActivityExecution(ActivityExecution):
         Relation.free_rvs(db=mmdb, owner=self.owner_name)
         Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
         pass
+
+    def initialize_action_states(self) -> bool:
+        """
+        Initialize value of action_states relvar for the executing Real State
+
+        Returns:
+            False if there are no Actions defined in this Real State
+        """
+        _logger.info(f"Initializing action states")
+        # We declare a temporary relation to build the relvar value
+        action_init_mmrv = Relation.declare_rv(db=mmdb, owner=self.owner_name, name="action_init")
+
+        # Get all Actions in this State Activity, if any
+        R = f"Activity:<{self.anum}>, Domain:<{self.domain.name}>"
+        state_action_r = Relation.restrict(db=mmdb, relation="Action", restriction=R, svar_name=action_init_mmrv)
+        if not state_action_r.body:
+            _logger.info(f"No actions defined in [{self.state}]")
+            return False
+
+        # There are actions in this Real State
+        # Create a relation and set the execution state of each Action to (U) - unexecuted
+        Relation.project(db=mmdb, attributes=("ID",), svar_name=action_init_mmrv)
+        Relation.extend(db=mmdb, attrs={'State': 'U'}, svar_name=action_init_mmrv)
+        # Now we set the relvar to initial action states
+        Relvar.set(db=mmdb, relvar=self.action_states, relation=action_init_mmrv)
+        # And free up the temporary relation variable
+        Relation.free_rvs(db=mmdb, owner=self.owner_name, names=(action_init_mmrv,))
+        _logger.info(f"Actions states for Real State [{self.state}] initialized")
+        return True
 
     def enable_initial_actions(self) -> str | None:
         """
