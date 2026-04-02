@@ -32,7 +32,8 @@ class ActionExecution:
         self.activity_execution = activity_execution
         self.action_id = action_id
         self.action_type = type(self).__name__.lower()
-        _logger.info(f"Executing action: {self.activity_execution.anum}-{action_id}({self.action_type})")
+        _logger.info(f"\n\n    ::: STARTING {{{self.action_id}}}: {self.activity_execution.anum} ({self.action_type}) :::\n")
+        # _logger.info(f"Executing action: {self.activity_execution.anum}-{action_id}({self.action_type})")
 
         # The domain alias is also the name of the TclRAL domain database session
         self.domdb = self.activity_execution.domain.alias  # Abbreviated access since we use it alot
@@ -57,3 +58,7 @@ class ActionExecution:
         Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id},
                         svar_name="action_mmrv")
         self.action_mmrv = "action_mmrv"
+
+    def complete(self):
+        _logger.info(f"\n\n    ::: COMPLETED {{{self.action_id}}}: {self.activity_execution.anum} ({self.action_type}) :::\n")
+

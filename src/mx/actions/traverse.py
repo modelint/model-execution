@@ -165,7 +165,7 @@ class Traverse(ActionExecution):
             _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
             _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
 
-        pass  # All hops completed
+        self.complete()
 
     def from_asymmetric_association_class_hop(self, hop_t: dict[str, str], hop_rv: str, hop_from_rv: str) -> str:
         """

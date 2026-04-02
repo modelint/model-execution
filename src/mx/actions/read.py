@@ -110,3 +110,5 @@ class Read(ActionExecution):
 
         if __debug__:
             _rv_after_free = Database.get_all_rv_names()
+
+        self.complete()

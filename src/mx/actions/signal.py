@@ -68,6 +68,7 @@ class Signal(ActionExecution):
         self.process_signal()
 
         Relation.free_rvs(db=mmdb, owner=self.owner)
+        self.complete()
 
     def process_signal(self):
         """

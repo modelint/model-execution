@@ -112,4 +112,5 @@ class Write(ActionExecution):
 
         _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
         _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
-        pass
+
+        self.complete()
