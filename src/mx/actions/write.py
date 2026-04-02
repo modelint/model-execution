@@ -24,9 +24,6 @@ from mx.utility import *
 
 _logger = logging.getLogger(__name__)
 
-if __debug__:
-    from mx.utility import *
-
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
     write_action: str
@@ -106,11 +103,5 @@ class Write(ActionExecution):
                              update={write_attr: new_value})
 
         log_table(_logger, table_msg(db=self.domdb, variable_name='Accessible Shaft Level'))
-        # This action's mmdb rvs are no longer needed)
-        Relation.free_rvs(db=mmdb, owner=self.owner)
-        Relation.free_rvs(db=self.domdb, owner=self.owner)
-
-        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
-        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
 
         self.complete()

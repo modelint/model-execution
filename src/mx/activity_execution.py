@@ -116,11 +116,7 @@ class ActivityExecution(ABC):
             self.enable_initial_flows()
             self.execute()
         Relation.free_rvs(db=mmdb, owner=self.owner_name)
-        try:
-            Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
-        except KeyError as e:
-            if "No such owner" not in str(e):
-                raise
+        Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
         _logger.info(f"\n\n    ^^^ ({self.anum}) {self.label} Complete ^^^ \n")
         pass
 

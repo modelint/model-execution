@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 # Model Integration
 from pyral.relation import Relation
+from pyral.database import Database
 
 # MX
 from mx.db_names import mmdb
@@ -60,5 +61,16 @@ class ActionExecution:
         self.action_mmrv = "action_mmrv"
 
     def complete(self):
-        _logger.info(f"\n\n    ::: COMPLETED {{{self.action_id}}}: {self.activity_execution.anum} ({self.action_type}) :::\n")
+        """
+        Clean up when any kind of Action completes execution
+        """
+        # We can safely clear out any action specifc mmdb rvs
+        # Metamodel access is not shared from one action to the next within an activity
+        Relation.free_rvs(db=mmdb, owner=self.owner)
+        # But we don't clear out the domain db rvs since these ARE shared within an activity
+        # For example, the values of any output flows must remain available as inputs to any
+        # downstream actions. We'll clear out the mmdb rvs when the activity has completed.
+
+        _logger.info(f"\n\n    ::: COMPLETED {{{self.action_id}}}: "
+                     f"{self.activity_execution.anum} ({self.action_type}) :::\n")
 

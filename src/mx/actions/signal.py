@@ -67,7 +67,6 @@ class Signal(ActionExecution):
 
         self.process_signal()
 
-        Relation.free_rvs(db=mmdb, owner=self.owner)
         self.complete()
 
     def process_signal(self):
@@ -174,8 +173,6 @@ class Signal(ActionExecution):
             partitioning_class=pclass,
             to_rnum=rnum
         )
-
-        pass
 
     def signal_completion(self, event_spec_name: str):
         CompletionEvent(sm_type=self.activity_execution.state_machine.sm_type,

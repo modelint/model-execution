@@ -159,11 +159,6 @@ class Traverse(ActionExecution):
             db=self.domdb, rv_name=domrv.output_irefs
         ))
         log_table(_logger, table_msg(db=self.domdb, variable_name=domrv.output_irefs))
-        Relation.free_rvs(db=mmdb, owner=self.owner)
-
-        if __debug__:
-            _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
-            _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
 
         self.complete()
 

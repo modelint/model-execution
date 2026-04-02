@@ -103,12 +103,4 @@ class Read(ActionExecution):
 
             _logger.info(f"Scalar value: [{attr_value}]")
 
-        # This action's mmdb rvs are no longer needed)
-        Relation.free_rvs(db=mmdb, owner=self.owner)
-        # And since we are outputing a scalar flow, there is no domain rv output to preserve
-        # In fact, we didn't define any domain rv's at all, so there are none to free
-
-        if __debug__:
-            _rv_after_free = Database.get_all_rv_names()
-
         self.complete()

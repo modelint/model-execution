@@ -1,20 +1,25 @@
 """ scalar_switch.py  -- execute a scalar_switch action """
 
 # System
+import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from mx.method_execution import MethodExecution  # TODO: Replace with Activity after refactoring State/Assigner Activities
+    from mx.activity_execution import ActivityExecution
 
 # Model Integration
 from pyral.relation import Relation
 from pyral.relation import Database  # Diagnostic
 
 # MX
+from mx.log_table_config import TABLE, log_table
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
+from mx.utility import *
+
+_logger = logging.getLogger(__name__)
 
 # For each python string variable that will hold the name of a temporary TclRAL relation used in this module,
 # a corresponding attribute is defined. An instance of this tuple is generated with each attribute holding
@@ -22,75 +27,73 @@ from mx.rvname import declare_rvs
 # Each such variable can then be supplied in the svar_name argument
 # to create the TclRAL relation. Later that same variable can be used to supply a relation argument to other
 # PyRAL methods.
-class RVs(NamedTuple):
-    activity_scalar_switch_actions: str
-    this_scalar_switch_action: str
+class MMRVs(NamedTuple):
+    scalar_switch_action: str
     cases: str
     mvals: str
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
-def declare_my_module_rvs(db: str, owner: str) -> RVs:
-    rvs = declare_rvs(db, owner, "activity_scalar_switch_actions", "this_scalar_switch_action", "cases", "mvals")
-    return RVs(*rvs)
+def declare_my_module_rvs(db: str, owner: str) -> MMRVs:
+    rvs = declare_rvs(db, owner, "scalar_switch_action", "cases", "mvals")
+    return MMRVs(*rvs)
 
 class ScalarSwitch(ActionExecution):
 
-    def __init__(self, action_id: str, activity: "MethodExecution"):
+    def __init__(self, action_id: str, activity_execution: "ActivityExecution"):
         """
         Perform the Scalar Switch Action on a domain model.
 
         Note: For now we are only handling Methods, but State Activities will be incorporated eventually.
 
-        :param action_id:  The ACTN<n> value identifying each Action instance
-        :param activity: The A<n> Activity ID (for Method and State Activities)
+        Args:
+            action_id: The ACTN<n> value identifying each Action instance
+            activity_execution: The Activity Execution object
         """
-        super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
+        super().__init__(activity_execution=activity_execution, action_id=action_id)
 
         # Do not execute this Action if it is not enabled, see comment in Action class
         if self.disabled:
             return
 
         # Get a NamedTuple with a field for each relation variable name
-        rv = declare_my_module_rvs(db=mmdb, owner=self.rvp)
+        mmrv = declare_my_module_rvs(db=mmdb, owner=self.owner)
 
         # Lookup the Action instance
-        # Start with all Switch actions in this Activity
-        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Scalar Switch Action",
-                          svar_name=rv.activity_scalar_switch_actions)
-        # Narrow it down to this Switch Action instance
-        R = f"ID:<{action_id}>"
-        scalar_switch_action_t = Relation.restrict(db=mmdb, relation=rv.activity_scalar_switch_actions, restriction=R,
-                                                   svar_name=rv.this_scalar_switch_action)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=rv.this_scalar_switch_action)
+        scalar_switch_action_r = Relation.semijoin(
+            db=mmdb, rname1=self.action_mmrv, rname2="Scalar Switch Action",
+            svar_name=mmrv.scalar_switch_action)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.scalar_switch_action))
+        scalar_switch_action_t = scalar_switch_action_r.body[0]
 
-        self.source_flow_name = scalar_switch_action_t.body[0]["Scalar_input"]
-        self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        self.source_flow_name = scalar_switch_action_t["Scalar_input"]
+        self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        _logger.info(f"{self.source_flow_name}")
+        _logger.info("Flows")
+        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                      flow_type=self.source_flow.flowtype,
+                                      activity=self.activity_execution, rv_name=self.source_flow.value))
 
-        cases_r = Relation.semijoin(db=mmdb, rname1=rv.this_scalar_switch_action, rname2="Case",
+        cases_r = Relation.semijoin(db=mmdb, rname1=mmrv.scalar_switch_action, rname2="Case",
                                     attrs={"ID": "Switch_action", "Activity": "Activity", "Domain": "Domain"},
-                                    svar_name=rv.cases)
-        mvals_r = Relation.semijoin(db=mmdb, rname1=rv.cases, rname2="Match Value",
+                                    svar_name=mmrv.cases)
+        mvals_r = Relation.semijoin(db=mmdb, rname1=mmrv.cases, rname2="Match Value",
                                     attrs={"Flow": "Case_flow", "Activity": "Activity", "Domain": "Domain"},
-                                    svar_name=rv.mvals)
+                                    svar_name=mmrv.mvals)
         R = f"Value:<{self.source_flow.value}>"
-        selected_case_r = Relation.restrict(db=mmdb, relation=rv.mvals, restriction=R)
+        selected_case_r = Relation.restrict(db=mmdb, relation=mmrv.mvals, restriction=R)
         scase_tuple = selected_case_r.body[0]
-        self.activity.flows[scase_tuple["Case_flow"]] = ActiveFlow(value=scase_tuple["Value"], flowtype=self.source_flow.flowtype)
+        self.activity_execution.flows[scase_tuple["Case_flow"]] = ActiveFlow(value=scase_tuple["Value"],
+                                                                             flowtype=self.source_flow.flowtype)
 
-        self.activity.xe.mxlog.log(message="Flows")
-        self.activity.xe.mxlog.log_sflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-                                         flow_type=self.source_flow.flowtype, activity=self.activity)
-        self.activity.xe.mxlog.log(message=f"Scalar value: [{scase_tuple['Value']}]")
-        self.activity.xe.mxlog.log_sflow(flow_name=scase_tuple["Case_flow"], flow_dir=FlowDir.OUT,
-                                         flow_type=self.source_flow.flowtype, activity=self.activity)
-        # We don't need our mmdb relation variables
-        Relation.free_rvs(db=mmdb, owner=self.rvp)
-        # And since we are outputing a scalar flow, there is no domain rv output to preserve
-        # In fact, we didn't define any domain rv's at all, so there are none to free
+        _logger.info("Flows")
+        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                      flow_type=self.source_flow.flowtype,
+                                      activity=self.activity_execution, rv_name=self.source_flow.value))
+        _logger.info(f"Scalar value: [{scase_tuple['Value']}]")
+        log_table(_logger, sflow_msg(db=self.domdb, flow_name=scase_tuple["Case_flow"], flow_dir=FlowDir.OUT,
+                                     flow_type=self.source_flow.flowtype, activity=self.activity_execution,
+                                     rv_name=self.source_flow.value))
 
-        # Diagnostic verification
-        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
-        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
+        self.complete()

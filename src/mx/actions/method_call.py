@@ -106,3 +106,5 @@ class MethodCall(ActionExecution):
                                           parameters=mcall_param_flow_names)
         m = method_activity.execute()
 
+        self.complete()
+
