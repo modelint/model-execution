@@ -15,6 +15,7 @@ from pyral.database import Database
 from pyral.rtypes import *
 
 # MX
+from mx.instance_set import InstanceSet
 from mx.log_table_config import TABLE
 from mx.message import *
 from mx.actions.flow import ActiveFlow
@@ -239,8 +240,20 @@ class ActivityExecution(ABC):
                 log_table(_logger, nsflow_msg(db=domdb, flow_name=pflow_name, flow_dir=FlowDir.IN, flow_type=ptype,
                                               activity=self, rv_name=self.flows[pflow_name].value))
 
-        # Enable any class accessor flows
-        pass
+        # Now check for any class accessor and set each such flow to the name of the accessed class
+        class_accessor_r = Relation.semijoin(db=mmdb, rname1=self.activity_rvn, rname2="Class Accessor",
+                                             attrs={'Activity': 'Activity', 'Domain': 'Domain'})
+        for t in class_accessor_r.body:
+            class_name = t["Class"]  # Class accessor is defined on this class
+            # Declare an rv owned by the method to hold the class irefs
+            # Note that the rv cannot have any spaces in its name
+            class_accessor_drv = Relation.declare_rv(db=domdb, owner=self.owner_name,
+                                                     name=f"{class_name.replace(' ', '_')}_class_accessor")
+            # set it to an iref per instance in the class
+            InstanceSet.irefs(db=domdb, iset_rv=class_name, irefs_rv=class_accessor_drv,
+                              class_name=class_name, domain_name=self.domain.name)
+            # Make it the value of the class accessor output flow
+            self.flows[t["Output_flow"]] = ActiveFlow(value=class_accessor_drv, flowtype=class_name)
 
     def next_action(self) -> str | None:
         """
