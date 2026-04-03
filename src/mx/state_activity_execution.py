@@ -46,6 +46,11 @@ class StateActivityExecution(ActivityExecution):
         self.pi_flow_name = None
         self.pi_flow_name = None
 
+        # Set signum
+        R = f"State_model:<{self.state_machine.state_model}>, Domain:<{self.state_machine.domain.name}>"
+        state_sig_r = Relation.restrict(db=mmdb, relation="State Signature", restriction=R)
+        signum = state_sig_r.body[0]['SIGnum']
+
         # Initialization specific to each type of State Machine
         match self.state_machine.sm_type:
             case StateMachineType.LIFECYCLE:
@@ -97,7 +102,7 @@ class StateActivityExecution(ActivityExecution):
                 activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="single_assigner_name")
 
         super().__init__(domain=state_machine.domain, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
-                         parameters=state_machine.active_event.params)
+                         signum=signum, parameters=state_machine.active_event.params)
 
     def initialize_action_states(self) -> bool:
         """
@@ -180,60 +185,3 @@ class StateActivityExecution(ActivityExecution):
             pass
 
         # Neither case executes if this is an Single Assigner
-
-    # def enable_initial_flows(self):
-    #     """
-    #     Set the values of any initially available flows in this State Activity
-    #     """
-    #     # Executing instance flow (if this is a Lifecycle state activity)
-    #     _logger.info(f"Enabling initial flows")
-    #     domdb = self.state_machine.domain.alias
-    #     if self.xi_flow_name:
-    #         class_name = self.state_machine.state_model
-    #         instance_id = self.state_machine.instance_id
-    #         xi_flow_value_rv = Relation.declare_rv(
-    #             db=domdb, owner=self.owner_name, name="xi_flow_value"
-    #         )
-    #         # Convert identifier to a restriction phrase
-    #         R = ", ".join(f"{k}:<{v}>" for k, v in instance_id.items())
-    #         # Set a relation variable name for the xi flow value
-    #         Relation.restrict(db=domdb, relation=class_name, restriction=R)
-    #         id_attr_names = tuple(k for k in instance_id.keys())
-    #         Relation.project(db=domdb, attributes=id_attr_names, svar_name=xi_flow_value_rv)
-    #
-    #         # Set the xi flow value to a relation variable holding a single instance reference for the xi
-    #         self.flows[self.xi_flow_name] = ActiveFlow(value=xi_flow_value_rv, flowtype=class_name)
-    #         _logger.info(f"{self.xi_flow_name} set to executing instance")
-    #         log_table(_logger, table_msg(db=domdb, variable_name=xi_flow_value_rv, table_name=self.owner_name))
-    #     elif self.pi_flow_name:
-    #         pclass_name = self.state_machine.pclass_name
-    #         pinstance_id = self.state_machine.instance_id
-    #         pi_flow_value_rv = Relation.declare_rv(
-    #             db=domdb, owner=self.owner_name, name="pi_flow_value"
-    #         )
-    #         # Convert identifier to a restriction phrase
-    #         R = ", ".join(f"{k}:<{v}>" for k, v in pinstance_id.items())
-    #         # Set a relation variable name for the pi flow value
-    #         Relation.restrict(db=domdb, relation=pclass_name, restriction=R)
-    #         id_attr_names = tuple(k for k in pinstance_id.keys())
-    #         Relation.project(db=domdb, attributes=id_attr_names, svar_name=pi_flow_value_rv)
-    #
-    #         # Set the xi flow value to a relation variable holding a single instance reference for the xi
-    #         self.flows[self.pi_flow_name] = ActiveFlow(value=pi_flow_value_rv, flowtype=pclass_name)
-    #         pass
-    #
-    #     # Any Scalar Value (constant) flows
-    #     # These are flows whose value is specified in the activity such as 'Stop requested = TRUE'
-    #     scalar_value_r = Relation.semijoin(db=mmdb, rname1=self.activity_rvn, rname2="Scalar Value")
-    #     if scalar_value_r.body:
-    #         sflow_r = Relation.join(db=mmdb, rname2="Scalar Flow")
-    #         for sv_i in sflow_r.body:
-    #             sv_flow_name = sv_i['ID']
-    #             sval = sv_i['Name']
-    #             sval_type = sv_i['Type']
-    #             self.flows[sv_flow_name] = ActiveFlow(value=sval, flowtype=sval_type)
-    #             _logger.info(f"initial Scalar Value Flow {sv_flow_name} set to value {sval} type {sval_type}")
-    #             pass
-
-        # All input parameter flows
-        # TODO: Set these by referencing method_execution.py file

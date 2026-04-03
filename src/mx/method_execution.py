@@ -57,8 +57,13 @@ class MethodExecution(ActivityExecution):
         # just in case our Flow naming scheme changes, we check to be sure
         self.xi_flow_name = method_t["Executing_instance_flow"]
 
+        # Set the signature
+        method_sig_r = Relation.semijoin(db=mmdb, rname1=method_rv, rname2="Method Signature",
+                                         attrs={'Name': 'Method', 'Class': 'Class', 'Domain': 'Domain'})
+        signum = method_sig_r.body[0]['SIGnum']
+
         super().__init__(domain=domain, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
-                         parameters=parameters)
+                         signum=signum, parameters=parameters)
 
     def enable_xi_flow(self):
         """

@@ -46,12 +46,14 @@ class MMRVs(NamedTuple):
     unexecuted_actions: str  # Unexecuted actions projected on ID
     unenabled_actions: str  # Remaining actions that are unenabled (U)
     flow_deps: str  # This activity's flow dependencies
+    params: str
+    activity_inputs: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner,
-                      "unexecuted_actions", "unenabled_actions", "flow_deps"
+                      "unexecuted_actions", "unenabled_actions", "flow_deps", "params", "activity_inputs"
                       )
     return MMRVs(*rvs)
 
@@ -75,7 +77,8 @@ class ActivityExecution(ABC):
         "method call": MethodCall,
     }
 
-    def __init__(self, domain: 'Domain', anum: str, owner_name: str, activity_rvn: str, parameters: NamedValues):
+    def __init__(self, domain: 'Domain', anum: str, owner_name: str, activity_rvn: str,
+                 signum: str, parameters: NamedValues):
         """
 
         Args:
@@ -83,11 +86,13 @@ class ActivityExecution(ABC):
             anum: This activity's identifier
             owner_name: String that uniquely identifies this activity and executing instance or rnum
             activity_rvn: Relational variable name holding this activity's metamodel data
+            signum: The Activity's signature number (SIGnum)
             parameters: Possibly an empty dictionary of parameter values conforming to the Activity's signature
         """
         self.domain = domain
         self.system = domain.system
         self.anum = anum
+        self.signum = signum
         self.parameters = parameters
         self.ready_actions: set[str] = set()
         self.flows: dict[str, ActiveFlow | None] = {}
@@ -193,6 +198,8 @@ class ActivityExecution(ABC):
 
         """
         _logger.info(f"Enabling initial flows")
+        mmrv = self.mmrv
+        domdb = self.domain.alias
         self.enable_xi_flow()
 
         # Any Scalar Value (constant) flows
@@ -209,7 +216,31 @@ class ActivityExecution(ABC):
                 pass
 
         # All input parameter flows
-        # TODO: Set these by referencing method_execution.py file
+        # We do a restrict using the signum to get the Activity's input params
+        R = f"Signature:<{self.signum}>, Domain:<{self.domain.name}>"
+        Relation.restrict(db=mmdb, relation='Parameter', restriction=R, svar_name=mmrv.params)
+        # We do a join instead of a semijoin so we retain the Parameter.Type attribute in the result
+        activity_input_r = Relation.join(db=mmdb, rname1=mmrv.params, rname2='Activity Input',
+                                         attrs={'Name': 'Parameter', 'Signature': 'Signature', 'Domain': 'Domain'},
+                                         svar_name=mmrv.activity_inputs)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.activity_inputs))
+
+        # Enable input flow value
+        _logger.info("Enabling input parameter flows...")
+        for t in activity_input_r.body:
+            pflow_name = t['Input_flow']
+            param_name = t['Name']
+            ptype = t['Type']
+            self.flows[pflow_name] = self.parameters[param_name]
+            if self.flows[pflow_name].flowtype == 'scalar':
+                _logger.info(sflow_msg(flow_name=pflow_name, flow_dir=FlowDir.IN, flow_type=ptype, activity=self,
+                                       value=self.flows[pflow_name].value))
+            else:
+                log_table(_logger, nsflow_msg(db=domdb, flow_name=pflow_name, flow_dir=FlowDir.IN, flow_type=ptype,
+                                              activity=self, rv_name=self.flows[pflow_name].value))
+
+        # Enable any class accessor flows
+        pass
 
     def next_action(self) -> str | None:
         """

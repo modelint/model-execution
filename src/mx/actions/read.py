@@ -97,10 +97,9 @@ class Read(ActionExecution):
             attr_value = attr_value_r.body[0][snake(access["Attribute"])]
             self.activity_execution.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
             _logger.info(f"- Attribute: {access["Attribute"]}")
-            log_table(_logger, sflow_msg(db=self.domdb, flow_name=access["Output_flow"], flow_dir=FlowDir.OUT,
-                                         flow_type=atypes[access["Attribute"]],
-                                         activity=self.activity_execution, rv_name=self.source_flow.value))
-
-            _logger.info(f"Scalar value: [{attr_value}]")
+            _logger.info(
+                sflow_msg(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT, flow_type=atypes[access["Attribute"]],
+                                         activity=self.activity_execution, value=attr_value)
+            )
 
         self.complete()

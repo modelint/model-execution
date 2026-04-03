@@ -12,6 +12,8 @@ from pyral.relation import Relation
 from pyral.database import Database
 
 # MX
+from mx.log_table_config import TABLE, log_table
+from mx.utility import *
 from mx.db_names import mmdb
 
 _logger = logging.getLogger(__name__)
@@ -55,10 +57,10 @@ class ActionExecution:
 
         # To simplify the lookup of each subclass of Action, we extend the activity tuple with our action id
         # Then the action will do a semijoin to its subclass, Read Action, for example.
-        Relation.declare_rv(db=mmdb, owner=self.owner, name="action_mmrv")
+        self.action_mmrv = Relation.declare_rv(db=mmdb, owner=self.owner, name="action_mmrv")
         Relation.extend(db=mmdb, relation=self.activity_execution.activity_rvn, attrs={'ID': self.action_id},
-                        svar_name="action_mmrv")
-        self.action_mmrv = "action_mmrv"
+                        svar_name=self.action_mmrv)
+        log_table(_logger, table_msg(db=mmdb, variable_name=self.action_mmrv))
 
     def complete(self):
         """

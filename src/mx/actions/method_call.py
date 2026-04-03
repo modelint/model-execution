@@ -15,6 +15,8 @@ from pyral.relvar import Relvar
 from pyral.database import Database  # Diagnostics
 
 # MX
+from mx.log_table_config import TABLE, log_table
+from mx.utility import *
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
@@ -30,11 +32,13 @@ if __debug__:
 class MMRVs(NamedTuple):
     method_call_action: str
     method_info: str
+    method_call_parameters: str
+    method_call_output: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
-    rvs = declare_rvs(mmdb, owner, "method_call_action", "method_info")
+    rvs = declare_rvs(mmdb, owner, "method_call_action", "method_info", "method_call_parameters", "method_call_output")
     return MMRVs(*rvs)
 
 class MethodCall(ActionExecution):
@@ -58,12 +62,13 @@ class MethodCall(ActionExecution):
 
         # Lookup the Method Call Action
         # This gives us the Method's anum and input instance flow number
-        method_call_t = Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="Method Call",
+        method_call_r = Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="Method Call",
                                           attrs={'ID': 'ID', 'Activity': 'Activity', 'Domain': 'Domain'},
                                           svar_name=mmrv.method_call_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.method_call_action))
-        called_method_anum = method_call_t.body[0]['Method']
-        called_method_input_fname = method_call_t.body[0]['Instance_flow']
+        method_call_t = method_call_r.body[0]
+        called_method_anum = method_call_t['Method']
+        called_method_input_fname = method_call_t['Instance_flow']
 
         # Get the Method information so that the Method Activity can initialize its owner name without having
         # to do a query.  We will pass the rv to the Method Activity.
@@ -75,18 +80,24 @@ class MethodCall(ActionExecution):
 
         # Lookup the Method Call Output
         # This gives us the flow name of any output from the method (may be none)
-        mcall_output_t = Relation.semijoin(db=mmdb, rname1=mmrv.method_call_action, rname2="Method Call Output")
+        mcall_output_r = Relation.semijoin(db=mmdb, rname1=mmrv.method_call_action, rname2="Method Call Output",
+                                           attrs={'ID': 'Method_call', 'Activity': 'Activity', 'Domain': 'Domain'},
+                                           svar_name=mmrv.method_call_output)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.method_call_output))
         called_method_output_fname = None
-        if mcall_output_t.body:
-            called_method_output_fname = mcall_output_t.body[0]['Flow']
+        if mcall_output_r.body:
+            called_method_output_fname = mcall_output_r.body[0]['Flow']
 
         # Lookup any parameters
-        mcall_params_r = Relation.semijoin(db=mmdb, rname1=mmrv.method_call_action, rname2="Method Call Parameter")
-        mcall_param_flow_names = {}
-        if mcall_params_r.body:
-            mcall_param_flow_names = {t['Parameter']: t['Flow'] for t in mcall_params_r.body}
-        pass
-        # TODO: We need to make these flows accessible (values/types) to the target method somehow, but need an example
+        mcall_params_r = Relation.semijoin(
+            db=mmdb, rname1=mmrv.method_call_action, rname2="Method Call Parameter",
+            attrs={'ID': 'Method_call', 'Activity': 'Activity', 'Domain': 'Domain'},
+            svar_name=mmrv.method_call_parameters)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.method_call_parameters))
+        my_flows = self.activity_execution.flows
+        mcall_param_flows: dict[str, ActiveFlow] = {
+            t['Parameter']: my_flows[t['Flow']] for t in mcall_params_r.body
+        }
 
         # We need the id of the target method's executing instance
         from mx.instance_set import InstanceSet
@@ -103,7 +114,7 @@ class MethodCall(ActionExecution):
         method_activity = MethodExecution(domain=self.activity_execution.domain, method_rv=mmrv.method_info,
                                           anum=called_method_anum,
                                           instance_id=target_instance_id,
-                                          parameters=mcall_param_flow_names)
+                                          parameters=mcall_param_flows)
         m = method_activity.execute()
 
         self.complete()
