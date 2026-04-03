@@ -20,7 +20,6 @@ from mx.db_names import mmdb, PROGRAM_NAME
 from mx.exceptions import *
 from mx.mdb_types import *
 from mx.mxtypes import ExternalAddress
-from mx_logger import MXLogger
 from mx.log_table_config import ConsoleTableFilter, ConsoleWarningFilter
 
 _logger = logging.getLogger(__name__)
@@ -53,7 +52,6 @@ class System:
         self.verbose = False
         self.playground = None  # This is a set of populated domain dbs and compatible scenarios
         self.response_monitor = None
-        self.mxlogger = MXLogger()
 
     def initialize(self, system_path: Path, verbose: bool, debug: bool):
         """
