@@ -34,7 +34,7 @@ class StateActivityExecution(ActivityExecution):
             anum:  Activity number identifying the State Activity
             state_machine:  State Machine object (instance specific) executing this State Activity
         """
-        self.label = f"{state_machine.state_model}->[{state_name}]" # For display in log messages
+        label = f"{state_machine.state_model}->[{state_name}]" # For display in log messages
         self.state = state_name
         self.state_machine = state_machine  # The Lifecycle or Assigner State Machine
 
@@ -101,7 +101,7 @@ class StateActivityExecution(ActivityExecution):
                 owner_name = f"SASM_{self.state_machine.state_model}__{self.state}_{anum}"
                 activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="single_assigner_name")
 
-        super().__init__(domain=state_machine.domain, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
+        super().__init__(domain=state_machine.domain, label=label, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
                          signum=signum, parameters=state_machine.active_event.params)
 
     def initialize_action_states(self) -> bool:

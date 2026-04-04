@@ -18,7 +18,7 @@ from pyral.rtypes import *
 from mx.instance_set import InstanceSet
 from mx.log_table_config import TABLE
 from mx.message import *
-from mx.actions.flow import ActiveFlow
+from mx.actions.flow import ActiveFlow, FlowState
 from mx.actions.action_execution import ActionExecution
 from mx.deprecated.bridge import NamedValues
 from mx.actions.traverse import Traverse
@@ -78,7 +78,7 @@ class ActivityExecution(ABC):
         "method call": MethodCall,
     }
 
-    def __init__(self, domain: 'Domain', anum: str, owner_name: str, activity_rvn: str,
+    def __init__(self, domain: 'Domain', label: str, anum: str, owner_name: str, activity_rvn: str,
                  signum: str, parameters: NamedValues):
         """
 
@@ -92,11 +92,18 @@ class ActivityExecution(ABC):
         """
         self.domain = domain
         self.system = domain.system
+        self.label = label
         self.anum = anum
         self.signum = signum
         self.parameters = parameters
         self.ready_actions: set[str] = set()
-        self.flows: dict[str, ActiveFlow | None] = {}
+
+        # Flow content during this execution
+        #   None - Flow has not been assigned a value yet
+        #   ActiveFlow - Is the type ane value conveyed in the flow
+        #   FlowState - Specifically FlowState.Disabled meaning no value will be assigned during this execution
+        self.flows: dict[str, ActiveFlow | FlowState | None] = {}
+
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         self.activity_rvn = activity_rvn
@@ -106,7 +113,6 @@ class ActivityExecution(ABC):
         # during execution
         # We set the name of this relvar so we can access and update the relvar content
         self.action_states = Relation.declare_rv(db=mmdb, owner=self.owner_name, name="_Action_States")
-        # self.action_states = f"{self.owner_name}_Action_States"
         # And here we define the empty relvar in PyRAL
         Relvar.create_relvar(db=mmdb, name=self.action_states, attrs=[
             Attribute(name='ID', type='string'),
@@ -353,4 +359,18 @@ class ActivityExecution(ABC):
             ActivityExecution.execute_action[action_type](activity_execution=self, action_id=action_id)
             self.update_enabled_actions()
             pass
+        pass
+
+    def disable(self, flow_name: str):
+        """
+        Given the name of a disabled flow, change the action state of all downstream actions
+        to disabled. This python method should be called by any decision, switch, or any other
+        action that conditionally disabled downstream actions.
+
+        Args:
+            flow_name:  The name of the upstream flow that has been disabled
+
+        Returns:
+
+        """
         pass

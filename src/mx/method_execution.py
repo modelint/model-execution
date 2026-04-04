@@ -47,7 +47,7 @@ class MethodExecution(ActivityExecution):
         method_t = method_r.body[0]
         self.class_name = method_t['Class']
         self.method_name = method_t['Name']
-        self.label = f"{self.class_name}.{self.method_name}"  # For display in log messages
+        label = f"{self.class_name}.{self.method_name}"  # For display in log messages
         instance_id_value = '_'.join(v for v in self.instance_id.values())
         owner_name = f"METHOD_{snake(self.class_name)}_{snake(self.method_name)}_{instance_id_value}"
         activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="method")
@@ -62,7 +62,7 @@ class MethodExecution(ActivityExecution):
                                          attrs={'Name': 'Method', 'Class': 'Class', 'Domain': 'Domain'})
         signum = method_sig_r.body[0]['SIGnum']
 
-        super().__init__(domain=domain, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
+        super().__init__(domain=domain, label=label, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
                          signum=signum, parameters=parameters)
 
     def enable_xi_flow(self):

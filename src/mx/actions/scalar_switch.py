@@ -15,7 +15,7 @@ from pyral.relation import Database  # Diagnostic
 from mx.log_table_config import TABLE, log_table
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
-from mx.actions.flow import ActiveFlow, FlowDir
+from mx.actions.flow import ActiveFlow, FlowDir, FlowState
 from mx.rvname import declare_rvs
 from mx.utility import *
 
@@ -114,6 +114,11 @@ class ScalarSwitch(ActionExecution):
 
         # Log all disabled Case (Control Flows)
         for t in unselected_cases_r.body:
+            self.activity_execution.flows[t['Case_flow']] = FlowState.DISABLED
             _logger.info(f"Disabled case control flow: {t['Case_flow']} -> x")
+            self.activity_execution.disable(flow_name=t['Case_flow'])
+            # Get the flow destination using Control Dependency relvar ['Action']
+            # Update action states so that that action is 'D'
+            # Get all downstream actions and do the same
 
         self.complete()

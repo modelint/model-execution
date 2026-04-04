@@ -1,7 +1,7 @@
 """ flow.py -- Active Flow type """
 
 # System
-from enum import Enum
+from enum import Enum, auto
 from typing import TYPE_CHECKING, NamedTuple, Any
 
 # Model Integration
@@ -16,6 +16,9 @@ if TYPE_CHECKING:
 class ActiveFlow(NamedTuple):
     value: Any
     flowtype: str
+
+class FlowState(Enum):
+    DISABLED = auto()
 
 class FlowDir(Enum):
     IN = "in"
