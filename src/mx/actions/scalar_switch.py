@@ -31,12 +31,13 @@ class MMRVs(NamedTuple):
     scalar_switch_action: str
     cases: str
     mvals: str
+    selected_case: str
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_my_module_rvs(db: str, owner: str) -> MMRVs:
-    rvs = declare_rvs(db, owner, "scalar_switch_action", "cases", "mvals")
+    rvs = declare_rvs(db, owner, "scalar_switch_action", "cases", "mvals", "selected_case")
     return MMRVs(*rvs)
 
 class ScalarSwitch(ActionExecution):
@@ -71,29 +72,48 @@ class ScalarSwitch(ActionExecution):
         self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
         _logger.info(f"{self.source_flow_name}")
         _logger.info("Flows")
-        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-                                      flow_type=self.source_flow.flowtype,
-                                      activity=self.activity_execution, rv_name=self.source_flow.value))
+        if self.source_flow.flowtype == 'scalar':
+            _logger.info(sflow_msg(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                   flow_type=self.source_flow.flowtype, activity=self.activity_execution,
+                                   value=self.source_flow.value))
+        else:
+            log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                          flow_type=self.source_flow.flowtype,
+                                          activity=self.activity_execution, rv_name=self.source_flow.value))
 
-        cases_r = Relation.semijoin(db=mmdb, rname1=mmrv.scalar_switch_action, rname2="Case",
-                                    attrs={"ID": "Switch_action", "Activity": "Activity", "Domain": "Domain"},
-                                    svar_name=mmrv.cases)
-        mvals_r = Relation.semijoin(db=mmdb, rname1=mmrv.cases, rname2="Match Value",
-                                    attrs={"Flow": "Case_flow", "Activity": "Activity", "Domain": "Domain"},
-                                    svar_name=mmrv.mvals)
+        # Find all Case (Control Flows) that could be emitted by this Scalar Switch Action
+        Relation.semijoin(db=mmdb, rname1=mmrv.scalar_switch_action, rname2="Case",
+                          attrs={"ID": "Switch_action", "Activity": "Activity", "Domain": "Domain"},
+                          svar_name=mmrv.cases)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.cases))
+        # And join with the values that can be emitted by each of the Case (Control Flows)
+        Relation.semijoin(db=mmdb, rname1=mmrv.cases, rname2="Match Value",
+                          attrs={"Flow": "Case_flow", "Activity": "Activity", "Domain": "Domain"},
+                          svar_name=mmrv.mvals)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.mvals))
+        # We select the output Case (Control Flow) to enable based on on our input source value
         R = f"Value:<{self.source_flow.value}>"
-        selected_case_r = Relation.restrict(db=mmdb, relation=mmrv.mvals, restriction=R)
+        selected_case_r = Relation.restrict(db=mmdb, relation=mmrv.mvals, restriction=R, svar_name=mmrv.selected_case)
+        unselected_cases_r = Relation.subtract(db=mmdb, rname1=mmrv.mvals, rname2=mmrv.selected_case)
         scase_tuple = selected_case_r.body[0]
+        # And then set the value of that output flow to the selected Match Value
         self.activity_execution.flows[scase_tuple["Case_flow"]] = ActiveFlow(value=scase_tuple["Value"],
                                                                              flowtype=self.source_flow.flowtype)
+        # TODO: We have an opportunity hear to explicitly disable the unselected Case Control Flows
+        # TODO: But waiting to see how we handle disabled flows in general
 
         _logger.info("Flows")
-        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-                                      flow_type=self.source_flow.flowtype,
-                                      activity=self.activity_execution, rv_name=self.source_flow.value))
-        _logger.info(f"Scalar value: [{scase_tuple['Value']}]")
-        log_table(_logger, sflow_msg(db=self.domdb, flow_name=scase_tuple["Case_flow"], flow_dir=FlowDir.OUT,
+        # The source flow always matches the output flow
+        log_table(_logger, sflow_msg(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
                                      flow_type=self.source_flow.flowtype, activity=self.activity_execution,
-                                     rv_name=self.source_flow.value))
+                                     value = self.source_flow.value))
+
+        log_table(_logger, sflow_msg( flow_name=scase_tuple["Case_flow"], flow_dir=FlowDir.OUT,
+                                      flow_type=self.source_flow.flowtype, activity=self.activity_execution,
+                                      value=self.activity_execution.flows[scase_tuple["Case_flow"]].value))
+
+        # Log all disabled Case (Control Flows)
+        for t in unselected_cases_r.body:
+            _logger.info(f"Disabled case control flow: {t['Case_flow']} -> x")
 
         self.complete()
