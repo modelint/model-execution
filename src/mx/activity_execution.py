@@ -393,10 +393,13 @@ class ActivityExecution(ABC):
         mmrv = self.mmrv
         # Get all upstream actions
         Relation.restrict(db=mmdb, relation=mmrv.flow_deps, restriction=f"To_action:<{action_id}>", svar_name=mmrv.gate_check)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_check))
         # Obtain current action states for each
-        Relation.semijoin(db=mmdb, rname1="q", rname2=self.action_states, attrs={"From_action": "ID"}, svar_name=mmrv.gate_check)
+        Relation.semijoin(db=mmdb, rname1=mmrv.gate_check, rname2=self.action_states, attrs={"From_action": "ID"}, svar_name=mmrv.gate_check)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_check))
         # Get all upstream action ids that are not disabled
-        Relation.restrict(db=mmdb, relation="r", restriction="State:NOT <D>", svar_name=mmrv.gate_check)
+        Relation.restrict(db=mmdb, relation=mmrv.gate_check, restriction="NOT State:<D>", svar_name=mmrv.gate_check)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_check))
         # If there aren't any, it means they are all disabled
         # Card 0 = False (all disabled) so we report True
         # Card > 0 = True At least one not disabled, report False
@@ -433,8 +436,9 @@ class ActivityExecution(ABC):
         Relation.create(db=mmdb, attrs=[Attribute(name="From_action", type="string")], tuples=newly_disabled,
                         svar_name=mmrv.newly_disabled)
         Relation.join(db=mmdb, rname1=mmrv.newly_disabled, rname2=mmrv.flow_deps, svar_name=mmrv.newly_disabled)
-        Relation.extend(db=mmdb, attrs={'Activity': self.anum}, relation=mmrv.newly_disabled, svar_name=mmrv.downstream_actions)
-        Relation.extend(db=mmdb, attrs={'Domain': self.domain.name}, relation=mmrv.downstream_actions, svar_name=mmrv.downstream_actions)
+        Relation.extend(db=mmdb, attrs={'Activity': self.anum, 'Domain': self.domain.name}, relation=mmrv.newly_disabled, svar_name=mmrv.downstream_actions)
+        # Relation.extend(db=mmdb, attrs={'Activity': self.anum}, relation=mmrv.newly_disabled, svar_name=mmrv.downstream_actions)
+        # Relation.extend(db=mmdb, attrs={'Domain': self.domain.name}, relation=mmrv.downstream_actions, svar_name=mmrv.downstream_actions)
         Relation.rename(db=mmdb, relation=mmrv.downstream_actions, names={'To_action': 'Action'}, svar_name=mmrv.downstream_actions)
         Relation.project(db=mmdb, relation=mmrv.downstream_actions, attributes=("From_action",), exclude=True, svar_name=mmrv.downstream_actions)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.downstream_actions))
