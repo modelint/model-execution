@@ -32,12 +32,13 @@ class MMRVs(NamedTuple):
     cases: str
     mvals: str
     selected_case: str
+    disabled_cases: str
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_my_module_rvs(db: str, owner: str) -> MMRVs:
-    rvs = declare_rvs(db, owner, "scalar_switch_action", "cases", "mvals", "selected_case")
+    rvs = declare_rvs(db, owner, "scalar_switch_action", "cases", "mvals", "selected_case", "disabled_cases")
     return MMRVs(*rvs)
 
 class ScalarSwitch(ActionExecution):
@@ -94,7 +95,8 @@ class ScalarSwitch(ActionExecution):
         # We select the output Case (Control Flow) to enable based on on our input source value
         R = f"Value:<{self.source_flow.value}>"
         selected_case_r = Relation.restrict(db=mmdb, relation=mmrv.mvals, restriction=R, svar_name=mmrv.selected_case)
-        unselected_cases_r = Relation.subtract(db=mmdb, rname1=mmrv.mvals, rname2=mmrv.selected_case)
+        unselected_cases_r = Relation.subtract(db=mmdb, rname1=mmrv.mvals, rname2=mmrv.selected_case, svar_name=mmrv.disabled_cases)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.disabled_cases))
         scase_tuple = selected_case_r.body[0]
         # And then set the value of that output flow to the selected Match Value
         self.activity_execution.flows[scase_tuple["Case_flow"]] = ActiveFlow(value=scase_tuple["Value"],
@@ -112,13 +114,19 @@ class ScalarSwitch(ActionExecution):
                                       flow_type=self.source_flow.flowtype, activity=self.activity_execution,
                                       value=self.activity_execution.flows[scase_tuple["Case_flow"]].value))
 
-        # Log all disabled Case (Control Flows)
+        # Disable all outgoing unselected case flows
         for t in unselected_cases_r.body:
             self.activity_execution.flows[t['Case_flow']] = FlowState.DISABLED
             _logger.info(f"Disabled case control flow: {t['Case_flow']} -> x")
-            self.activity_execution.disable(flow_name=t['Case_flow'])
-            # Get the flow destination using Control Dependency relvar ['Action']
-            # Update action states so that that action is 'D'
-            # Get all downstream actions and do the same
+            # self.activity_execution.disable(flow_name=t['Case_flow'])
+
+        downstream_rv = self.activity_execution.mmrv.downstream_actions
+        Relation.semijoin(db=mmdb, rname1=mmrv.disabled_cases, rname2='Control Dependency',
+                          attrs={'Case_flow': 'Control_flow', 'Activity': 'Activity', 'Domain': 'Domain'},
+                          svar_name=downstream_rv)
+        Relation.project(db=mmdb, relation=downstream_rv, attributes=("Control_flow",), exclude=True,
+                         svar_name=downstream_rv)
+        log_table(_logger, table_msg(db=mmdb, variable_name=downstream_rv))
+        self.activity_execution.disable_downstream_actions()
 
         self.complete()
