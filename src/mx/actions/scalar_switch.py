@@ -15,7 +15,7 @@ from pyral.relation import Database  # Diagnostic
 from mx.log_table_config import TABLE, log_table
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
-from mx.actions.flow import ActiveFlow, FlowDir, FlowState
+from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.utility import *
 
@@ -101,9 +101,6 @@ class ScalarSwitch(ActionExecution):
         # And then set the value of that output flow to the selected Match Value
         self.activity_execution.flows[scase_tuple["Case_flow"]] = ActiveFlow(value=scase_tuple["Value"],
                                                                              flowtype=self.source_flow.flowtype)
-        # TODO: We have an opportunity hear to explicitly disable the unselected Case Control Flows
-        # TODO: But waiting to see how we handle disabled flows in general
-
         _logger.info("Flows")
         # The source flow always matches the output flow
         log_table(_logger, sflow_msg(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
@@ -115,9 +112,9 @@ class ScalarSwitch(ActionExecution):
                                       value=self.activity_execution.flows[scase_tuple["Case_flow"]].value))
 
         # Disable all outgoing unselected case flows
-        for t in unselected_cases_r.body:
-            self.activity_execution.flows[t['Case_flow']] = FlowState.DISABLED
-            _logger.info(f"Disabled case control flow: {t['Case_flow']} -> x")
+        # for t in unselected_cases_r.body:
+        #     self.activity_execution.flows[t['Case_flow']] = FlowState.DISABLED
+        #     _logger.info(f"Disabled case control flow: {t['Case_flow']} -> x")
             # self.activity_execution.disable(flow_name=t['Case_flow'])
 
         downstream_rv = self.activity_execution.mmrv.downstream_actions
@@ -127,6 +124,8 @@ class ScalarSwitch(ActionExecution):
         Relation.project(db=mmdb, relation=downstream_rv, attributes=("Control_flow",), exclude=True,
                          svar_name=downstream_rv)
         log_table(_logger, table_msg(db=mmdb, variable_name=downstream_rv))
+        _logger.info("Start disabling downstream actions for unmatched cases...")
         self.activity_execution.disable_downstream_actions()
+        _logger.info("Downstream actions for unmatched cases disabled")
 
         self.complete()

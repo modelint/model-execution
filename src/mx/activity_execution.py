@@ -19,7 +19,7 @@ from pyral.rtypes import *
 from mx.instance_set import InstanceSet
 from mx.log_table_config import TABLE
 from mx.message import *
-from mx.actions.flow import ActiveFlow, FlowState
+from mx.actions.flow import ActiveFlow
 from mx.actions.action_execution import ActionExecution
 from mx.deprecated.bridge import NamedValues
 from mx.actions.traverse import Traverse
@@ -109,8 +109,8 @@ class ActivityExecution(ABC):
         # Flow content during this execution
         #   None - Flow has not been assigned a value yet
         #   ActiveFlow - Is the type ane value conveyed in the flow
-        #   FlowState - Specifically FlowState.Disabled meaning no value will be assigned during this execution
-        self.flows: dict[str, ActiveFlow | FlowState | None] = {}
+        self.flows: dict[str, ActiveFlow | None] = {}
+        # self.flows: dict[str, ActiveFlow | FlowState | None] = {}
 
         self.owner_name = owner_name
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
@@ -392,41 +392,42 @@ class ActivityExecution(ABC):
         """
         mmrv = self.mmrv
         # Get all upstream actions
-        Relation.restrict(db=mmdb, relation=mmrv.flow_deps, restriction=f"To_action:<{action_id}>", svar_name=mmrv.gate_check)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_check))
+        Relation.restrict(db=mmdb, relation=mmrv.flow_deps, restriction=f"To_action:<{action_id}>",
+                          svar_name=mmrv.gate_check)
+        # log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_check))
         # Obtain current action states for each
-        Relation.semijoin(db=mmdb, rname1=mmrv.gate_check, rname2=self.action_states, attrs={"From_action": "ID"}, svar_name=mmrv.gate_check)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_check))
+        Relation.semijoin(db=mmdb, rname1=mmrv.gate_check, rname2=self.action_states, attrs={"From_action": "ID"},
+                          svar_name=mmrv.gate_check)
+        # log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_check))
         # Get all upstream action ids that are not disabled
         Relation.restrict(db=mmdb, relation=mmrv.gate_check, restriction="NOT State:<D>", svar_name=mmrv.gate_check)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_check))
+        _logger.info(f"Gate should be disabled if ALL upstream Actions have been disabled")
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_check, table_name="Non-disabled upstream Actions"))
+        card = Relation.cardinality(db=mmdb, rname=mmrv.gate_check)
         # If there aren't any, it means they are all disabled
-        # Card 0 = False (all disabled) so we report True
-        # Card > 0 = True At least one not disabled, report False
-        return not bool(Relation.cardinality(db=mmdb, rname=mmrv.gate_check))
+        # card 0 = False (all disabled) so we report True
+        # card > 0 = True At least one not disabled, report False
+        all_upstream_disabled = not bool(card)
+        ua_msg = "upstream actions are disabled - "
+        log_msg = f"All {ua_msg} disable the Gate Action" if all_upstream_disabled \
+            else f"Not all {ua_msg} don't disable Gate Action"
+        _logger.info(f"{log_msg} ")
+        return all_upstream_disabled
 
     def disable_downstream_actions(self):
         """
         Disable all downstream actions.  These are available in the
         mmrv.downstream_actions relational variable
-
-        Returns:
-
         """
         mmrv = self.mmrv
 
-        _logger.info("Start disable")
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.downstream_actions))
-        # Check recursion limit and return if there are no more downstream actions to disable
-        if not Relation.cardinality(db=mmdb, rname=mmrv.downstream_actions):
-            return
-
+        # log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.downstream_actions))
         # Join with Action to obtain the type of each Action.  We'll be interested in Gate Actions later
         ds_actions_r = Relation.join(db=mmdb, rname1=mmrv.downstream_actions, rname2='Action',
                                      attrs={'Action': 'ID', 'Activity': 'Activity', 'Domain': 'Domain'},
                                      svar_name=mmrv.downstream_actions)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.downstream_actions))
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.flow_deps))
+        # log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.flow_deps))
         newly_disabled : list[FromAction_t] = []
         for t in ds_actions_r.body:
             if t['Type'] != 'gate' or t['Type'] == 'gate' and self.all_upstream_disabled(t['Action']):
@@ -436,43 +437,16 @@ class ActivityExecution(ABC):
         Relation.create(db=mmdb, attrs=[Attribute(name="From_action", type="string")], tuples=newly_disabled,
                         svar_name=mmrv.newly_disabled)
         Relation.join(db=mmdb, rname1=mmrv.newly_disabled, rname2=mmrv.flow_deps, svar_name=mmrv.newly_disabled)
-        Relation.extend(db=mmdb, attrs={'Activity': self.anum, 'Domain': self.domain.name}, relation=mmrv.newly_disabled, svar_name=mmrv.downstream_actions)
-        # Relation.extend(db=mmdb, attrs={'Activity': self.anum}, relation=mmrv.newly_disabled, svar_name=mmrv.downstream_actions)
-        # Relation.extend(db=mmdb, attrs={'Domain': self.domain.name}, relation=mmrv.downstream_actions, svar_name=mmrv.downstream_actions)
-        Relation.rename(db=mmdb, relation=mmrv.downstream_actions, names={'To_action': 'Action'}, svar_name=mmrv.downstream_actions)
-        Relation.project(db=mmdb, relation=mmrv.downstream_actions, attributes=("From_action",), exclude=True, svar_name=mmrv.downstream_actions)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.downstream_actions))
-        self.disable_downstream_actions()
-        pass
-        # update the downstream rv to all actions downstream from the actions we just disabled
-        # Call the function again
+        Relation.extend(db=mmdb, attrs={'Activity': self.anum, 'Domain': self.domain.name},
+                        relation=mmrv.newly_disabled, svar_name=mmrv.downstream_actions)
+        Relation.rename(db=mmdb, relation=mmrv.downstream_actions, names={'To_action': 'Action'},
+                        svar_name=mmrv.downstream_actions)
+        Relation.project(db=mmdb, relation=mmrv.downstream_actions, attributes=("From_action",), exclude=True,
+                         svar_name=mmrv.downstream_actions)
+        # log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.downstream_actions))
 
-    # def disable(self, flow_name: str):
-    #     """
-    #     Given the name of a disabled flow, change the action state of all downstream actions
-    #     to disabled. This python method should be called by any decision, switch, or any other
-    #     action that conditionally disabled downstream actions.
-    #
-    #     Args:
-    #         flow_name:  The name of the upstream flow that has been disabled
-    #
-    #     Returns:
-    #
-    #     """
-    #     mmrv = self.mmrv
-    #
-    #     # Start with a disabled Control Flow
-    #     # Get all Control Depenencies To_action's for that disabled flow
-    #
-    #     # Starting from a disabled flow find all actions downstream from that action
-    #     R = f"Control_flow:<{flow_name}>, Activity:<{self.anum}>, Domain:<{self.domain.name}>"
-    #     disable_action_r = Relation.restrict(db=mmdb, relation="Control Dependency", restriction=R,
-    #                                          svar_name=mmrv.disabled_flow)
-    #     log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.disabled_flow))
-    #     log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.flow_deps))
-    #     for t in disable_action_r.body:
-    #         Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': t['Action']}, update={'State': 'D'})
-    #         Relation.semijoin(db=mmdb, rname1=mmrv.disabled_flow, rname2=mmrv.flow_deps,
-    #                           attrs={'Action': 'From_action'}, svar_name=mmrv.downstream_actions)
-    #         Relation.project(db=mmdb, relation=mmrv.downstream_actions, attributes=("To_action",), svar_name=mmrv.downstream_actions)
-    #     self.disable_downstream_actions()
+        # Check recursion limit and return if there are no more downstream actions to disable
+        if not Relation.cardinality(db=mmdb, rname=mmrv.downstream_actions):
+            return
+
+        self.disable_downstream_actions()

@@ -17,9 +17,9 @@ class ActiveFlow(NamedTuple):
     value: Any
     flowtype: str
 
-class FlowState(Enum):
-    DISABLED = auto()
-
+# class FlowState(Enum):
+#     DISABLED = auto()
+#
 class FlowDir(Enum):
     IN = "in"
     OUT = "out"
