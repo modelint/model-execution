@@ -54,7 +54,7 @@ def str_to_bool(s: str) -> bool:
 
 class Select(ActionExecution):
 
-    def __init__(self, action_id: str, activity: "ActivityExecution"):
+    def __init__(self, action_id: str, activity_execution: "ActivityExecution"):
         """
         Perform the Select Action on a domain model.
 
@@ -62,14 +62,14 @@ class Select(ActionExecution):
         :param activity: A<n> Activity ID (for Method and State Activities)
         """
 
-        super().__init__(activity_execution=activity, action_id=action_id)
+        super().__init__(activity_execution=activity_execution, action_id=action_id)
 
         # Do not execute this Action if it is not enabled, see comment in Action class
         if self.disabled:
             return
 
         # Get a NamedTuple with a field for each relation variable name
-        self.mmrv = declare_my_module_rvs(db=mmdb, owner=self.rvp)
+        self.mmrv = declare_my_module_rvs(db=mmdb, owner=self.owner)
         mmrv = self.mmrv
 
         # Lookup the Action instance
@@ -132,14 +132,14 @@ class Select(ActionExecution):
         Relation.restrict(db=self.domdb, relation=input_iset_rv, restriction=R.strip(),
                           svar_name=selection_output_drv)
 
-        log_table(_logger, table_msg(db=mmdb, variable_name=selection_output_drv))
+        log_table(_logger, table_msg(db=self.domdb, variable_name=selection_output_drv))
 
         # Extract irefs for output
         InstanceSet.irefs(db=self.domdb, iset_rv=selection_output_drv, irefs_rv=selection_output_drv,
                           class_name=self.source_flow.flowtype,
                           domain_name=self.activity_execution.domain.name)
 
-        log_table(_logger, table_msg(db=mmdb, variable_name=selection_output_drv))
+        log_table(_logger, table_msg(db=self.domdb, variable_name=selection_output_drv))
 
         # Assign result to output flow
         # For a select action, the source and dest flow types must match
@@ -162,8 +162,7 @@ class Select(ActionExecution):
         my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Equivalence_Criterion",
                                              svar_name=mmrv.my_eq_criteria)
 
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.my_eq_criteria)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.my_eq_criteria))
 
         criteria_rphrases: list[str] = []
 
