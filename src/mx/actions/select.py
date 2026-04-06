@@ -37,21 +37,6 @@ def declare_my_module_rvs(db: str, owner: str) -> MMRVs:
                       "my_criteria", "my_eq_criteria", "my_comp_criteria")
     return MMRVs(*rvs)
 
-
-def str_to_bool(s: str) -> bool:
-    """
-    :param s: "True" or "true" or "False" or "false"
-    :return: Corresponding Python bool value
-    """
-    tf = s.strip().lower()
-    if tf == "true":
-        return True
-    elif tf == "false":
-        return False
-    else:
-        raise ValueError(f"Invalid boolean string: {s}")
-
-
 class Select(ActionExecution):
 
     def __init__(self, action_id: str, activity_execution: "ActivityExecution"):
@@ -81,11 +66,11 @@ class Select(ActionExecution):
         self.source_flow_name = select_action_t["Input_flow"]
         self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
         _logger.info(f"{self.source_flow_name}")
-        # _logger.info("Flows")
-        # log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-        #                               flow_type=self.source_flow.flowtype,
-        #                               activity=self.activity_execution, rv_name=self.source_flow.value))
-        #
+        _logger.info("Flows")
+        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                      flow_type=self.source_flow.flowtype,
+                                      activity=self.activity_execution, rv_name=self.source_flow.value))
+
         # Get the destination flow name
         subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.select_action, rname2="Single_Select")
         if not subclass_r.body:
@@ -125,6 +110,7 @@ class Select(ActionExecution):
         input_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="selection_input")
         InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=input_iset_rv,
                               class_name=self.source_flow.flowtype)
+        log_table(_logger, table_msg(db=self.domdb, variable_name=input_iset_rv))
 
         # Perform the selection
         selection_output_drv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="selection_output")
@@ -159,7 +145,7 @@ class Select(ActionExecution):
         """
         mmrv = self.mmrv
         # Look up the equivalence critiera, if any
-        my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Equivalence_Criterion",
+        my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Equivalence Criterion",
                                              svar_name=mmrv.my_eq_criteria)
 
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.my_eq_criteria))
@@ -168,9 +154,7 @@ class Select(ActionExecution):
 
         for c in my_eq_criteria_r.body:
             attr = c['Attribute'].replace(' ', '_')
-            value = bool(c['Value'])
-            # PyRAL specifies boolean values using ptyhon bool type, not strings
-            value = str_to_bool(c['Value']) if c['Scalar'] == "Boolean" else value
+            value = c['Value'].upper()  # This will be either TRUE or FALSE
 
             phrase = f"{attr}:<{value}>"
             criteria_rphrases.append(phrase)

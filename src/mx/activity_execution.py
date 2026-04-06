@@ -321,7 +321,7 @@ class ActivityExecution(ABC):
         Relation.project(db=mmdb, relation=mmrv.flow_deps, attributes=("From_action", "To_action",),
                          svar_name=mmrv.flow_deps)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.unenabled_actions))
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.flow_deps))
+        # log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.flow_deps))
 
         # This is the summarize expression which defines a sequence of relational operations
         # that will be applied per each unenabled action id
