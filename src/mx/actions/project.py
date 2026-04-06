@@ -53,8 +53,7 @@ class Project(ActionExecution):
         mmrv = declare_mm_rvs(db=mmdb, owner=self.owner)
 
         # Lookup the Action instance
-        project_action_r = Relation.semijoin(
-            db=mmdb, rname1=self.action_mmrv, rname2="Project Action", svar_name=mmrv.project_action)
+        Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="Project Action", svar_name=mmrv.project_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.project_action))
 
         # Join it with the Table Action superclass to get the input / output flows
