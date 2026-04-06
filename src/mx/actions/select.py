@@ -43,10 +43,10 @@ class Select(ActionExecution):
         """
         Perform the Select Action on a domain model.
 
-        :param action_id: ACTN<n> value identifying each Action instance
-        :param activity: A<n> Activity ID (for Method and State Activities)
+        Args:
+            action_id:  The ACTN<n> value identifying each Action instance
+            activity_execution: The A<n> Activity ID
         """
-
         super().__init__(activity_execution=activity_execution, action_id=action_id)
 
         # Do not execute this Action if it is not enabled, see comment in Action class
