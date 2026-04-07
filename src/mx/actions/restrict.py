@@ -1,107 +1,86 @@
 """ restrict.py -- executes the Restrict Action """
 
 # System
+import logging
 from typing import TYPE_CHECKING, NamedTuple
 import re
 
 if TYPE_CHECKING:
-    from mx.method_execution import MethodExecution
+    from mx.activity_execution import ActivityExecution
 
 # Model Integration
 from pyral.relation import Relation
 from pyral.database import Database  # Diagnostics
 
 # MX
+from mx.log_table_config import TABLE, log_table
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
 from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
+from mx.utility import *
 
+_logger = logging.getLogger(__name__)
 
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
-    activity_restrict_actions: str
-    this_restrict_action: str
+    restrict_action: str
     restrict_table_action: str
     restriction_condition: str
     my_criteria: str
     my_eq_criteria: str
     my_comp_criteria: str
 
-
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(db: str, owner: str) -> MMRVs:
-    rvs = declare_rvs(db, owner, "activity_restrict_actions", "this_restrict_action",
-                      "restrict_table_action",
+    rvs = declare_rvs(db, owner, "restrict_action", "restrict_table_action",
                       "restriction_condition", "my_criteria", "my_eq_criteria", "my_comp_criteria")
     return MMRVs(*rvs)
 
-
-def str_to_bool(s: str) -> bool:
-    """
-    :param s: "True" or "true" or "False" or "false"
-    :return: Corresponding Python bool value
-    """
-    tf = s.strip().lower()
-    if tf == "true":
-        return True
-    elif tf == "false":
-        return False
-    else:
-        raise ValueError(f"Invalid boolean string: {s}")
-
 class Restrict(ActionExecution):
 
-    def __init__(self, action_id: str, activity: "MethodExecution"):
+    def __init__(self, action_id: str, activity_execution: "ActivityExecution"):
         """
         Perform the Restrict Action on a domain model.
 
-        :param action_id: ACTN<n> value identifying each Action instance
-        :param activity: A<n> Activity ID (for Method and State Activities)
+        Args:
+            action_id:  The ACTN<n> value identifying each Action instance
+            activity_execution: The A<n> Activity ID
         """
-        super().__init__(activity=activity, anum=activity.anum, action_id=action_id)
+        super().__init__(activity_execution=activity_execution, action_id=action_id)
 
         # Do not execute this Action if it is not enabled, see comment in Action class
         if self.disabled:
             return
 
-        self.criteria : dict[int, str] = {}
+        self.criteria: dict[int, str] = {}
 
         # Get a NamedTuple with a field for each relation variable name
-        self.mmrv = declare_mm_rvs(db=mmdb, owner=self.rvp)
+        self.mmrv = declare_mm_rvs(db=mmdb, owner=self.owner)
         mmrv = self.mmrv  # For brevity
 
         # Lookup the Action instance
-        # Start with all Restrict actions in this Activity
-        Relation.semijoin(db=mmdb, rname1=activity.method_rvname, rname2="Restrict_Action",
-                          svar_name=mmrv.activity_restrict_actions)
-        # Narrow it down to this Restrict Action instance
-        R = f"ID:<{action_id}>"
-        restrict_action_t = Relation.restrict(db=mmdb, relation=mmrv.activity_restrict_actions, restriction=R,
-                                              svar_name=mmrv.this_restrict_action)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.this_restrict_action)
+        Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="Restrict Action", svar_name=mmrv.restrict_action)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.restrict_action))
 
         # Join it with the Table Action superclass to get the input / output flows
-        restrict_table_action_t = Relation.join(db=mmdb, rname1=mmrv.this_restrict_action, rname2="Table_Action",
+        restrict_table_action_t = Relation.join(db=mmdb, rname1=mmrv.restrict_action, rname2="Table Action",
                                                 svar_name=mmrv.restrict_table_action)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.restrict_table_action)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.restrict_table_action))
 
         self.source_flow_name = restrict_table_action_t.body[0]["Input_a_flow"]
-        self.source_flow = self.activity.flows[self.source_flow_name]  # The active content of source flow (value, type)
-        # Just the name of the destination flow since it isn't enabled until after the Traversal Action executes
+        self.source_flow = self.activity_execution.flows[self.source_flow_name]
+
         self.dest_flow_name = restrict_table_action_t.body[0]["Output_flow"]
         # And the output of the Restrict Action will be placed in the Activity flow dictionary
         # upon completion of this Action
 
         # Get the Restriction Condition
-        rcond_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_restrict_action, rname2="Restriction Condition",
+        rcond_r = Relation.semijoin(db=mmdb, rname1=mmrv.restrict_action, rname2="Restriction Condition",
                                     attrs={"ID": "Action", "Activity": "Activity", "Domain": "Domain"},
                                     svar_name=mmrv.restriction_condition)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.restriction_condition)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.restriction_condition))
 
         # The supplied expression helps us define any complex boolean logic
         # in the restriction phrase to be created.
@@ -109,10 +88,10 @@ class Restrict(ActionExecution):
 
         # Get all Criteria
         Relation.semijoin(db=mmdb, rname1=mmrv.restriction_condition, rname2="Criterion", svar_name=mmrv.my_criteria)
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.my_criteria)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.my_criteria))
 
-        self.activity.xe.mxlog.log(message=f"- Card: {rcond_r.body[0]["Selection_cardinality"]}")
+        _logger.info(f"- Card: {rcond_r.body[0]["Selection_cardinality"]}")
+
         # Make a phrase for each criterion
         # TODO: incorporate and/or/not logic
 
@@ -121,33 +100,29 @@ class Restrict(ActionExecution):
         self.make_comparison_phrases()
 
         # Perform the selection
-        selection_output_rv = Relation.declare_rv(db=self.domdb, owner=self.rvp, name="selection_output")
+        selection_output_drv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="selection_output")
         R = self.make_rphrase()
 
         Relation.restrict(db=self.domdb, relation=self.source_flow.value, restriction=R.strip(),
-                          svar_name=selection_output_rv)
+                          svar_name=selection_output_drv)
 
-        self.activity.xe.mxlog.log(message=f"- Criteria: {R}")
-        self.activity.xe.mxlog.log(message="Flows")
-        if self.activity.xe.debug:
-            Relation.print(db=self.domdb, variable_name=selection_output_rv)
+        _logger.info(f"- Criteria: {R}")
+        _logger.info("Flows")
 
-        self.activity.xe.mxlog.log_nsflow(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-                                          flow_type=self.source_flow.flowtype, activity=self.activity,
-                                          db=self.domdb, rv_name=self.source_flow.value)
+        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                      flow_type=self.source_flow.flowtype,
+                                      activity=self.activity_execution, rv_name=self.source_flow.value))
+
         # Assign result to output flow
         # For a select action, the source and dest flow types must match
-        self.activity.flows[self.dest_flow_name] = ActiveFlow(value=selection_output_rv,
-                                                              flowtype=self.source_flow.flowtype)
+        self.activity_execution.flows[self.dest_flow_name] = ActiveFlow(value=selection_output_drv,
+                                                                        flowtype=self.source_flow.flowtype)
 
-        self.activity.xe.mxlog.log_nsflow(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
-                                          flow_type=self.source_flow.flowtype, activity=self.activity,
-                                          db=self.domdb, rv_name=selection_output_rv)
-        # This action's mmdb rvs are no longer needed)
-        Relation.free_rvs(db=mmdb, owner=self.rvp)
-        _rv_after_mmdb_free = Database.get_rv_names(db=mmdb)
-        _rv_after_dom_free = Database.get_rv_names(db=self.domdb)
-        pass
+        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
+                                      flow_type=self.source_flow.flowtype,
+                                      activity=self.activity_execution, rv_name=selection_output_drv))
+
+        self.complete()
 
     def make_eq_phrases(self):
         """
@@ -157,15 +132,13 @@ class Restrict(ActionExecution):
         my_eq_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Equivalence_Criterion",
                                              svar_name=mmrv.my_eq_criteria)
 
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.my_eq_criteria)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.my_eq_criteria))
 
         for c in my_eq_criteria_r.body:
             cid = int(c["ID"])
             attr = c['Attribute'].replace(' ', '_')
             value = bool(c['Value'])
-            # PyRAL specifies boolean values using ptyhon bool type, not strings
-            value = str_to_bool(c['Value']) if c['Scalar'] == "Boolean" else value
+            value = c['Value'].upper() if c['Scalar'] == "Boolean" else value  # TRUE or FALSE if boolean
             value = f"<{value}>" if ' ' in value else value
 
             phrase = f"{attr}:{value}"
@@ -176,17 +149,16 @@ class Restrict(ActionExecution):
         """
         mmrv = self.mmrv
         # Look up the comparison critiera, if any
-        my_comp_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Comparison_Criterion",
+        my_comp_criteria_r = Relation.semijoin(db=mmdb, rname1=mmrv.my_criteria, rname2="Comparison Criterion",
                                                svar_name=mmrv.my_comp_criteria)
 
-        if self.activity.xe.debug:
-            Relation.print(db=mmdb, variable_name=mmrv.my_comp_criteria)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.my_comp_criteria))
 
         for c in my_comp_criteria_r.body:
             cid = int(c["ID"])
             attr = c['Attribute'].replace(' ', '_')
             scalar_flow_name = c['Value']
-            value = self.activity.flows[scalar_flow_name].value
+            value = self.activity_execution.flows[scalar_flow_name].value
             relop = c['Comparison']
             pyral_op = ':' if relop == '==' and isinstance(value, str) else relop
             # PyRAL specifies boolean values using ptyhon bool type, not strings
