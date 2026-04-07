@@ -111,11 +111,10 @@ class MethodCall(ActionExecution):
 
         # Call the method
         from mx.method_execution import MethodExecution
-        method_activity = MethodExecution(domain=self.activity_execution.domain, method_rv=mmrv.method_info,
-                                          anum=called_method_anum,
-                                          instance_id=target_instance_id,
-                                          parameters=mcall_param_flows)
-        m = method_activity.execute()
+        MethodExecution(domain=self.activity_execution.domain, method_rv=mmrv.method_info,
+                        anum=called_method_anum, instance_id=target_instance_id, parameters=mcall_param_flows)
+
+        # TODO: Need to set the output flow value
 
         self.complete()
 

@@ -394,16 +394,6 @@ class ActivityExecution(ABC):
             pass
         pass
 
-    def add_downstream_action(self, action_id: str):
-        """
-        Find all downstream actions and add to existing rv
-
-        Args:
-            action_id: The upstream action id
-        """
-        mmrv = self.mmrv
-        # Relation.restrict(db=mmdb, relation=mmrv.flow_deps, R=f"From_action:<{action_id}>", svar_name=)
-
     def all_upstream_disabled(self, action_id: str) -> bool:
         """
         Return true if all upstream actions have been disabled.
