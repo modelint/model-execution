@@ -56,13 +56,17 @@ class MMRVs(NamedTuple):
     downstream_actions: str
     gate_check: str
     newly_disabled: str
+    gate_actions: str
+    gate_upstream: str
+    enabled_gate: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner,
                       "unexecuted_actions", "unenabled_actions", "flow_deps", "params", "activity_inputs",
-                      "disabled_flow", "downstream_actions", "gatecheck", "newly_disabled"
+                      "disabled_flow", "downstream_actions", "gatecheck", "newly_disabled", "gate_actions",
+                      "gate_upstream", "enabled_gate"
                       )
     return MMRVs(*rvs)
 
@@ -353,6 +357,22 @@ class ActivityExecution(ABC):
         # Get all unenabled gate actions
         # For each check to see if any upstream From action has completed
         # If so, enable the Gate Action
+        Relation.extend(db=mmdb, relation=mmrv.unenabled_actions,
+                        attrs={'Activity': self.anum, 'Domain':self.domain.name}, svar_name=mmrv.unenabled_actions)
+        gate_actions_r = Relation.semijoin(db=mmdb, rname1=mmrv.unenabled_actions, rname2='Gate Action', svar_name=mmrv.gate_actions)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.gate_actions))
+
+        for t in gate_actions_r.body:
+            R = f"To_action:<{t['ID']}>"
+            Relation.restrict(db=mmdb, relation=mmrv.flow_deps, restriction=R, svar_name=mmrv.gate_upstream)
+            Relation.semijoin(db=mmdb, rname1=mmrv.gate_upstream, rname2=self.action_states,
+                              attrs={'From_action': 'ID'}, svar_name=mmrv.gate_upstream)
+            Relation.restrict(db=mmdb, relation=mmrv.gate_upstream, restriction=f"State:<C>",
+                              svar_name=mmrv.enabled_gate)
+            if Relation.cardinality(db=mmdb, rname=mmrv.enabled_gate):
+                # Mark it as enabled
+                Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': t['ID']},
+                                 update={'State': 'E'})
 
         # And now the our action_states relvar has been updated with the latest newly enabled actions
         log_table(_logger, table_msg(db=mmdb, variable_name=self.action_states))
