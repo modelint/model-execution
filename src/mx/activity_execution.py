@@ -349,6 +349,11 @@ class ActivityExecution(ABC):
             Relvar.updateone(db=mmdb, relvar_name=self.action_states, id={'ID': unenabled_action["ID"]},
                              update={'State': 'E'})
 
+        # The above process won't always enable a Gate Action
+        # Get all unenabled gate actions
+        # For each check to see if any upstream From action has completed
+        # If so, enable the Gate Action
+
         # And now the our action_states relvar has been updated with the latest newly enabled actions
         log_table(_logger, table_msg(db=mmdb, variable_name=self.action_states))
 
