@@ -55,8 +55,9 @@ class RankRestrict(ActionExecution):
         mmrv = self.mmrv  # For brevity
 
         # Lookup the Action instance
-        rank_restrict_action_r = Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="Rank Restrict Action",
-                          svar_name=mmrv.rank_restrict_action)
+        rank_restrict_action_r = Relation.semijoin(db=mmdb,
+                                                   rname1=self.action_mmrv, rname2="Rank Restrict Action",
+                                                   svar_name=mmrv.rank_restrict_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.rank_restrict_action))
 
         # Join it with the Table Action superclass to get the input / output flows

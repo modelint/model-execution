@@ -6,6 +6,10 @@ class MXException(Exception):
     """ Model Execution exception """
     pass
 
+class MXActionException(MXException):
+    """ Error encountered during Action execution """
+    pass
+
 class MXMonitor(MXException):
     """ Debugging monitor triggered """
     pass
