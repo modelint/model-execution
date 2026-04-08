@@ -131,9 +131,9 @@ class Signal(ActionExecution):
             db=mmdb, rname1=mmrv.send_signal_action, rname2="Initial Signal Action",
             svar_name=mmrv.initial_signal_action
         )
-        if signal_instance_action_r.body:
+        if initial_signal_action_r.body:
             log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.initial_signal_action))
-            self.signal_assigner()
+            self.initial_signal()
             return
 
     def signal_instance(self):

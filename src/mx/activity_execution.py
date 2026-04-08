@@ -25,6 +25,7 @@ from mx.deprecated.bridge import NamedValues
 from mx.actions.traverse import Traverse
 from mx.actions.rename import Rename
 from mx.actions.scalar_switch import ScalarSwitch
+from mx.actions.decision import Decision
 from mx.actions.read import Read
 from mx.actions.write import Write
 from mx.actions.extract import Extract
@@ -33,6 +34,7 @@ from mx.actions.project import Project
 from mx.actions.set_action import SetAction
 from mx.actions.restrict import Restrict
 from mx.actions.gate import Gate
+from mx.actions.pass_action import PassAction  # Can't be 'Pass' since pass is a python keyword
 from mx.actions.rank_restrict import RankRestrict
 from mx.actions.signal import Signal
 from mx.actions.method_call import MethodCall
@@ -85,9 +87,11 @@ class ActivityExecution(ABC):
         "rank restrict": RankRestrict,
         "extract": Extract,
         "gate": Gate,
+        "pass": PassAction,
         "signal": Signal,
         "write": Write,
         "method call": MethodCall,
+        "decision": Decision,
     }
 
     def __init__(self, domain: 'Domain', label: str, anum: str, owner_name: str, activity_rvn: str,

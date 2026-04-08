@@ -124,9 +124,6 @@ class MethodCall(ActionExecution):
             else:
                 self.activity_execution.flows[called_method_output_fname] = ActiveFlow(
                     value=synch_output_drv, flowtype=m.synch_ns_output_type)
-        pass
-
-        # TODO: Need to set the output flow value
 
         self.complete()
 
