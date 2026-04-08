@@ -29,7 +29,8 @@ _logger = logging.getLogger(__name__)
 
 class MethodExecution(ActivityExecution):
 
-    def __init__(self, anum: str, domain: "Domain", method_rv: str, instance_id: NamedValues, parameters: NamedValues):
+    def __init__(self, anum: str, domain: "Domain", method_rv: str, instance_id: NamedValues,
+                 parameters: NamedValues, synch_output_drv: str):
         """
         A Method is invoked by a Method Call action
 
@@ -39,9 +40,13 @@ class MethodExecution(ActivityExecution):
             domain: In this domain (object)
             instance_id: Method is invoked on this instance, specified by identifier attribute value pairs
             parameters: Parameters and values for this Method's Signature
+            synch_output_drv: Any non-scalar synchronous output is applied to this relational variable
         """
         self.instance_id = instance_id
         self.actions = None  # Here we will maintain the execution state of each action in this Method
+        # If this method outputs a scalar value, we will set this attribute to the result
+        # so that it can be accessed by the invoking method_call action
+        self.synch_scalar_output = None  # Set during
 
         method_r = Relation.restrict(db=mmdb, relation=method_rv)
         method_t = method_r.body[0]
@@ -64,6 +69,21 @@ class MethodExecution(ActivityExecution):
 
         super().__init__(domain=domain, label=label, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
                          signum=signum, parameters=parameters)
+
+        # TODO
+        # Are we returning a synch output?
+        # If so set either the rv or self.synch_scalar_output
+        my_synch_output_mmrv = Relation.declare_rv(db=mmdb, owner=owner_name, name="synch_output")
+        sflow_r = Relation.semijoin(db=mmdb, rname1=self.activity_rvn, rname2='Synchronous Output',
+                                    attrs={'Activity': 'Anum', 'Domain': 'Domain'}, svar_name=my_synch_output_mmrv)
+        sflow_t = sflow_r.body[0]
+        sflow_value = self.flows[sflow_t['Output_flow']]
+        if sflow_value.flowtype == 'scalar':
+            self.synch_scalar_output = sflow_value.value
+        else:
+            Relation.restrict(db=domain.alias, relation=sflow_value.value, svar_name=synch_output_drv)
+            self.synch_ns_output_type = sflow_t['Type']
+        pass
 
     def enable_xi_flow(self):
         """

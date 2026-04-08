@@ -33,12 +33,13 @@ class MMRVs(NamedTuple):
     method_call_action: str
     method_info: str
     method_call_parameters: str
-    method_call_output: str
+    method_call_output: str  # Output of the method call itself
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
-    rvs = declare_rvs(mmdb, owner, "method_call_action", "method_info", "method_call_parameters", "method_call_output")
+    rvs = declare_rvs(mmdb, owner, "method_call_action", "method_info", "method_call_parameters",
+                      "method_call_output")
     return MMRVs(*rvs)
 
 class MethodCall(ActionExecution):
@@ -107,12 +108,23 @@ class MethodCall(ActionExecution):
                                      variable_name=self.activity_execution.flows[called_method_input_fname].value))
         target_instance_id = target_instance_t.body[0]
 
-        # TODO : Create owner name
-
         # Call the method
+        synch_output_drv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="synch_output")
         from mx.method_execution import MethodExecution
-        MethodExecution(domain=self.activity_execution.domain, method_rv=mmrv.method_info,
-                        anum=called_method_anum, instance_id=target_instance_id, parameters=mcall_param_flows)
+        m = MethodExecution(domain=self.activity_execution.domain, method_rv=mmrv.method_info,
+                            anum=called_method_anum, instance_id=target_instance_id, parameters=mcall_param_flows,
+                            synch_output_drv=synch_output_drv)
+        scalar_synch_out = m.synch_scalar_output
+        # If there was a method output we need to set an output flow to the scalar or non scalar value
+        if called_method_output_fname:
+            # We output a value
+            if m.synch_scalar_output:
+                self.activity_execution.flows[called_method_output_fname] = ActiveFlow(
+                    value=m.synch_scalar_output, flowtype='scalar')
+            else:
+                self.activity_execution.flows[called_method_output_fname] = ActiveFlow(
+                    value=synch_output_drv, flowtype=m.synch_ns_output_type)
+        pass
 
         # TODO: Need to set the output flow value
 

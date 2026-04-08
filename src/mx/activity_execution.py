@@ -139,8 +139,14 @@ class ActivityExecution(ABC):
             self.enable_initial_actions()
             self.enable_initial_flows()
             self.execute()
-        Relation.free_rvs(db=mmdb, owner=self.owner_name)
-        Relation.free_rvs(db=self.domain.alias, owner=self.owner_name)
+        # Relation.free_rvs(db=mmdb, owner=self.owner_name)
+        Relation.free_rvs(db=self.domain.alias, owner=snake(self.owner_name))
+        r = Database.get_all_rv_names()
+        # for k in r[self.domain.alias].keys():
+        #     if k.startswith(snake(self.owner_name)):
+        #         Relation.free_rvs(db=self.domain.alias, owner=k)
+        #     pass
+        q = Database.get_all_rv_names()
         _logger.info(f"\n\n    ^^^ ({self.anum}) {self.label} Complete ^^^ \n")
         pass
 
