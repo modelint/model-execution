@@ -15,6 +15,7 @@ from mx.log_table_config import TABLE
 from mx.message import *
 from mx.actions.flow import ActiveFlow
 from mx.activity_execution import ActivityExecution
+from mx.lifecycle_state_machine import LifecycleStateMachine
 from mx.mxtypes import StateMachineType
 from mx.utility import *
 from mx.db_names import mmdb
@@ -36,6 +37,29 @@ class DelegatedCreationActivity(ActivityExecution):
             domain: Domain object
         """
         dca_label = f"{class_name}[{ip_state_name}]"  # For display in log messages
+
+        # Execute the creation activity to create the class instance
+        # Later we can obtain the identifier value of that new instance to create a lifecycle state machine
+
+        # We assume there are no lifecycles at the moment so we can just make the id 0
+        instance_id = 0  # Default assumption is that there are no lifey
+        if domain.lifecycles.get(class_name):
+            # Add one to the maximum key value to generate an unused instance id
+            instance_id = max(domain.lifecycles[class_name]) + 1
+
+        pass
+
+
+        # We need to generate an instance_id and create a lifecycle state machine for this new instance
+        # Then we need to execute the activity to populate the instance
+
+        self.lifecycles.setdefault(class_name, {})[i["_instance"]] = LifecycleStateMachine(
+            lifecycle_sm_id=instance_id,
+            current_state=ip_state_name,
+            instance_id=inst_id,
+            class_name=class_name,
+            domain=domain
+        )
 
         self.instance_id_value = None
         self.xi_flow_name = None

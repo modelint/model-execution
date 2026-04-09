@@ -47,8 +47,8 @@ class CompletionEvent(DispatchedEvent):
                 # Since this is a completion event, we can just use the source instance id
                 # So we restrict based on the identifier attr/value pairs
                 R = ", ".join([f"{a}:<{v}>" for a, v in self.source.instance_id.items()])
-                inst_id_r = Relation.restrict(db=self.domain.alias, relation=f"{self.state_model}_i", restriction=R)
-                target_inst_id = inst_id_r.body[0]["_instance"]
+                inst_id_r = Relation.restrict(db=self.domain.alias, relation=f"{self.domain.owner}__{self.state_model}_i", restriction=R)
+                target_inst_id = int(inst_id_r.body[0]["_instance"])
                 # Now we grab the lifecycle state machine instance
                 sm = self.domain.lifecycles[self.state_model][target_inst_id]
                 # And tell it to set this completion event

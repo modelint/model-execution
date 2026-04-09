@@ -2,7 +2,7 @@
 
 # System
 import logging
-from typing import TYPE_CHECKING, NamedTuple, Optional
+from typing import TYPE_CHECKING, NamedTuple
 from collections import defaultdict
 from contextlib import redirect_stdout
 
@@ -55,11 +55,13 @@ class Domain:
 
         self.name = name
         self.alias = alias  # Now we have access to both the mmdb and this domain's schema
+        self.owner = f"{alias}_init"  # We used this to organize any rv's, such as the instance_ids
         self.system = system
         self.single_assigners = None
-        self.lifecycles: dict[str, dict[ str, LifecycleStateMachine]] = {}
-        self.mult_assigners: dict[str, dict[ str, MultipleAssignerStateMachine]] = {}
+        self.lifecycles: dict[str, dict[ int, LifecycleStateMachine]] = {}
+        self.mult_assigners: dict[str, dict[ int, MultipleAssignerStateMachine]] = {}
         self.lifecycle_ids: dict[str, list[str]] = {}
+        self.sm_instance_rvs: dict[str, str] = {}
         self.ma_partitions: dict[str, MAPartitionClassID] = {}
         self.methods = None
         self.rv_owner = f"_{alias}_domain"
@@ -204,13 +206,18 @@ class Domain:
 
             _logger.info(f"    Lifecycles for: {class_name}")
 
-            # Tag the class relvar so that each instance has an arbitrary integer id 0..n
-            class_i_rv = f"{snake(class_name)}_i"
+            # We index all lifecycles with an integer instance id
+            # To do this we tag the class relvar so that each instance has an arbitrary integer id 0..n
+            # Then we can use the class specific identifier to lookup an instance id using the class name
+            # with a _i suffix, e.g. Door_i to get all Door instance ids.
+            class_i_drv = Relation.declare_rv(db=self.alias, owner=self.owner, name=f"{snake(class_name)}_i")
+            self.sm_instance_rvs[class_name] = class_i_drv
             # We can use the above formula to obtain this relation variable later for any given class name
             Relation.tag(db=self.alias, tag_attr_name="_instance", relation=class_name)
             # Project on id attrs + the tagged _instance attr to yield the class_i_rv value
             P = tuple(id_attrs + ['_instance'])
-            instance_r = Relation.project(db=self.alias, attributes=P, svar_name=class_i_rv)
+            instance_r = Relation.project(db=self.alias, attributes=P, svar_name=class_i_drv)
+            log_table(_logger, table_msg(db=self.alias, variable_name=class_i_drv))
 
             # Create a lifecycle statemachine for each instance and index it to its instance id
             for i in instance_r.body:
@@ -221,8 +228,8 @@ class Domain:
                 istate = istates[class_name]
                 # Now use the instance id in the inner dictionary (local to class_name)
                 # Ensure the inner dictionary exists for the class_name
-                self.lifecycles.setdefault(class_name, {})[i["_instance"]] = LifecycleStateMachine(
-                    lifecycle_sm_id=i["_instance"],
+                self.lifecycles.setdefault(class_name, {})[int(i["_instance"])] = LifecycleStateMachine(
+                    lifecycle_sm_id=int(i["_instance"]),
                     current_state=istate,
                     instance_id=inst_id,
                     class_name=class_name,
@@ -246,7 +253,8 @@ class Domain:
             pclass_name = partition.pclass
 
             # Tag the class relvar so that each instance has an arbitrary integer id 0..n
-            rnum_i_rv = f"{rnum}_i"
+            rnum_i_rv = Relation.declare_rv(db=self.alias, owner=self.owner, name=f"{rnum}_i")
+            self.sm_instance_rvs[rnum] = rnum_i_rv
             # We can use the above formula to obtain this relation variable later for any given class name
             Relation.tag(db=self.alias, tag_attr_name="_instance", relation=pclass_name)
             # Project on id attrs + the tagged _instance attr to yield the class_i_rv value
@@ -263,8 +271,8 @@ class Domain:
                 # Now use the instance id in the inner dictionary (local to class_name)
                 # Ensure the inner dictionary exists for the class_name
                 pass
-                self.mult_assigners.setdefault(pclass_name, {})[i["_instance"]] = MultipleAssignerStateMachine(
-                    ma_sm_id=i["_instance"],
+                self.mult_assigners.setdefault(pclass_name, {})[int(i["_instance"])] = MultipleAssignerStateMachine(
+                    ma_sm_id=int(i["_instance"]),
                     current_state=istate,
                     rnum=rnum,
                     domain=self,

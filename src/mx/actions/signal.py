@@ -19,7 +19,6 @@ from mx.log_table_config import TABLE, log_table
 from mx.message import *
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
-from mx.dc_activity_execution import DelegatedCreationActivity
 from mx.actions.flow import ActiveFlow
 from mx.completion_event import CompletionEvent
 from mx.interaction_event import InteractionEvent
@@ -29,10 +28,12 @@ from mx.mxtypes import *
 _logger = logging.getLogger(__name__)
 
 class MMRVs(NamedTuple):
-    send_signal_action : str
-    signal_assigner_action : str
-    signal_instance_action : str
-    initial_signal_action : str
+    send_signal_action: str
+    signal_assigner_action: str
+    signal_instance_action: str
+    initial_signal_action: str
+    initial_pseudo_state: str  # Delegated Creation Activity
+    initial_transition: str
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
@@ -42,6 +43,8 @@ def declare_mm_rvs(owner: str) -> MMRVs:
                       "signal_assigner_action",
                       "signal_instance_action",
                       "initial_signal_action",
+                      "initial_pseudo_state",
+                      "initial_transition",
                       )
     return MMRVs(*rvs)
 
@@ -64,7 +67,7 @@ class Signal(ActionExecution):
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(owner=self.owner)
 
-        self.supplied_params: NamedValues = {}
+        self.supplied_params = self.set_supplied_params()
 
         self.process_signal()
 
@@ -147,19 +150,19 @@ class Signal(ActionExecution):
         """
         mmrv = self.mmrv
         # Locate the Delegated Creaction Activity and execute it
-        Relation.join(db=mmdb, rname1=self.action_mmrv, rname2='Initial Pseudo State',
-                      svar_name=mmrv.initial_signal_action)
-        initial_signal_action_r = Relation.rename(db=mmdb, relation=mmrv.initial_signal_action,
-                                                  names={'Anum': 'Creation_activity'},
-                                                  svar_name=mmrv.initial_signal_action)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.initial_signal_action))
-        initial_signal_action_t = initial_signal_action_r.body[0]
-        dc_anum = initial_signal_action_t['Creation_activity']
-        dc_class = initial_signal_action_t['Class']
-        ip_state_name = initial_signal_action_t['Name']
+        # Most of what we need is in the Initial Pseudo State class
+        ips_r = Relation.semijoin(db=mmdb, rname1=mmrv.initial_signal_action, rname2='Initial Pseudo State',
+                                  attrs={'Pseudo_state': 'Name', 'Class': 'Class', 'Domain': 'Domain'},
+                                  svar_name=mmrv.initial_pseudo_state)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.initial_pseudo_state))
+        ips_t = ips_r.body[0]
+        dc_anum = ips_t['Creation_activity']
+        dc_class = ips_t['Class']
+        ip_state_name = ips_t['Name']
 
+        from mx.dc_activity_execution import DelegatedCreationActivity
         DelegatedCreationActivity(anum=dc_anum, ip_state_name=ip_state_name, class_name=dc_class,
-                                  domain=self.activity_execution.domain, parameters=self.set_supplied_params())
+                                  domain=self.activity_execution.domain, parameters=self.supplied_params)
         pass
 
 

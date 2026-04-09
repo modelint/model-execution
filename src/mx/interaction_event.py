@@ -60,8 +60,10 @@ class InteractionEvent(DispatchedEvent):
             case StateMachineType.LIFECYCLE:
                 # Find the target instance id
                 R = ", ".join([f"{a}:<{v}>" for a, v in self.to_instance.items()])
-                inst_id_r = Relation.restrict(db=self.domain.alias, relation=f"{self.state_model}_i", restriction=R)
-                target_inst_id = inst_id_r.body[0]["_instance"]
+                # TODO: relation lookup below should just be the rv name we declared
+                inst_id_r = Relation.restrict(
+                    db=self.domain.alias, relation=f"{self.domain.sm_instance_rvs[self.state_model]}", restriction=R)
+                target_inst_id = int(inst_id_r.body[0]["_instance"])
                 # Look up the lifecycle state machine object for that instance
                 sm = self.domain.lifecycles[self.state_model][target_inst_id]
                 sm.accept_interaction_event(event=self)
@@ -69,8 +71,9 @@ class InteractionEvent(DispatchedEvent):
             case StateMachineType.MA:
                 # Find the target instance id for the partitioning instance
                 R = ", ".join([f"{a}:<{v}>" for a, v in self.partitioning_instance.items()])
-                inst_id_r = Relation.restrict(db=self.domain.alias, relation=f"{self.state_model}_i", restriction=R)
-                target_inst_id = inst_id_r.body[0]["_instance"]
+                inst_id_r = Relation.restrict(
+                    db=self.domain.alias, relation=f"{self.domain.sm_instance_rvs[self.state_model]}", restriction=R)
+                target_inst_id = int(inst_id_r.body[0]["_instance"])
                 # Look up the multiple assigner state machine object for that partitioning instance
                 sm = self.domain.mult_assigners[self.partitioning_class][target_inst_id]
                 sm.accept_interaction_event(event=self)
