@@ -41,6 +41,16 @@ class DelegatedCreationActivity(ActivityExecution):
         # Execute the creation activity to create the class instance
         # Later we can obtain the identifier value of that new instance to create a lifecycle state machine
 
+        # Set signum
+        # TODO: We need the state signature for the target state
+        R = f"State_model:<{class_name}>, Domain:<{domain.name}>"
+        state_sig_r = Relation.restrict(db=mmdb, relation="State Signature", restriction=R)
+        signum = state_sig_r.body[0]['SIGnum']
+
+        # The owner_name is passed along to the superclass for initialization as a self variable
+        owner_name = f"LSM_{class_name}__{'creation'}_{anum}"
+        activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="lifecycle_name")
+
         # We assume there are no lifecycles at the moment so we can just make the id 0
         instance_id = 0  # Default assumption is that there are no lifey
         if domain.lifecycles.get(class_name):
@@ -49,25 +59,24 @@ class DelegatedCreationActivity(ActivityExecution):
 
         pass
 
+        super().__init__(domain=domain, activity_label=dca_label, anum=anum, owner_name=owner_name,
+                         activity_rvn=activity_rvn,
+                         signum=signum, parameters=parameters)
+
 
         # We need to generate an instance_id and create a lifecycle state machine for this new instance
         # Then we need to execute the activity to populate the instance
 
-        self.lifecycles.setdefault(class_name, {})[i["_instance"]] = LifecycleStateMachine(
-            lifecycle_sm_id=instance_id,
-            current_state=ip_state_name,
-            instance_id=inst_id,
-            class_name=class_name,
-            domain=domain
-        )
+        # self.lifecycles.setdefault(class_name, {})[i["_instance"]] = LifecycleStateMachine(
+        #     lifecycle_sm_id=instance_id,
+        #     current_state=ip_state_name,
+        #     instance_id=inst_id,
+        #     class_name=class_name,
+        #     domain=domain
+        # )
 
         self.instance_id_value = None
         self.xi_flow_name = None
-
-        # Set signum
-        # R = f"State_model:<{class_name}>, Domain:<{domain.name}>"
-        state_sig_r = Relation.restrict(db=mmdb, relation="State Signature", restriction=R)
-        signum = state_sig_r.body[0]['SIGnum']
 
         # We need to create a new lifecycle instance
 
@@ -76,12 +85,9 @@ class DelegatedCreationActivity(ActivityExecution):
         # owner_name. We'll use that to name any local relational variables that are declared, used, and
         # freed up during execution of this State Activity.
         self.instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
-        # The owner_name is passed along to the superclass for initialization as a self variable
-        owner_name = f"LSM_{class_name}__{'initial_pseudo_state'}_{anum}_inst_{self.instance_id_value}"
 
         # Now we save our Lifecycle Activity instance for use by any executing Action
         # The activity rv_name is passed along to the superclass
-        activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="lifecycle_name")
         R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
         Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
         lifecycle_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=activity_rvn)
@@ -90,10 +96,6 @@ class DelegatedCreationActivity(ActivityExecution):
         # just in case our Flow naming scheme changes, we check to be sure
         self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
 
-
-        super().__init__(domain=domain, activity_label=dca_label, anum=anum, owner_name=owner_name,
-                         activity_rvn=activity_rvn,
-                         signum=signum, parameters=parameters)
 
     def initialize_action_states(self) -> bool:
         """
