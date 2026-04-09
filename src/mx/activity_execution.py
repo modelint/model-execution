@@ -21,7 +21,6 @@ from mx.log_table_config import TABLE
 from mx.message import *
 from mx.actions.flow import ActiveFlow
 from mx.actions.action_execution import ActionExecution
-from mx.deprecated.bridge import NamedValues
 from mx.actions.traverse import Traverse
 from mx.actions.rename import Rename
 from mx.actions.scalar_switch import ScalarSwitch
@@ -40,7 +39,7 @@ from mx.actions.signal import Signal
 from mx.actions.method_call import MethodCall
 from mx.db_names import mmdb
 from mx.rvname import declare_rvs
-from mx.mxtypes import ActionState
+from mx.mxtypes import ActionState, NamedValues
 from mx.utility import *
 
 _logger = logging.getLogger(__name__)
@@ -94,7 +93,7 @@ class ActivityExecution(ABC):
         "decision": Decision,
     }
 
-    def __init__(self, domain: 'Domain', label: str, anum: str, owner_name: str, activity_rvn: str,
+    def __init__(self, domain: 'Domain', activity_label: str, anum: str, owner_name: str, activity_rvn: str,
                  signum: str, parameters: NamedValues):
         """
 
@@ -108,7 +107,7 @@ class ActivityExecution(ABC):
         """
         self.domain = domain
         self.system = domain.system
-        self.label = label
+        self.label = activity_label
         self.anum = anum
         self.signum = signum
         self.parameters = parameters

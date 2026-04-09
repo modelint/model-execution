@@ -1,10 +1,9 @@
-""" state_activity_execution.py -- A metamodel StateActivity """
-
+""" dc_creation_activity.py -- A metamodel Delegated Creation Activity """
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from mx.state_machine import StateMachine
+    from mx.domain import Domain
 
 # Model Integration
 from pyral.relvar import Relvar
@@ -19,90 +18,58 @@ from mx.activity_execution import ActivityExecution
 from mx.mxtypes import StateMachineType
 from mx.utility import *
 from mx.db_names import mmdb
-from mx.mxtypes import ActionState
+from mx.mxtypes import NamedValues
 
 _logger = logging.getLogger(__name__)
 
-class StateActivityExecution(ActivityExecution):
+class DelegatedCreationActivity(ActivityExecution):
 
-    def __init__(self, state_name: str, anum: str, state_machine: "StateMachine"):
+    def __init__(self, anum: str,  ip_state_name: str, class_name: str, domain: 'Domain',
+                 parameters: NamedValues):
         """
-        We are here to execute all of the Actions in a State Activity
+        Here we execute a Delegated Creation Activity to create a new instance with a Lifecycle State Machine
 
         Args:
-            state_name: Name of the executing state
-            anum:  Activity number identifying the State Activity
-            state_machine:  State Machine object (instance specific) executing this State Activity
+            anum: Activity number identifying the Delegated Creation Activity
+            ip_state_name: All initial pseudo states have the same name, but we pass it in here from the mmdb
+            class_name:  Name of the Class with a Lifecycle, effectively our state model name
+            domain: Domain object
         """
-        sa_label = f"{state_machine.state_model}->[{state_name}]"  # For display in log messages
-        self.state = state_name
-        self.state_machine = state_machine  # The Lifecycle or Assigner State Machine
+        dca_label = f"{class_name}[{ip_state_name}]"  # For display in log messages
 
-        # Holds a value only if this is a Lifecycle State Machine
         self.instance_id_value = None
         self.xi_flow_name = None
 
-        # Holds a value only if this is a Multiple Assigner State Machine
-        self.pi_flow_name = None
-        self.pi_flow_name = None
-
         # Set signum
-        R = f"State_model:<{self.state_machine.state_model}>, Domain:<{self.state_machine.domain.name}>"
+        # R = f"State_model:<{class_name}>, Domain:<{domain.name}>"
         state_sig_r = Relation.restrict(db=mmdb, relation="State Signature", restriction=R)
         signum = state_sig_r.body[0]['SIGnum']
 
-        # Initialization specific to each type of State Machine
-        match self.state_machine.sm_type:
-            case StateMachineType.LIFECYCLE:
-                # There is an executing instance of the State Model's Class running this State Activity
-                # We flatten the instance id into a string and then use it to define this's ActivityExecution's
-                # owner_name. We'll use that to name any local relational variables that are declared, used, and
-                # freed up during execution of this State Activity.
-                self.instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
-                # The owner_name is passed along to the superclass for initialization as a self variable
-                owner_name = f"LSM_{self.state_machine.state_model}__{self.state}_{anum}_inst_{self.instance_id_value}"
+        # We need to create a new lifecycle instance
 
-                # Now we save our Lifecycle Activity instance for use by any executing Action
-                # The activity rv_name is passed along to the superclass
-                activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="lifecycle_name")
-                R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
-                Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
-                lifecycle_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=activity_rvn)
+        # There is an executing instance of the State Model's Class running this State Activity
+        # We flatten the instance id into a string and then use it to define this's ActivityExecution's
+        # owner_name. We'll use that to name any local relational variables that are declared, used, and
+        # freed up during execution of this State Activity.
+        self.instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
+        # The owner_name is passed along to the superclass for initialization as a self variable
+        owner_name = f"LSM_{class_name}__{'initial_pseudo_state'}_{anum}_inst_{self.instance_id_value}"
 
-                # The name of our executing instance flow. This always ends up as "F1", but
-                # just in case our Flow naming scheme changes, we check to be sure
-                self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
+        # Now we save our Lifecycle Activity instance for use by any executing Action
+        # The activity rv_name is passed along to the superclass
+        activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="lifecycle_name")
+        R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
+        Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
+        lifecycle_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=activity_rvn)
 
-            case StateMachineType.MA:
-                # It must be a multiple assigner state machine
-                # we need the rnum plus the partitioning instance
+        # The name of our executing instance flow. This always ends up as "F1", but
+        # just in case our Flow naming scheme changes, we check to be sure
+        self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
 
-                # There is an instance of the partitioning class input to this State Activity
-                # We flatten the instance id into a string and then use it to define this's ActivityExecution's
-                # owner_name. We'll use that to name any local relational variables that are declared, used, and
-                # freed up during execution of this State Activity.
-                self.pinstance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
-                # The owner_name is passed along to the superclass for initialization as a self variable
-                owner_name = f"MASM_{self.state_machine.state_model}__{self.state}_{anum}_inst_"  # TODO: add partitioning inst id
-                activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="multiple_assigner_name")
 
-                # Now we save our Multiple Assigner Activity instance for use by any executing Action
-                # The activity rv_name is passed along to the superclass
-                R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
-                Relation.restrict(db=mmdb, relation='Multiple Assigner Activity', restriction=R)
-                ma_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=activity_rvn)
-
-                # The name of our executing instance flow. This always ends up as "F1", but
-                # just in case our Flow naming scheme changes, we check to be sure
-                self.pi_flow_name = ma_activity_r.body[0]["Partitioning_instance_flow"]
-
-            case StateMachineType.SA:
-                # Single assigner is just the rnum
-                owner_name = f"SASM_{self.state_machine.state_model}__{self.state}_{anum}"
-                activity_rvn = Relation.declare_rv(db=mmdb, owner=owner_name, name="single_assigner_name")
-
-        super().__init__(domain=state_machine.domain, activity_label=sa_label, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
-                         signum=signum, parameters=state_machine.active_event.params)
+        super().__init__(domain=domain, activity_label=dca_label, anum=anum, owner_name=owner_name,
+                         activity_rvn=activity_rvn,
+                         signum=signum, parameters=parameters)
 
     def initialize_action_states(self) -> bool:
         """

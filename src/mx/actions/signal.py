@@ -19,6 +19,7 @@ from mx.log_table_config import TABLE, log_table
 from mx.message import *
 from mx.db_names import mmdb
 from mx.actions.action_execution import ActionExecution
+from mx.dc_activity_execution import DelegatedCreationActivity
 from mx.actions.flow import ActiveFlow
 from mx.completion_event import CompletionEvent
 from mx.interaction_event import InteractionEvent
@@ -140,6 +141,29 @@ class Signal(ActionExecution):
         pass
 
     def initial_signal(self):
+        """
+        Process an initial signal. An event is dispatched to an lifecycle state machine, but the instance and
+        state machine must be created first.
+        """
+        mmrv = self.mmrv
+        # Locate the Delegated Creaction Activity and execute it
+        Relation.join(db=mmdb, rname1=self.action_mmrv, rname2='Initial Pseudo State',
+                      svar_name=mmrv.initial_signal_action)
+        initial_signal_action_r = Relation.rename(db=mmdb, relation=mmrv.initial_signal_action,
+                                                  names={'Anum': 'Creation_activity'},
+                                                  svar_name=mmrv.initial_signal_action)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.initial_signal_action))
+        initial_signal_action_t = initial_signal_action_r.body[0]
+        dc_anum = initial_signal_action_t['Creation_activity']
+        dc_class = initial_signal_action_t['Class']
+        ip_state_name = initial_signal_action_t['Name']
+
+        DelegatedCreationActivity(anum=dc_anum, ip_state_name=ip_state_name, class_name=dc_class,
+                                  domain=self.activity_execution.domain, parameters=self.set_supplied_params())
+        pass
+
+
+        # Use signal_instance (or duplicate it) to dispatch the initial Interaction Event
         pass
 
     def signal_assigner(self):
@@ -187,10 +211,11 @@ class Signal(ActionExecution):
     def process_cancel_delay(self):
         pass
 
-    def set_supplied_params(self):
+    def set_supplied_params(self) -> NamedValues:
         # Get the parameters
         # TODO: Process signal with parameters when we have an example
         # supplied_parameter_value_r = Relation.semijoin(db=mmdb, rname1=send_signal_action_rv,
         #                                                rname2="Supplied Parameter Value")
+        return {}
 
         pass
