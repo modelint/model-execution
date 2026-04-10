@@ -1,6 +1,7 @@
 """ dc_creation_activity.py -- A metamodel Delegated Creation Activity """
 import logging
 from typing import TYPE_CHECKING, NamedTuple
+from operator import itemgetter
 
 if TYPE_CHECKING:
     from mx.domain import Domain
@@ -25,27 +26,27 @@ _logger = logging.getLogger(__name__)
 
 class DelegatedCreationActivity(ActivityExecution):
 
-    def __init__(self, anum: str,  ip_state_name: str, class_name: str, domain: 'Domain',
-                 parameters: NamedValues):
+    def __init__(self, ips_rv: str, parameters: NamedValues, domain: "Domain"):
         """
         Here we execute a Delegated Creation Activity to create a new instance with a Lifecycle State Machine
 
         Args:
-            anum: Activity number identifying the Delegated Creation Activity
-            ip_state_name: All initial pseudo states have the same name, but we pass it in here from the mmdb
-            class_name:  Name of the Class with a Lifecycle, effectively our state model name
-            domain: Domain object
+            ips_rv: Initial Pseudo State relational variable name
+            parameters: Supplied parameter values for the Creation Signature
         """
-        dca_label = f"{class_name}[{ip_state_name}]"  # For display in log messages
+        dc_activity_r = Relation.join(db=mmdb, rname1=ips_rv, rname2='Delegated Creation Activity',
+                                      attrs={'Creation_activity': 'Anum', 'Domain': 'Domain', }, svar_name=ips_rv
+                                      )
+        log_table(_logger, table_msg(db=mmdb, variable_name=ips_rv))
+        dca_t = dc_activity_r.body[0]
+
+        anum, class_name, ip_state, csig = itemgetter(
+            'Creation_activity', 'Class', 'Name', 'Signature')(dca_t)
+
+        dca_label = f"{class_name}[{ip_state}]"  # For display in log messages
 
         # Execute the creation activity to create the class instance
         # Later we can obtain the identifier value of that new instance to create a lifecycle state machine
-
-        # Set signum
-        # TODO: We need the state signature for the target state
-        R = f"State_model:<{class_name}>, Domain:<{domain.name}>"
-        state_sig_r = Relation.restrict(db=mmdb, relation="State Signature", restriction=R)
-        signum = state_sig_r.body[0]['SIGnum']
 
         # The owner_name is passed along to the superclass for initialization as a self variable
         owner_name = f"LSM_{class_name}__{'creation'}_{anum}"
@@ -61,7 +62,7 @@ class DelegatedCreationActivity(ActivityExecution):
 
         super().__init__(domain=domain, activity_label=dca_label, anum=anum, owner_name=owner_name,
                          activity_rvn=activity_rvn,
-                         signum=signum, parameters=parameters)
+                         signum=csig, parameters=parameters)
 
 
         # We need to generate an instance_id and create a lifecycle state machine for this new instance

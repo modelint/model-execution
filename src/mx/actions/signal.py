@@ -151,18 +151,14 @@ class Signal(ActionExecution):
         mmrv = self.mmrv
         # Locate the Delegated Creaction Activity and execute it
         # Most of what we need is in the Initial Pseudo State class
-        ips_r = Relation.semijoin(db=mmdb, rname1=mmrv.initial_signal_action, rname2='Initial Pseudo State',
+        Relation.semijoin(db=mmdb, rname1=mmrv.initial_signal_action, rname2='Initial Pseudo State',
                                   attrs={'Pseudo_state': 'Name', 'Class': 'Class', 'Domain': 'Domain'},
                                   svar_name=mmrv.initial_pseudo_state)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.initial_pseudo_state))
-        ips_t = ips_r.body[0]
-        dc_anum = ips_t['Creation_activity']
-        dc_class = ips_t['Class']
-        ip_state_name = ips_t['Name']
+        # log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.initial_pseudo_state))
 
         from mx.dc_activity_execution import DelegatedCreationActivity
-        DelegatedCreationActivity(anum=dc_anum, ip_state_name=ip_state_name, class_name=dc_class,
-                                  domain=self.activity_execution.domain, parameters=self.supplied_params)
+        DelegatedCreationActivity(ips_rv=mmrv.initial_pseudo_state, parameters=self.supplied_params,
+                                  domain=self.activity_execution.domain)
         pass
 
 
