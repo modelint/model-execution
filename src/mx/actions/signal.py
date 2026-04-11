@@ -27,6 +27,7 @@ from mx.mxtypes import *
 
 _logger = logging.getLogger(__name__)
 
+
 class MMRVs(NamedTuple):
     send_signal_action: str
     signal_assigner_action: str
@@ -34,6 +35,7 @@ class MMRVs(NamedTuple):
     initial_signal_action: str
     initial_pseudo_state: str  # Delegated Creation Activity
     initial_transition: str
+
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
@@ -47,6 +49,7 @@ def declare_mm_rvs(owner: str) -> MMRVs:
                       "initial_transition",
                       )
     return MMRVs(*rvs)
+
 
 class Signal(ActionExecution):
     """
@@ -152,8 +155,8 @@ class Signal(ActionExecution):
         # Locate the Delegated Creaction Activity and execute it
         # Most of what we need is in the Initial Pseudo State class
         Relation.semijoin(db=mmdb, rname1=mmrv.initial_signal_action, rname2='Initial Pseudo State',
-                                  attrs={'Pseudo_state': 'Name', 'Class': 'Class', 'Domain': 'Domain'},
-                                  svar_name=mmrv.initial_pseudo_state)
+                          attrs={'Pseudo_state': 'Name', 'Class': 'Class', 'Domain': 'Domain'},
+                          svar_name=mmrv.initial_pseudo_state)
         # log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.initial_pseudo_state))
 
         from mx.dc_activity_execution import DelegatedCreationActivity
@@ -161,14 +164,14 @@ class Signal(ActionExecution):
                                   domain=self.activity_execution.domain)
         pass
 
-
         # Use signal_instance (or duplicate it) to dispatch the initial Interaction Event
         pass
 
     def signal_assigner(self):
         mmrv = self.mmrv
         pass
-        signal_assigner_action_t = Relation.semijoin(db=mmdb, rname1=mmrv.signal_assigner_action, rname2="Signal Assigner Action")
+        signal_assigner_action_t = Relation.semijoin(db=mmdb, rname1=mmrv.signal_assigner_action,
+                                                     rname2="Signal Assigner Action")
         rnum = signal_assigner_action_t.body[0]['Association']
         ma_partition_instance_t = Relation.semijoin(db=mmdb, rname2="Multiple Assigner Partition Instance")
         partition_flow = None if not ma_partition_instance_t.body else ma_partition_instance_t.body[0]["Partition"]
