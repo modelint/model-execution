@@ -161,7 +161,7 @@ class Signal(ActionExecution):
 
         from mx.dc_activity_execution import DelegatedCreationActivity
         DelegatedCreationActivity(ips_rv=mmrv.initial_pseudo_state, parameters=self.supplied_params,
-                                  domain=self.activity_execution.domain)
+                                  domain=self.activity_execution.domain, signal_action_mmrv=mmrv.initial_signal_action)
         pass
 
         # Use signal_instance (or duplicate it) to dispatch the initial Interaction Event

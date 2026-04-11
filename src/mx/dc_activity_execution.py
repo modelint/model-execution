@@ -26,14 +26,17 @@ _logger = logging.getLogger(__name__)
 
 class DelegatedCreationActivity(ActivityExecution):
 
-    def __init__(self, ips_rv: str, parameters: NamedValues, domain: "Domain"):
+    def __init__(self, ips_rv: str, parameters: NamedValues, domain: "Domain", signal_action_mmrv: str):
         """
         Here we execute a Delegated Creation Activity to create a new instance with a Lifecycle State Machine
 
         Args:
             ips_rv: Initial Pseudo State relational variable name
             parameters: Supplied parameter values for the Creation Signature
+            domain: The Domain object
+            signal_action_mmrv: The initial signal action triggering this dc activity
         """
+        self.signal_action_mmrv = signal_action_mmrv
         dc_activity_r = Relation.join(db=mmdb, rname1=ips_rv, rname2='Delegated Creation Activity',
                                       attrs={'Creation_activity': 'Anum', 'Domain': 'Domain', }, svar_name=ips_rv
                                       )

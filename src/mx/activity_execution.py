@@ -33,6 +33,7 @@ from mx.actions.project import Project
 from mx.actions.set_action import SetAction
 from mx.actions.restrict import Restrict
 from mx.actions.gate import Gate
+from mx.actions.create import Create
 from mx.actions.pass_action import PassAction  # Can't be 'Pass' since pass is a python keyword
 from mx.actions.rank_restrict import RankRestrict
 from mx.actions.signal import Signal
@@ -91,6 +92,7 @@ class ActivityExecution(ABC):
         "write": Write,
         "method call": MethodCall,
         "decision": Decision,
+        "create": Create,
     }
 
     def __init__(self, domain: 'Domain', activity_label: str, anum: str, owner_name: str, activity_rvn: str,
