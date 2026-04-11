@@ -3,6 +3,7 @@
 # System
 import logging
 from typing import TYPE_CHECKING, NamedTuple
+from operator import itemgetter
 
 if TYPE_CHECKING:
     from mx.activity_execution import ActivityExecution
@@ -64,12 +65,27 @@ class Create(ActionExecution):
         create_action_t = create_action_r.body[0]
 
         # Get source flows from Initialization Source
+        # We semijoin from the Initial Signal Action that triggered the Delegated Creation Activity
+        # to obtain any number of Flows in the Activity where the creation signal was emitted mapped to
+        # flows here in the Delegated Creation Activity.
         init_sources_r = Relation.semijoin(db=mmdb, rname1=self.activity_execution.signal_action_mmrv,
                                            rname2='Initialization Source',
                                            attrs={'ID': 'Signal_action', 'Activity': 'Signal_activity',
                                                   'Domain': 'Domain'},
                                            svar_name=mmrv.init_sources)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.init_sources))
+
+        for t in init_sources_r.body:
+            source_fname, local_fname = t['Source_flow'], t['Local_flow']
+            source_fvalue = self.activity_execution.source_ae.flows[source_fname]
+            self.activity_execution.flows[local_fname] = source_fvalue
+
+            pass
+        pass
+
+
+        # Set local flows to values obtained from the source Activity which is still in the process of executing
+        # TODO: generalize this to accommodate a synchronous creation source (synch create action)
 
         self.source_flow_name = create_action_t["Instance_flow"]
         self.source_flow = self.activity_execution.flows[

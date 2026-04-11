@@ -26,7 +26,8 @@ _logger = logging.getLogger(__name__)
 
 class DelegatedCreationActivity(ActivityExecution):
 
-    def __init__(self, ips_rv: str, parameters: NamedValues, domain: "Domain", signal_action_mmrv: str):
+    def __init__(self, ips_rv: str, parameters: NamedValues, domain: "Domain", signal_action_mmrv: str,
+                 source_activity_execution: ActivityExecution):
         """
         Here we execute a Delegated Creation Activity to create a new instance with a Lifecycle State Machine
 
@@ -35,7 +36,9 @@ class DelegatedCreationActivity(ActivityExecution):
             parameters: Supplied parameter values for the Creation Signature
             domain: The Domain object
             signal_action_mmrv: The initial signal action triggering this dc activity
+            source_activity_execution: The executing activity that triggerd this dc activity
         """
+        self.source_ae = source_activity_execution
         self.signal_action_mmrv = signal_action_mmrv
         dc_activity_r = Relation.join(db=mmdb, rname1=ips_rv, rname2='Delegated Creation Activity',
                                       attrs={'Creation_activity': 'Anum', 'Domain': 'Domain', }, svar_name=ips_rv
@@ -48,9 +51,6 @@ class DelegatedCreationActivity(ActivityExecution):
 
         dca_label = f"{class_name}[{ip_state}]"  # For display in log messages
 
-        # Execute the creation activity to create the class instance
-        # Later we can obtain the identifier value of that new instance to create a lifecycle state machine
-
         # The owner_name is passed along to the superclass for initialization as a self variable
         owner_name = f"LSM_{class_name}__{'creation'}_{anum}"
 
@@ -60,17 +60,19 @@ class DelegatedCreationActivity(ActivityExecution):
         Relation.restrict(db=mmdb, relation='Delegated Creation Activity', restriction=R, svar_name=activity_rvn)
         Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=activity_rvn)
 
+        # Execute the creation activity to create the class instance
+        # Later we can obtain the identifier value of that new instance to create a lifecycle state machine
+        super().__init__(domain=domain, activity_label=dca_label, anum=anum, owner_name=owner_name,
+                         activity_rvn=activity_rvn,
+                         signum=csig, parameters=parameters)
+
+        pass
+
         # We assume there are no lifecycles at the moment so we can just make the id 0
         instance_id = 0  # Default assumption is that there are no lifey
         if domain.lifecycles.get(class_name):
             # Add one to the maximum key value to generate an unused instance id
             instance_id = max(domain.lifecycles[class_name]) + 1
-
-        pass
-
-        super().__init__(domain=domain, activity_label=dca_label, anum=anum, owner_name=owner_name,
-                         activity_rvn=activity_rvn,
-                         signum=csig, parameters=parameters)
 
 
         # We need to generate an instance_id and create a lifecycle state machine for this new instance
