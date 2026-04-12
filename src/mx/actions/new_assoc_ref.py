@@ -21,15 +21,18 @@ from mx.utility import *
 
 _logger = logging.getLogger(__name__)
 
+
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
     new_assoc_ref_action: str
 
+
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(db: str, owner: str) -> MMRVs:
-    rvs = declare_rvs(db, owner, "rename_action", "rename_table_action")
+    rvs = declare_rvs(db, owner, "new_assoc_ref_action", )
     return MMRVs(*rvs)
+
 
 class NewAssocRef(ActionExecution):
 
@@ -53,17 +56,14 @@ class NewAssocRef(ActionExecution):
         # Lookup the Action instance
         Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="New Associative Reference Action",
                           svar_name=mmrv.new_assoc_ref_action)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.new_assoc_ref_action))
-
         Relation.join(db=mmdb, rname1=mmrv.new_assoc_ref_action, rname2='New Reference Action',
                       svar_name=mmrv.new_assoc_ref_action)
+        ref_action_r = Relation.join(db=mmdb, rname1=mmrv.new_assoc_ref_action, rname2='Reference Action',
+                                     svar_name=mmrv.new_assoc_ref_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.new_assoc_ref_action))
+        t = ref_action_r.body[0]
+        tflow_name, pflow_name, output_flow_name = t['T_instance'], t['P_instance'], t['Ref_attr_values']
         pass
-
-
-
-
-
 
         # Join it with the Table Action superclass to get the input / output flows
         rename_table_action_r = Relation.join(db=mmdb, rname1=mmrv.rename_action, rname2="Table Action",
@@ -77,7 +77,8 @@ class NewAssocRef(ActionExecution):
 
         # Extract input and output flows required by the Rename Action
         self.source_flow_name = rename_table_action_t["Input_a_flow"]  # Name like F1, F2, etc
-        self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        self.source_flow = self.activity_execution.flows[
+            self.source_flow_name]  # The active content of source flow (value, type)
         log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
                                       flow_type=self.source_flow.flowtype,
                                       activity=self.activity_execution, rv_name=self.source_flow.value))

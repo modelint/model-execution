@@ -34,6 +34,7 @@ from mx.actions.set_action import SetAction
 from mx.actions.restrict import Restrict
 from mx.actions.gate import Gate
 from mx.actions.create import Create
+from mx.actions.new_assoc_ref import NewAssocRef
 from mx.actions.pass_action import PassAction  # Can't be 'Pass' since pass is a python keyword
 from mx.actions.rank_restrict import RankRestrict
 from mx.actions.signal import Signal
@@ -93,6 +94,7 @@ class ActivityExecution(ABC):
         "method call": MethodCall,
         "decision": Decision,
         "create": Create,
+        "new assoc ref": NewAssocRef,
     }
 
     def __init__(self, domain: 'Domain', activity_label: str, anum: str, owner_name: str, activity_rvn: str,
