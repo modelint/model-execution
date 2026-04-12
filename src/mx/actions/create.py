@@ -75,25 +75,22 @@ class Create(ActionExecution):
                                            svar_name=mmrv.init_sources)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.init_sources))
 
+        _logger.info("Flows")
+        # Set the value of each local flow to its corresponding source in the creation initiator's executing
+        # activity
+        # TODO: generalize this to accommodate a synchronous creation source (synch create action)
         for t in init_sources_r.body:
-            source_fname, local_fname = t['Source_flow'], t['Local_flow']
+            source_anum, source_fname, local_fname = t['Signal_activity'], t['Source_flow'], t['Local_flow']
+            _logger.info(f"Copying {source_anum}-{source_fname} value -> {self.activity_execution.anum}-{local_fname}")
             source_fvalue = self.activity_execution.source_ae.flows[source_fname]
             self.activity_execution.flows[local_fname] = source_fvalue
+            log_table(_logger, nsflow_msg(db=self.domdb, flow_name=local_fname, flow_dir=FlowDir.IN,
+                                      flow_type=source_fvalue.flowtype,
+                                      activity=self.activity_execution, rv_name=source_fvalue.value))
 
-            pass
+        # Now create the instance
         pass
 
 
-        # Set local flows to values obtained from the source Activity which is still in the process of executing
-        # TODO: generalize this to accommodate a synchronous creation source (synch create action)
-
-        self.source_flow_name = create_action_t["Instance_flow"]
-        self.source_flow = self.activity_execution.flows[
-            self.source_flow_name]  # The active content of source flow (value, type)
-        _logger.info(f"{self.source_flow_name}")
-        _logger.info("Flows")
-        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-                                      flow_type=self.source_flow.flowtype,
-                                      activity=self.activity_execution, rv_name=self.source_flow.value))
 
         self.complete()
