@@ -3,6 +3,7 @@
 # System
 import logging
 from typing import TYPE_CHECKING, NamedTuple
+from collections import defaultdict
 
 if TYPE_CHECKING:
     from mx.activity_execution import ActivityExecution
@@ -25,12 +26,14 @@ _logger = logging.getLogger(__name__)
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
     new_assoc_ref_action: str
+    init_sources: str
+    attr_refs: str
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(db: str, owner: str) -> MMRVs:
-    rvs = declare_rvs(db, owner, "new_assoc_ref_action", )
+    rvs = declare_rvs(db, owner, "new_assoc_ref_action", "init_sources", "attr_refs")
     return MMRVs(*rvs)
 
 
@@ -62,43 +65,70 @@ class NewAssocRef(ActionExecution):
                                      svar_name=mmrv.new_assoc_ref_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.new_assoc_ref_action))
         t = ref_action_r.body[0]
-        tflow_name, pflow_name, output_flow_name = t['T_instance'], t['P_instance'], t['Ref_attr_values']
-        pass
+        tflow_name, pflow_name, output_flow_name, rnum = \
+            t['T_instance'], t['P_instance'], t['Ref_attr_values'], t['Association']
 
-        # Join it with the Table Action superclass to get the input / output flows
-        rename_table_action_r = Relation.join(db=mmdb, rname1=mmrv.rename_action, rname2="Table Action",
-                                              svar_name=mmrv.rename_table_action)
-        rename_table_action_t = rename_table_action_r.body[0]
+        # Get source flows from Initialization Source
+        # We semijoin from the Initial Signal Action that triggered the Delegated Creation Activity
+        # to obtain any number of Flows in the Activity where the creation signal was emitted mapped to
+        # flows here in the Delegated Creation Activity.
+        init_sources_r = Relation.semijoin(db=mmdb, rname1=self.activity_execution.signal_action_mmrv,
+                                           rname2='Initialization Source',
+                                           attrs={'ID': 'Signal_action', 'Activity': 'Signal_activity',
+                                                  'Domain': 'Domain'},
+                                           svar_name=mmrv.init_sources)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.init_sources))
 
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.rename_table_action))
-
-        _logger.info(f"- {rename_table_action_t["From_attribute"]} >> {rename_table_action_t["To_attribute"]}")
         _logger.info("Flows")
+        # Set the value of each local flow to its corresponding source in the creation initiator's executing
+        # activity
+        # TODO: generalize this to accommodate a synchronous creation source (synch create action)
+        for t in init_sources_r.body:
+            source_anum, source_fname, local_fname = t['Signal_activity'], t['Source_flow'], t['Local_flow']
+            _logger.info(f"Copying {source_anum}-{source_fname} value -> {self.activity_execution.anum}-{local_fname}")
+            source_fvalue = self.activity_execution.source_ae.flows[source_fname]
+            self.activity_execution.flows[local_fname] = source_fvalue
+            log_table(_logger, nsflow_msg(db=self.domdb, flow_name=local_fname, flow_dir=FlowDir.IN,
+                                          flow_type=source_fvalue.flowtype,
+                                          activity=self.activity_execution, rv_name=source_fvalue.value))
 
-        # Extract input and output flows required by the Rename Action
-        self.source_flow_name = rename_table_action_t["Input_a_flow"]  # Name like F1, F2, etc
-        self.source_flow = self.activity_execution.flows[
-            self.source_flow_name]  # The active content of source flow (value, type)
-        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-                                      flow_type=self.source_flow.flowtype,
-                                      activity=self.activity_execution, rv_name=self.source_flow.value))
+        # Determine the action output value.  This will be a tuple where each attribute is the name of a referential
+        # Attribute of the new instance's Association Class.
+        #
+        # To determine the value of each referential attribute, we join the T/P instances
+        # of the appropriate instance in the
 
-        self.dest_flow_name = rename_table_action_t["Output_flow"]
-        # And the output of the Rename will be placed in the Activity flow dictionary
-        # upon completion of this Action
+        # Obtain the Attribute References
+        R = f"Rnum:<{rnum}>, Domain:<{self.activity_execution.domain.name}>"
+        attr_refs_r = Relation.restrict(db=mmdb, relation='Attribute Reference', restriction=R,
+                                        svar_name=mmrv.attr_refs)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.attr_refs))
 
-        # Rename
-        rename_output_drv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="rename_output")
-        Relation.rename(db=self.domdb,
-                        names={rename_table_action_t["From_attribute"]: rename_table_action_t["To_attribute"]},
-                        relation=self.source_flow.flowtype, svar_name=rename_output_drv)
-        log_table(_logger, table_msg(db=self.domdb, variable_name=rename_output_drv))
+        # Create the output flow tuple structure
+        assoc_class_attrs_r = Relation.project(db=mmdb, attributes=('From_attribute',), relation=mmrv.attr_refs)
 
-        self.activity_execution.flows[self.dest_flow_name] = ActiveFlow(value=rename_output_drv,
-                                                                        flowtype=rename_table_action_t["To_table"])
-        # The domain rv above is retained since it is an output flow, so we don't free it until the Activity completes
-        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
-                                      flow_type=rename_table_action_t["To_table"],
-                                      activity=self.activity_execution, rv_name=rename_output_drv))
+        # Unpack from->to attribute names for the T and P references
+        from_to = defaultdict(list)
+        for t in attr_refs_r.body:
+            from_to[t['Ref']].append({'from': t['From_attribute'], 'to': t['To_attribute']})
+
+        output_tuple = {t['From_attribute']: None for t in assoc_class_attrs_r.body}
+
+        # T and P participating class instance relations
+        tflow_value = self.activity_execution.flows[tflow_name]
+        pflow_value = self.activity_execution.flows[pflow_name]
+
+        # Process T reference
+        T_to_inst_r = Relation.restrict(db=self.domdb, relation=tflow_value.value)
+        T_to_inst_t = T_to_inst_r.body[0]
+        for r in from_to['T']:
+            output_tuple[r['from']] = T_to_inst_t[r['to']]
+
+        # Process P reference
+        P_to_inst_r = Relation.restrict(db=self.domdb, relation=pflow_value.value)
+        P_to_inst_t = P_to_inst_r.body[0]
+        for r in from_to['P']:
+            output_tuple[r['from']] = P_to_inst_t[r['to']]
+        pass
 
         self.complete()

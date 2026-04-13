@@ -64,29 +64,7 @@ class Create(ActionExecution):
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.create_action))
         create_action_t = create_action_r.body[0]
 
-        # Get source flows from Initialization Source
-        # We semijoin from the Initial Signal Action that triggered the Delegated Creation Activity
-        # to obtain any number of Flows in the Activity where the creation signal was emitted mapped to
-        # flows here in the Delegated Creation Activity.
-        init_sources_r = Relation.semijoin(db=mmdb, rname1=self.activity_execution.signal_action_mmrv,
-                                           rname2='Initialization Source',
-                                           attrs={'ID': 'Signal_action', 'Activity': 'Signal_activity',
-                                                  'Domain': 'Domain'},
-                                           svar_name=mmrv.init_sources)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.init_sources))
 
-        _logger.info("Flows")
-        # Set the value of each local flow to its corresponding source in the creation initiator's executing
-        # activity
-        # TODO: generalize this to accommodate a synchronous creation source (synch create action)
-        for t in init_sources_r.body:
-            source_anum, source_fname, local_fname = t['Signal_activity'], t['Source_flow'], t['Local_flow']
-            _logger.info(f"Copying {source_anum}-{source_fname} value -> {self.activity_execution.anum}-{local_fname}")
-            source_fvalue = self.activity_execution.source_ae.flows[source_fname]
-            self.activity_execution.flows[local_fname] = source_fvalue
-            log_table(_logger, nsflow_msg(db=self.domdb, flow_name=local_fname, flow_dir=FlowDir.IN,
-                                      flow_type=source_fvalue.flowtype,
-                                      activity=self.activity_execution, rv_name=source_fvalue.value))
 
         # Now create the instance
         pass
