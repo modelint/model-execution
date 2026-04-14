@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 # Model Integration
 from pyral.relation import Relation
 from pyral.database import Database  # Diagnostics
+from pyral.rtypes import Attribute
 
 # MX
 from mx.log_table_config import TABLE, log_table
@@ -28,12 +29,13 @@ class MMRVs(NamedTuple):
     new_assoc_ref_action: str
     init_sources: str
     attr_refs: str
+    assoc_class_attrs: str
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(db: str, owner: str) -> MMRVs:
-    rvs = declare_rvs(db, owner, "new_assoc_ref_action", "init_sources", "attr_refs")
+    rvs = declare_rvs(db, owner, "new_assoc_ref_action", "init_sources", "attr_refs", "assoc_class_attrs")
     return MMRVs(*rvs)
 
 
@@ -48,6 +50,8 @@ class NewAssocRef(ActionExecution):
             activity_execution: The A<n> Activity ID
         """
         super().__init__(activity_execution=activity_execution, action_id=action_id)
+
+        domain = self.activity_execution.domain  # For convenience
 
         # Do not execute this Action if it is not enabled, see comment in Action class
         if self.disabled:
@@ -99,7 +103,7 @@ class NewAssocRef(ActionExecution):
         # of the appropriate instance in the
 
         # Obtain the Attribute References
-        R = f"Rnum:<{rnum}>, Domain:<{self.activity_execution.domain.name}>"
+        R = f"Rnum:<{rnum}>, Domain:<{domain.name}>"
         attr_refs_r = Relation.restrict(db=mmdb, relation='Attribute Reference', restriction=R,
                                         svar_name=mmrv.attr_refs)
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.attr_refs))
@@ -112,7 +116,7 @@ class NewAssocRef(ActionExecution):
         for t in attr_refs_r.body:
             from_to[t['Ref']].append({'from': t['From_attribute'], 'to': t['To_attribute']})
 
-        output_tuple = {t['From_attribute']: None for t in assoc_class_attrs_r.body}
+        output_tuple_dict = {t['From_attribute']: None for t in assoc_class_attrs_r.body}
 
         # T and P participating class instance relations
         tflow_value = self.activity_execution.flows[tflow_name]
@@ -122,13 +126,38 @@ class NewAssocRef(ActionExecution):
         T_to_inst_r = Relation.restrict(db=self.domdb, relation=tflow_value.value)
         T_to_inst_t = T_to_inst_r.body[0]
         for r in from_to['T']:
-            output_tuple[r['from']] = T_to_inst_t[r['to']]
+            output_tuple_dict[r['from']] = T_to_inst_t[r['to']]
 
         # Process P reference
         P_to_inst_r = Relation.restrict(db=self.domdb, relation=pflow_value.value)
         P_to_inst_t = P_to_inst_r.body[0]
         for r in from_to['P']:
-            output_tuple[r['from']] = P_to_inst_t[r['to']]
-        pass
+            output_tuple_dict[r['from']] = P_to_inst_t[r['to']]
+
+        # Convert output tuple dictionary into a relational tuple
+
+        # Get the Association Class Name
+        # All From_class values are the same in the attr refs relation, so we can extract the association
+        # class name from the first tuple.
+        # Get all attributes for this class
+        assoc_class = attr_refs_r.body[0]['From_class']
+        assoc_attrs_r = Relation.restrict(db=mmdb, relation='Attribute',
+                                          restriction=f"Class:<{assoc_class}>, Domain:<{domain.name}>",
+                                          svar_name=mmrv.assoc_class_attrs)
+        # We need a list of named Attribute tuples
+        attrs = [
+            Attribute(name=a['Name'], type=domain.types[a['Scalar']])
+            for a in assoc_attrs_r.body
+            if a['Name'] in output_tuple_dict
+        ]
+        output_tuple_body = [tuple(output_tuple_dict[a.name] for a in attrs)]
+        ref_attr_init_tuple_drv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="ref_attr_init_tuple")
+        output_tuple_r = Relation.create(db=self.domdb, attrs=attrs, tuples=output_tuple_body, svar_name=ref_attr_init_tuple_drv)
+        # Now we need to set the flowtype
+
+        output_flow_type = "_".join(f"{a['Name']}_{a['Scalar']}" for a in assoc_attrs_r.body)
+
+        # Set the output flow
+        self.activity_execution.flows[output_flow_name] = ActiveFlow(value=ref_attr_init_tuple_drv, flowtype=output_flow_type)
 
         self.complete()

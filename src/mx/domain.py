@@ -5,6 +5,7 @@ import logging
 from typing import TYPE_CHECKING, NamedTuple
 from collections import defaultdict
 from contextlib import redirect_stdout
+import yaml
 
 if TYPE_CHECKING:
     from mx.system import System
@@ -67,6 +68,16 @@ class Domain:
         self.rv_owner = f"_{alias}_domain"
 
         self.file_path = self.system.playground / 'population' / f"{self.alias}.ral"  # Path to the domain database file
+
+        # Load the domain types
+        types_path = self.system.path / 'models' / f"{self.alias}_types.yaml"
+        try:
+            with types_path.open() as f:
+                self.types = yaml.safe_load(f)
+        except FileNotFoundError:
+            msg = f"Domain types file: {types_path} not found"
+            _logger.error(msg)
+            raise FileNotFoundError(msg)
 
         # Load the sip file and save all specified initial states
         is_context = InitialStateContext(domain=self)

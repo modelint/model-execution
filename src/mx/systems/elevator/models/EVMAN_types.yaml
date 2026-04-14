@@ -1,0 +1,11 @@
+Level Name : string
+Shaft ID : string
+Bank Name : string
+Boolean : boolean
+Duration : double
+Count : int
+Speed : double
+Building Name : string
+Distance : double
+Direction : string
+Ordinal : string
