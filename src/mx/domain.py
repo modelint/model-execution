@@ -61,7 +61,7 @@ class Domain:
         self.single_assigners = None
         self.lifecycles: dict[str, dict[ int, LifecycleStateMachine]] = {}
         self.mult_assigners: dict[str, dict[ int, MultipleAssignerStateMachine]] = {}
-        self.lifecycle_ids: dict[str, list[str]] = {}
+        self.class_ids: dict[str, list[str]] = {}
         self.sm_instance_rvs: dict[str, str] = {}
         self.ma_partitions: dict[str, MAPartitionClassID] = {}
         self.methods = None
@@ -92,7 +92,7 @@ class Domain:
         Database.load(db=self.alias, fname=str(self.file_path))
         if self.system.verbose:
             print_classes(db=self.alias, name=self.name)
-        self.find_lifecycles()
+        self.set_class_ids()
         self.find_single_assigners()
         self.find_mult_assigners()
 
@@ -135,31 +135,30 @@ class Domain:
         # TODO: Same for single assigners
         return self.busy
 
-    def find_lifecycles(self):
+    def set_class_ids(self):
         """
-        Find each class with a lifecycle defined and save its name and I1 identifier.
-        We use this information later when we populate the initial state of each lifecycle statemachine.
+        Find each class and save its name and I1 identifier.
         """
-        _logger.info(f"Gathering lifecycle info")
+        _logger.info(f"Gathering class info")
         # Get the names of each class in this domain with a lifecycle defined
         R = f"Domain:<{self.name}>"
-        lifecycle_i = Relation.restrict(db=mmdb, relation='Lifecycle', restriction=R)
-        class_names = [t['Class'] for t in lifecycle_i.body]
+        class_r = Relation.restrict(db=mmdb, relation='Class', restriction=R)
+        class_names = [t['Name'] for t in class_r.body]
 
         # Now get the identifier attributes of all of these classes
-        rv_id_all = Relation.declare_rv(db=mmdb, owner=self.rv_owner, name="id_all")
+        id_all_mmrv = Relation.declare_rv(db=mmdb, owner=self.rv_owner, name="id_all")
         R = f"Domain:<{self.name}>, Identifier:<1>"
-        Relation.join(db=mmdb, rname2='Identifier_Attribute', rname1='Lifecycle', svar_name=rv_id_all)
+        Relation.semijoin(db=mmdb, rname2='Identifier Attribute', rname1='Class', svar_name=id_all_mmrv)
+        log_table(_logger, table_msg(db=mmdb, variable_name=id_all_mmrv))
         # id_all relation has all identifier attributes for all classes with lifecycles
 
         # Save the primary identifier for each class with a lifecycle
         for c in class_names:
             R = f"Class:<{c}>, Identifier:<{1}>"
-            id_result = Relation.restrict(db=mmdb, restriction=R, relation=rv_id_all)
+            id_result = Relation.restrict(db=mmdb, restriction=R, relation=id_all_mmrv)
             c_id_attrs = [t['Attribute'] for t in id_result.body]  # id attributes for the current class
-            self.lifecycle_ids[c] = c_id_attrs
+            self.class_ids[c] = c_id_attrs
             _logger.info(f"    Setting {c} id to {c_id_attrs}")
-
 
     def find_single_assigners(self):
         """
@@ -210,10 +209,14 @@ class Domain:
         Create a State Machine for each Instance of a Class with a modeled Lifecycle
         """
         _logger.info(f"Initiating lifecycles...")
+        lifecycle_r = Relation.restrict(db=mmdb, relation='Lifecycle', restriction=f"Domain:<{self.name}>")
+        lifecycles = {t['Class'] for t in lifecycle_r.body}
         istates = self.lifecycle_initial_states
 
         # Get each class_name and its primary id for each lifecycle
-        for class_name, id_attrs in self.lifecycle_ids.items():
+        for class_name, id_attrs in self.class_ids.items():
+            if class_name not in lifecycles:
+                continue
 
             _logger.info(f"    Lifecycles for: {class_name}")
 

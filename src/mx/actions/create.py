@@ -94,7 +94,7 @@ class Create(ActionExecution):
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.default_attr_inits))
 
         # Now create the instance
-        # Relvar.updateone(db=self.domdb, relvar_name=target_class, id=, update=initial_attr_values)
+        Relvar.insert(db=self.domdb, relvar=target_class, tuples=initial_attr_values)
 
         pass
 
