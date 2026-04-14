@@ -29,13 +29,17 @@ _logger = logging.getLogger(__name__)
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
     create_action: str
-    init_sources: str
+    attr_inits: str
+    explicit_attr_inits: str
+    ref_attr_inits: str
+    default_attr_inits: str
 
 
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
-    rvs = declare_rvs(mmdb, owner, "create_action", "init_sources")
+    rvs = declare_rvs(mmdb, owner, "create_action", "attr_inits", "explicit_attr_inits",
+                      "ref_attr_inits", "default_attr_inits")
     return MMRVs(*rvs)
 
 
@@ -59,16 +63,39 @@ class Create(ActionExecution):
         mmrv = declare_mm_rvs(owner=self.owner)
 
         # Lookup the Action instance
-        create_action_r = Relation.semijoin(
-            db=mmdb, rname1=self.action_mmrv, rname2="Create Action", svar_name=mmrv.create_action)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.create_action))
-        create_action_t = create_action_r.body[0]
+        Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="Create Action", svar_name=mmrv.create_action)
+        # Get all Attribute Initializations required for the create
+        attr_init_r = Relation.semijoin(db=mmdb, rname1=mmrv.create_action, rname2='Attribute Initialization',
+                          attrs={'ID': 'Create_action', 'Activity': 'Activity', 'Domain': 'Domain'},
+                          svar_name=mmrv.attr_inits)
+        target_class = attr_init_r.body[0]['Class']
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.attr_inits))
+        # Split out into each type of initialization and process
+        initial_attr_values = {}
+        ref_attr_inits_r = Relation.semijoin(db=mmdb, rname1=mmrv.attr_inits, rname2='Reference Initialization',
+                                             svar_name=mmrv.ref_attr_inits)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.ref_attr_inits))
+        ref_flows_out_r = Relation.project(db=mmdb, attributes=('Initial_value_flow',), relation=mmrv.ref_attr_inits)
+        for t in ref_flows_out_r.body:
+            output_fname = t['Initial_value_flow']
+            ref_attr_vals_r = Relation.restrict(db=self.domdb,
+                                                relation=self.activity_execution.flows[output_fname].value)
+            # Flow value must be a tuple
+            ref_attr_vals_t = ref_attr_vals_r.body[0]
+            for k, v in ref_attr_vals_t.items():
+                initial_attr_values[k] = v
 
-
+        # TODO: Implement the other two cases when we have an example
+        explicit_attr_inits_r = Relation.semijoin(db=mmdb, rname1=mmrv.attr_inits, rname2='Explicit Initialization',
+                                                  svar_name=mmrv.explicit_attr_inits)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.explicit_attr_inits))
+        default_attr_inits_r = Relation.semijoin(db=mmdb, rname1=mmrv.attr_inits, rname2='Default Initialization',
+                                                 svar_name=mmrv.default_attr_inits)
+        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.default_attr_inits))
 
         # Now create the instance
+        # Relvar.updateone(db=self.domdb, relvar_name=target_class, id=, update=initial_attr_values)
+
         pass
-
-
 
         self.complete()
