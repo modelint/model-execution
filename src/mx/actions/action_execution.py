@@ -43,6 +43,8 @@ class ActionExecution:
 
         # Action owner name uses Activity owner name as its prefix
         self.owner = f"{self.activity_execution.owner_name}_{action_id}_{self.action_type}"
+        # Append owner name to activity's list of action owners so it can free up rvs after activity has completed
+        self.activity_execution.action_owners.append(self.owner)
 
         # Check the Flow Dependency class for all required input Flow names
         R = f"To_action:<{action_id}>, Activity:<{self.activity_execution.anum}>, Domain:<{self.activity_execution.domain.name}>"

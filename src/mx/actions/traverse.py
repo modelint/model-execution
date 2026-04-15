@@ -69,17 +69,11 @@ class Traverse(ActionExecution):
         if self.disabled:
             return
 
-        if __debug__:
-            _rv_before = Database.get_all_rv_names()
-
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(owner=self.owner)
         self.domrv = declare_dom_rvs(db=self.domdb, owner=self.owner)
         mmrv = self.mmrv
         domrv = self.domrv
-
-        if __debug__:
-            _rv_before = Database.get_all_rv_names()
 
         # We define a distinct method to trace each subclass of Hop
         execute_hop: dict[str, Callable[..., str]] = {  # The only type hint that seems to work with PyCharm

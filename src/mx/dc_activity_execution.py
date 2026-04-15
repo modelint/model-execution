@@ -29,7 +29,7 @@ class DelegatedCreationActivity(ActivityExecution):
     def __init__(self, ips_rv: str, parameters: NamedValues, domain: "Domain", signal_action_mmrv: str,
                  source_activity_execution: ActivityExecution):
         """
-        Here we execute a Delegated Creation Activity to create a new instance with a Lifecycle State Machine
+        Execute a Delegated Creation Activity to create a new instance with a Lifecycle State Machine
 
         Args:
             ips_rv: Initial Pseudo State relational variable name
@@ -73,7 +73,7 @@ class DelegatedCreationActivity(ActivityExecution):
             # Add one to the maximum key value to generate an unused instance id
             i = max(domain.lifecycles[class_name]) + 1
 
-        # Create a lifeycle state machine for this instance and add it to the domain lifecycles dictionary
+        # Create a lifeycle state machine for this instance and add it to the domain lifecycle dictionary
         lsm = LifecycleStateMachine(
             lifecycle_sm_id=i,
             current_state=ip_state,
@@ -82,6 +82,7 @@ class DelegatedCreationActivity(ActivityExecution):
             domain=domain
         )
         self.domain.lifecycles.setdefault(class_name, {})[i] = lsm
+        pass
 
 
     def initialize_action_states(self) -> bool:

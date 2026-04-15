@@ -65,7 +65,6 @@ class Domain:
         self.sm_instance_rvs: dict[str, str] = {}
         self.ma_partitions: dict[str, MAPartitionClassID] = {}
         self.methods = None
-        self.rv_owner = f"_{alias}_domain"
 
         self.file_path = self.system.playground / 'population' / f"{self.alias}.ral"  # Path to the domain database file
 
@@ -101,13 +100,10 @@ class Domain:
         # self.initiate_sa_state_machines()
         # self.initiate_methods()
 
-        # Clear out any mmdb rvs defined by this domain during initialization
-        _logger.info(f"Clearing out metamodel rvs for {self.rv_owner}...")
-        _logger.info(f"    Before: {Database.get_rv_names(db=mmdb)}")
-        Relation.free_rvs(db=mmdb, owner=self.rv_owner)
-        _logger.info(f"    After: {Database.get_rv_names(db=mmdb)}")
-        _logger.info(f"---")
-        pass
+        # Clear out all relational variables used for initialization
+        Relation.free_rvs(db=mmdb, owner=self.owner)
+        # There is a set of _i instance tag relations, on per lifecycle and we
+        # use these for state machine lookup, so only mmdb rvs are freed up here
 
     @property
     def busy(self) -> bool:
@@ -146,7 +142,7 @@ class Domain:
         class_names = [t['Name'] for t in class_r.body]
 
         # Now get the identifier attributes of all of these classes
-        id_all_mmrv = Relation.declare_rv(db=mmdb, owner=self.rv_owner, name="id_all")
+        id_all_mmrv = Relation.declare_rv(db=mmdb, owner=self.owner, name="id_all")
         R = f"Domain:<{self.name}>, Identifier:<1>"
         Relation.semijoin(db=mmdb, rname2='Identifier Attribute', rname1='Class', svar_name=id_all_mmrv)
         log_table(_logger, table_msg(db=mmdb, variable_name=id_all_mmrv))

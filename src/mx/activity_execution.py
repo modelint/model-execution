@@ -124,6 +124,7 @@ class ActivityExecution(ABC):
         # self.flows: dict[str, ActiveFlow | FlowState | None] = {}
 
         self.owner_name = owner_name
+        self.action_owners: list[str] = []  # We maintain a list of all action owner names to clear rvs later
         self.mmrv = declare_mm_rvs(owner=self.owner_name)
         self.activity_rvn = activity_rvn
         log_table(_logger, table_msg(db=mmdb, variable_name=self.activity_rvn))
@@ -146,16 +147,15 @@ class ActivityExecution(ABC):
             self.enable_initial_actions()
             self.enable_initial_flows()
             self.execute()
-        # Relation.free_rvs(db=mmdb, owner=self.owner_name)
+
+        # Since all Actions have executed, we are done with the domain db rvs and can free them up now
         Relation.free_rvs(db=self.domain.alias, owner=snake(self.owner_name))
-        r = Database.get_all_rv_names()
-        # for k in r[self.domain.alias].keys():
-        #     if k.startswith(snake(self.owner_name)):
-        #         Relation.free_rvs(db=self.domain.alias, owner=k)
-        #     pass
-        q = Database.get_all_rv_names()
+        # Free up all action rvs
+        for a in self.action_owners:
+            Relation.free_rvs(db=self.domain.alias, owner=snake(a))
+        Relation.free_rvs(db=mmdb, owner=snake(self.owner_name))
+        Database.get_rv_names()
         _logger.info(f"\n\n    ^^^ ({self.anum}) {self.label} Complete ^^^ \n")
-        pass
 
     @abstractmethod
     def initialize_action_states(self) -> bool:

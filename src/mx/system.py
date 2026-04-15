@@ -20,7 +20,7 @@ from mx.db_names import mmdb, PROGRAM_NAME
 from mx.exceptions import *
 from mx.mdb_types import *
 from mx.mxtypes import ExternalAddress
-from mx.log_table_config import ConsoleTableFilter, ConsoleWarningFilter
+# from mx.log_table_config import ConsoleTableFilter, ConsoleWarningFilter
 
 _logger = logging.getLogger(__name__)
 
@@ -63,12 +63,12 @@ class System:
             verbose:  If true, we may log to the console
             debug: If true, we do some diagnostic activity
         """
-        for handler in logging.getLogger().handlers:
-            if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
-                if handler.stream is sys.stdout:
-                    handler.addFilter(ConsoleTableFilter())
-                elif handler.stream is sys.stderr:
-                    handler.addFilter(ConsoleWarningFilter())
+        # for handler in logging.getLogger().handlers:
+        #     if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+        #         if handler.stream is sys.stdout:
+        #             handler.addFilter(ConsoleTableFilter())
+        #         elif handler.stream is sys.stderr:
+        #             handler.addFilter(ConsoleWarningFilter())
 
         _logger.info(f'{PROGRAM_NAME} version: {version}')
         _logger.info("---")
