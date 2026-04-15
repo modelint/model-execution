@@ -40,6 +40,7 @@ class DelegatedCreationActivity(ActivityExecution):
         """
         self.source_ae = source_activity_execution
         self.signal_action_mmrv = signal_action_mmrv
+        self.new_inst_id: NamedValues = {} # The delegated creation activity will set this to the id of the new instance
         dc_activity_r = Relation.join(db=mmdb, rname1=ips_rv, rname2='Delegated Creation Activity',
                                       attrs={'Creation_activity': 'Anum', 'Domain': 'Domain', }, svar_name=ips_rv
                                       )
@@ -66,46 +67,21 @@ class DelegatedCreationActivity(ActivityExecution):
                          activity_rvn=activity_rvn,
                          signum=csig, parameters=parameters)
 
-        pass
-
-        # We assume there are no lifecycles at the moment so we can just make the id 0
-        instance_id = 0  # Default assumption is that there are no lifey
+        # Generate an instance ID for this new Lifecycle
+        i = 0  # Default assumption is that there are no lifecycles for this class
         if domain.lifecycles.get(class_name):
             # Add one to the maximum key value to generate an unused instance id
-            instance_id = max(domain.lifecycles[class_name]) + 1
+            i = max(domain.lifecycles[class_name]) + 1
 
-
-        # We need to generate an instance_id and create a lifecycle state machine for this new instance
-        # Then we need to execute the activity to populate the instance
-
-        # self.lifecycles.setdefault(class_name, {})[i["_instance"]] = LifecycleStateMachine(
-        #     lifecycle_sm_id=instance_id,
-        #     current_state=ip_state_name,
-        #     instance_id=inst_id,
-        #     class_name=class_name,
-        #     domain=domain
-        # )
-
-        self.instance_id_value = None
-        self.xi_flow_name = None
-
-        # We need to create a new lifecycle instance
-
-        # There is an executing instance of the State Model's Class running this State Activity
-        # We flatten the instance id into a string and then use it to define this's ActivityExecution's
-        # owner_name. We'll use that to name any local relational variables that are declared, used, and
-        # freed up during execution of this State Activity.
-        self.instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
-
-        # Now we save our Lifecycle Activity instance for use by any executing Action
-        # The activity rv_name is passed along to the superclass
-        R = f"Anum:<{anum}>, Domain:<{self.state_machine.domain.name}>"
-        Relation.restrict(db=mmdb, relation='Lifecycle Activity', restriction=R)
-        lifecycle_activity_r = Relation.rename(db=mmdb, names={"Anum": "Activity"}, svar_name=activity_rvn)
-
-        # The name of our executing instance flow. This always ends up as "F1", but
-        # just in case our Flow naming scheme changes, we check to be sure
-        self.xi_flow_name = lifecycle_activity_r.body[0]["Executing_instance_flow"]
+        # Create a lifeycle state machine for this instance and add it to the domain lifecycles dictionary
+        lsm = LifecycleStateMachine(
+            lifecycle_sm_id=i,
+            current_state=ip_state,
+            instance_id=self.new_inst_id,
+            class_name=class_name,
+            domain=domain
+        )
+        self.domain.lifecycles.setdefault(class_name, {})[i] = lsm
 
 
     def initialize_action_states(self) -> bool:

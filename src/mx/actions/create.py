@@ -98,4 +98,8 @@ class Create(ActionExecution):
         _logger.info(f"Created instance of {target_class}")
         log_table(_logger, table_msg(db=self.domdb, variable_name=target_class))
 
+        # Set the identifier of the newly created instance for future reference (lifecycle creation for example)
+        target_id = self.activity_execution.domain.class_ids[target_class]
+        self.activity_execution.new_inst_id = {k: initial_attr_values[k] for k in target_id if k in initial_attr_values}
+
         self.complete()
