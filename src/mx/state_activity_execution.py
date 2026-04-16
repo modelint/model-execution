@@ -103,6 +103,7 @@ class StateActivityExecution(ActivityExecution):
 
         super().__init__(domain=state_machine.domain, activity_label=sa_label, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
                          signum=signum, parameters=state_machine.active_event.params)
+        self.cleanup()
 
     def initialize_action_states(self) -> bool:
         """

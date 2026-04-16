@@ -70,9 +70,7 @@ class MethodExecution(ActivityExecution):
         super().__init__(domain=domain, activity_label=method_label, anum=anum, owner_name=owner_name, activity_rvn=activity_rvn,
                          signum=signum, parameters=parameters)
 
-        # TODO
         # Are we returning a synch output?
-        # If so set either the rv or self.synch_scalar_output
         my_synch_output_mmrv = Relation.declare_rv(db=mmdb, owner=owner_name, name="synch_output")
         sflow_r = Relation.semijoin(db=mmdb, rname1=self.activity_rvn, rname2='Synchronous Output',
                                     attrs={'Activity': 'Anum', 'Domain': 'Domain'}, svar_name=my_synch_output_mmrv)
@@ -84,6 +82,8 @@ class MethodExecution(ActivityExecution):
             Relation.restrict(db=domain.alias, relation=sflow_value.value, svar_name=synch_output_drv)
             self.synch_ns_output_type = sflow_t['Type']
         pass
+
+        self.cleanup()
 
     def enable_xi_flow(self):
         """

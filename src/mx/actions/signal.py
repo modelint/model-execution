@@ -160,9 +160,15 @@ class Signal(ActionExecution):
         # log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.initial_pseudo_state))
 
         from mx.dc_activity_execution import DelegatedCreationActivity
-        DelegatedCreationActivity(ips_rv=mmrv.initial_pseudo_state, parameters=self.supplied_params,
-                                  domain=self.activity_execution.domain, signal_action_mmrv=mmrv.initial_signal_action,
-                                  source_activity_execution=self.activity_execution)
+        dca = DelegatedCreationActivity(ips_rv=mmrv.initial_pseudo_state, parameters=self.supplied_params,
+                                        domain=self.activity_execution.domain,
+                                        signal_action_mmrv=mmrv.initial_signal_action,
+                                        source_activity_execution=self.activity_execution)
+
+        # Create an instance of Interaction Event and then dispatch it
+        # ie = InteractionEvent(sm_type=StateMachineType.LIFECYCLE, event_spec=, params=self.supplied_params,
+        #                       domain=self.activity_execution.domain, source=)
+        # dca.lsm.accept_interaction_event(event=)
         pass
 
         # Use signal_instance (or duplicate it) to dispatch the initial Interaction Event

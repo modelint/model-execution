@@ -41,6 +41,7 @@ class DelegatedCreationActivity(ActivityExecution):
         self.source_ae = source_activity_execution
         self.signal_action_mmrv = signal_action_mmrv
         self.new_inst_id: NamedValues = {} # The delegated creation activity will set this to the id of the new instance
+        self.new_inst_number = 0  # We use this if the target class is not populated with any instances
         dc_activity_r = Relation.join(db=mmdb, rname1=ips_rv, rname2='Delegated Creation Activity',
                                       attrs={'Creation_activity': 'Anum', 'Domain': 'Domain', }, svar_name=ips_rv
                                       )
@@ -67,22 +68,16 @@ class DelegatedCreationActivity(ActivityExecution):
                          activity_rvn=activity_rvn,
                          signum=csig, parameters=parameters)
 
-        # Generate an instance ID for this new Lifecycle
-        i = 0  # Default assumption is that there are no lifecycles for this class
-        if domain.lifecycles.get(class_name):
-            # Add one to the maximum key value to generate an unused instance id
-            i = max(domain.lifecycles[class_name]) + 1
-
         # Create a lifeycle state machine for this instance and add it to the domain lifecycle dictionary
-        lsm = LifecycleStateMachine(
-            lifecycle_sm_id=i,
+        self.lsm = LifecycleStateMachine(
+            lifecycle_sm_id=self.new_inst_number,
             current_state=ip_state,
             instance_id=self.new_inst_id,
             class_name=class_name,
             domain=domain
         )
-        self.domain.lifecycles.setdefault(class_name, {})[i] = lsm
-        pass
+        self.domain.lifecycles.setdefault(class_name, {})[self.new_inst_number] = self.lsm
+        self.cleanup()
 
 
     def initialize_action_states(self) -> bool:

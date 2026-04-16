@@ -98,8 +98,27 @@ class Create(ActionExecution):
         _logger.info(f"Created instance of {target_class}")
         log_table(_logger, table_msg(db=self.domdb, variable_name=target_class))
 
+        # Also the lifecycle ID instance mapping
+        # Generate an instance ID for this new Lifecycle
+        if self.activity_execution.domain.lifecycles.get(target_class):
+            # Add one to the maximum key value to generate an unused instance id
+            self.activity_execution.new_inst_number = max(self.activity_execution.domain.lifecycles[target_class]) + 1
+        # We save the new inst number as an attribute of DelegatedCreationActivity since it will be referenced
+        # there when the Lifecycle state machinew is created
+
+        # Update the _instance relation which maps int instance ids to real attribute identifiers
+        new_inst_id_drv = Relation.declare_rv(db=self.domdb, owner=self.owner, name='new_inst_id')
+        # Get identifier attributes of the target class
+        class_id = self.activity_execution.domain.class_ids[target_class]
+        # Project on that identifier and add an _instance attribute to hold the int instance id of the new instance
+        Relation.project(db=self.domdb, relation=target_class, attributes=class_id, svar_name=new_inst_id_drv)
+        Relation.extend(db=self.domdb, attrs={'_instance': self.activity_execution.new_inst_number}, relation=new_inst_id_drv,
+                        svar_name=new_inst_id_drv)
+        # Get the existing population of inst id mappings for the target class and update it with the new instance
+        class_inst_id_drv = self.activity_execution.domain.sm_instance_rvs[target_class]
+        Relation.union(db=self.domdb, relations=(new_inst_id_drv, class_inst_id_drv), svar_name=class_inst_id_drv)
+
         # Set the identifier of the newly created instance for future reference (lifecycle creation for example)
-        target_id = self.activity_execution.domain.class_ids[target_class]
-        self.activity_execution.new_inst_id = {k: initial_attr_values[k] for k in target_id if k in initial_attr_values}
+        self.activity_execution.new_inst_id = {k: initial_attr_values[k] for k in class_id if k in initial_attr_values}
 
         self.complete()

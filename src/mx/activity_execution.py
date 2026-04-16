@@ -148,6 +148,11 @@ class ActivityExecution(ABC):
             self.enable_initial_flows()
             self.execute()
 
+    def cleanup(self):
+        """
+        Common cleanup tasks after Activity completes execution. Should be invoked by the subclass when it is
+        done.
+        """
         # Since all Actions have executed, we are done with the domain db rvs and can free them up now
         Relation.free_rvs(db=self.domain.alias, owner=snake(self.owner_name))
         # Free up all action rvs
