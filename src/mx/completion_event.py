@@ -42,6 +42,7 @@ class CompletionEvent(DispatchedEvent):
     def dispatch(self):
         # Look up the target state machine and set the completion event
         match self.sm_type:
+            # TODO: There is some duplication of code below to refactor once SA dispatch is impelmented
             case StateMachineType.LIFECYCLE:
                 # We need the instance id generated for the executing instance of this lifecycle
                 # Since this is a completion event, we can just use the source instance id
@@ -56,7 +57,11 @@ class CompletionEvent(DispatchedEvent):
                 # We don't queue it or put it in a set. We just make it the one and only pending completion event.
                 sm.accept_completion_event(event=self)
             case StateMachineType.MA:
-                pass
+                R = ", ".join([f"{a}:<{v}>" for a, v in self.source.instance_id.items()])
+                inst_id_r = Relation.restrict(db=self.domain.alias, relation=f"{self.domain.owner}__{self.state_model}_i", restriction=R)
+                target_inst_id = int(inst_id_r.body[0]["_instance"])
+                sm = self.domain.mult_assigners[self.partitioning_class][target_inst_id]
+                sm.accept_completion_event(event=self)
             case StateMachineType.SA:
                 pass
 

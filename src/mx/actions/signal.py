@@ -248,10 +248,21 @@ class Signal(ActionExecution):
         # The source is the same as the destination for a Completion Event
         # And we know the source must be a State Model, assigner or lifecycle
         # So we must fill out the appropriate named tuple
+        match self.activity_execution.state_machine.sm_type:
+            case StateMachineType.LIFECYCLE:
+                CompletionEvent(sm_type=self.activity_execution.state_machine.sm_type,
+                                event_spec=self.event_spec, params=self.supplied_params,
+                                domain=self.activity_execution.domain, source=self.signal_source)
+            case StateMachineType.MA:
+                CompletionEvent(sm_type=self.activity_execution.state_machine.sm_type,
+                                event_spec=self.event_spec, params=self.supplied_params,
+                                domain=self.activity_execution.domain, source=self.signal_source,
+                                partitioning_class=self.activity_execution.state_machine.pclass_name,
+                                partitioning_instance=self.activity_execution.state_machine.instance_id,
+                                to_rnum=self.activity_execution.state_machine.state_model)
+            case StateMachineType.SA:
+                pass
 
-        CompletionEvent(sm_type=self.activity_execution.state_machine.sm_type,
-                        event_spec=self.event_spec, params=self.supplied_params,
-                        domain=self.activity_execution.domain, source=self.signal_source)
 
     def process_cancel_delay(self):
         pass
