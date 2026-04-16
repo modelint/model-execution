@@ -27,8 +27,8 @@ class LifecycleStateMachine(StateMachine):
         # Owner name is prefixed with the state machine type
         rv_owner = f"Lifecycle_SM_{lifecycle_sm_id}"
 
-        super().__init__(sm_id=f"lc_{lifecycle_sm_id}", rv_owner=rv_owner, current_state=current_state, state_model=class_name,
-                         sm_type=StateMachineType.LIFECYCLE, domain=domain)
+        super().__init__(sm_id=f"lc_{lifecycle_sm_id}", rv_owner=rv_owner, current_state=current_state,
+                         state_model=class_name, sm_type=StateMachineType.LIFECYCLE, domain=domain)
 
         self.lifecycle_sm_id = lifecycle_sm_id  # Unique among lifecycle state machines in this domain
         self.instance_id = instance_id

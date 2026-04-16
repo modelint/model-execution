@@ -70,11 +70,43 @@ class Signal(ActionExecution):
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(owner=self.owner)
 
+        self.signal_source = self.set_source_address()
+        self.event_spec: str | None = None
         self.supplied_params = self.set_supplied_params()
 
         self.process_signal()
 
         self.complete()
+
+    def set_source_address(self) -> ElementAddress:
+        """
+        Determine the address of the event source.
+
+        Returns:
+            ElementAddress: namedtuple with the source address data
+        """
+        # TODO: This only works for state activity sources, add Method / Domain operation activities
+        # Determine the source type
+        match self.activity_execution.state_machine.sm_type:
+            case StateMachineType.LIFECYCLE:
+                signal_source = InstanceAddress(
+                    domain=self.activity_execution.domain.name,
+                    class_name=self.activity_execution.state_machine.state_model,
+                    instance_id=self.activity_execution.state_machine.instance_id
+                )
+            case StateMachineType.MA:
+                signal_source = AssignerAddress(
+                    domain=self.activity_execution.domain.name,
+                    rel_name=self.activity_execution.state_machine.state_model,
+                    instance_id=self.activity_execution.state_machine.instance_id
+                )
+            case StateMachineType.SA:
+                signal_source = AssignerAddress(
+                    domain=self.activity_execution.domain.name,
+                    rel_name=self.activity_execution.state_machine.state_model,
+                    instance_id=None
+                )
+        return signal_source
 
     def process_signal(self):
         """
@@ -101,17 +133,22 @@ class Signal(ActionExecution):
         # Get any supplied parameters
         self.set_supplied_params()
 
+        # Get the event spec name (needed for any Send Signal Action)
+        signal_send_action_r = Relation.restrict(db=mmdb, relation=mmrv.send_signal_action)
+        self.event_spec = signal_send_action_r.body[0]["Event_spec"]
+
         # Mutually exclusive destination cases
 
         # Signal Completion Action (self)
-        signal_completion_action_r = Relation.join(db=mmdb, rname1=mmrv.send_signal_action,
-                                                   rname2="Signal Completion Action")
-        log_table(_logger, table_msg(db=mmdb, variable_name=_relation, table_name="Signal Completion Action"))
+        signal_completion_action_r = Relation.join(
+            db=mmdb, rname1=mmrv.send_signal_action, rname2="Signal Completion Action",
+            svar_name=mmrv.signal_instance_action
+        )
         if signal_completion_action_r.body:
-            self.signal_completion(
-                event_spec_name=signal_completion_action_r.body[0]["Event_spec"],
-            )
+            self.signal_completion()
             return
+
+        # For all other cases we will need to specify the source of the event as an ElementAddress
 
         # Signal Instance
         signal_instance_action_r = Relation.join(
@@ -165,13 +202,10 @@ class Signal(ActionExecution):
                                         signal_action_mmrv=mmrv.initial_signal_action,
                                         source_activity_execution=self.activity_execution)
 
-        # Create an instance of Interaction Event and then dispatch it
-        # ie = InteractionEvent(sm_type=StateMachineType.LIFECYCLE, event_spec=, params=self.supplied_params,
-        #                       domain=self.activity_execution.domain, source=)
-        # dca.lsm.accept_interaction_event(event=)
-        pass
-
-        # Use signal_instance (or duplicate it) to dispatch the initial Interaction Event
+        # Create an instance of Interaction Event to dispatch it
+        InteractionEvent(sm_type=StateMachineType.LIFECYCLE, event_spec=self.event_spec, params=self.supplied_params,
+                         domain=self.activity_execution.domain, source=self.signal_source, to_instance=dca.new_inst_id,
+                         to_class=dca.lsm.class_name)
         pass
 
     def signal_assigner(self):
@@ -207,15 +241,17 @@ class Signal(ActionExecution):
             to_rnum=rnum
         )
 
-    def signal_completion(self, event_spec_name: str):
+    def signal_completion(self):
+        """
+        Dispatch a Completion Event
+        """
+        # The source is the same as the destination for a Completion Event
+        # And we know the source must be a State Model, assigner or lifecycle
+        # So we must fill out the appropriate named tuple
+
         CompletionEvent(sm_type=self.activity_execution.state_machine.sm_type,
-                        event_spec=event_spec_name, params=self.supplied_params,
-                        domain=self.activity_execution.domain,
-                        source=InstanceAddress(
-                            domain=self.activity_execution.domain.name,
-                            class_name=self.activity_execution.state_machine.state_model,
-                            instance_id=self.activity_execution.state_machine.instance_id)
-                        )
+                        event_spec=self.event_spec, params=self.supplied_params,
+                        domain=self.activity_execution.domain, source=self.signal_source)
 
     def process_cancel_delay(self):
         pass

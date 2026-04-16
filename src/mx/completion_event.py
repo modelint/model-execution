@@ -30,9 +30,9 @@ class CompletionEvent(DispatchedEvent):
             case StateMachineType.LIFECYCLE:
                 state_model = source.class_name
             case StateMachineType.SA:
-                pass
+                state_model = source.rel_name
             case StateMachineType.MA:
-                pass
+                state_model = source.rel_name
         super().__init__(source=source, event_spec=event_spec, state_model=state_model, sm_type=sm_type,
                          to_instance=to_instance,
                          partitioning_class=partitioning_class, partitioning_instance=partitioning_instance,
