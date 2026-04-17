@@ -47,9 +47,9 @@ class StateActivityExecution(ActivityExecution):
         self.pi_flow_name = None
 
         # Set signum
-        R = f"State_model:<{self.state_machine.state_model}>, Domain:<{self.state_machine.domain.name}>"
-        state_sig_r = Relation.restrict(db=mmdb, relation="State Signature", restriction=R)
-        signum = state_sig_r.body[0]['SIGnum']
+        R = f"Name:<{self.state}>, State_model:<{self.state_machine.state_model}>, Domain:<{self.state_machine.domain.name}>"
+        state_sig_r = Relation.restrict(db=mmdb, relation="Real State", restriction=R)
+        signum = state_sig_r.body[0]['Signature']
 
         # Initialization specific to each type of State Machine
         match self.state_machine.sm_type:
