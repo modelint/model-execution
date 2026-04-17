@@ -60,7 +60,10 @@ class StateActivityExecution(ActivityExecution):
                 # freed up during execution of this State Activity.
                 self.instance_id_value = '_'.join(v for v in self.state_machine.instance_id.values())
                 # The owner_name is passed along to the superclass for initialization as a self variable
-                owner_name = f"LSM_{self.state_machine.state_model}__{self.state}_{anum}_inst_{self.instance_id_value}"
+
+                # We are careful to strip away any terminating ? that may appear in a state name
+                # (actually we weren't careful, we got a nasty TclRAL error, and fixed it)  - LS
+                owner_name = f"LSM_{self.state_machine.state_model}__{self.state.removesuffix('?')}_{anum}_inst_{self.instance_id_value}"
 
                 # Now we save our Lifecycle Activity instance for use by any executing Action
                 # The activity rv_name is passed along to the superclass
