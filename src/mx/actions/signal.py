@@ -157,7 +157,7 @@ class Signal(ActionExecution):
         )
         if signal_instance_action_r.body:
             log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.signal_instance_action))
-            self.signal_instance()
+            self.signal_instance(target_inst_flow_name = signal_instance_action_r.body[0]['Instance_flow'])
             return
 
         # Signal Assigner State Machine (single or multiple)
@@ -180,7 +180,29 @@ class Signal(ActionExecution):
             self.initial_signal()
             return
 
-    def signal_instance(self):
+    def signal_instance(self, target_inst_flow_name: str):
+        """
+        Process an signal to an instance. An event is dispatched to an existing lifecycle state machine.
+
+        Args:
+            target_inst_flow_name: The name of the flow providing the instance recieving the signal
+        """
+        # The Signal Instance Action takes an input that specifies any number of target instances
+        # all belonging to the same class
+        target_inst_flow = self.activity_execution.flows[target_inst_flow_name]
+        log_table(_logger, table_msg(db=self.domdb, variable_name=target_inst_flow.value))
+        target_inst_r = Relation.restrict(db=self.domdb, relation=target_inst_flow.value)
+
+        # The flow type gives us the class name
+        target_class_name = target_inst_flow.flowtype
+
+        # We dispatch a distinct signal (if any) to each target instance
+        for t in target_inst_r.body:
+            # Create an instance of Interaction Event to dispatch it
+            # Each t is a reference to a single instance of the flow's class type
+            InteractionEvent(sm_type=StateMachineType.LIFECYCLE, event_spec=self.event_spec, params=self.supplied_params,
+                             domain=self.activity_execution.domain, source=self.signal_source, to_instance=t,
+                             to_class=target_class_name)
         pass
 
     def initial_signal(self):
