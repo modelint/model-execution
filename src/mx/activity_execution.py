@@ -39,6 +39,7 @@ from mx.actions.pass_action import PassAction  # Can't be 'Pass' since pass is a
 from mx.actions.rank_restrict import RankRestrict
 from mx.actions.signal import Signal
 from mx.actions.method_call import MethodCall
+from mx.actions.computation import Computation
 from mx.db_names import mmdb
 from mx.rvname import declare_rvs
 from mx.mxtypes import ActionState, NamedValues
@@ -95,6 +96,7 @@ class ActivityExecution(ABC):
         "decision": Decision,
         "create": Create,
         "new assoc ref": NewAssocRef,
+        "computation": Computation,
     }
 
     def __init__(self, domain: 'Domain', activity_label: str, anum: str, owner_name: str, activity_rvn: str,
