@@ -3,6 +3,7 @@
 # System
 import logging
 from typing import TYPE_CHECKING, NamedTuple
+import re
 
 if TYPE_CHECKING:
     from mx.activity_execution import ActivityExecution
@@ -21,6 +22,7 @@ from mx.actions.flow import ActiveFlow, FlowDir
 from mx.rvname import declare_rvs
 from mx.exceptions import *
 from mx.utility import *
+from mx.mxtypes import SCALAR_TYPE
 
 _logger = logging.getLogger(__name__)
 
@@ -35,6 +37,36 @@ class MMRVs(NamedTuple):
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner, "computation_action", "boolean_partition", "general_computation")
     return MMRVs(*rvs)
+
+def evaluate_flow_expression(expr: str, flow_values: dict[str, int | float | str]) -> int | float | bool | str:
+    """
+    Evaluate an expression containing <Fn> flow markers.
+
+    Args:
+        expr: Expression string like "<F3> == <F5>" or "(<F1> + <F3>) / <F1>"
+        flow_values: Dict mapping flow names to their values, e.g. {'F3': 3.14, 'F5': 3.14}
+
+    Returns:
+        Evaluated result of the expression.
+    """
+    # Extract all flow names referenced in the expression
+    flow_names = re.findall(r'<(F\d+)>', expr)
+
+    # Verify all referenced flows have values
+    missing = [f for f in flow_names if f not in flow_values]
+    if missing:
+        raise KeyError(f"No value provided for flow(s): {missing}")
+
+    # Replace each <Fn> marker with its value, quoting strings
+    def replacement(match: re.Match) -> str:
+        name = match.group(1)
+        val = flow_values[name]
+        return repr(val) if isinstance(val, str) else str(val)
+
+    python_expr = re.sub(r'<(F\d+)>', replacement, expr)
+
+    return eval(python_expr)
+
 
 class Computation(ActionExecution):
 
@@ -73,12 +105,11 @@ class Computation(ActionExecution):
             source_flow = self.activity_execution.flows[fname]
             _logger.info(f"{fname}")
             if source_flow.flowtype == 'scalar':
-                # TODO: We need to extend the Flow structure to include the scalar type name
+                _logger.info(
+                    sflow_msg(flow_name=fname, flow_dir=FlowDir.IN, flow_type=source_flow.scalar,
+                              activity=self.activity_execution, value=source_flow.value)
+                )
                 pass
-                # _logger.info(
-                #     sflow_msg(flow_name=fname, flow_dir=FlowDir.IN, flow_type=attr_t["Scalar"],
-                #               activity=self.activity_execution, value=source_flow.vaue)
-                # )
             else:
                 log_table(_logger, nsflow_msg(db=self.domdb, flow_name=fname, flow_dir=FlowDir.IN,
                                               flow_type=source_flow.flowtype, activity=self.activity_execution,
@@ -87,53 +118,35 @@ class Computation(ActionExecution):
         # Is this a General Computation or a Boolean Paritition?
         general_computation_r = Relation.semijoin(
             db=mmdb, rname1=mmrv.computation_action, rname2='General Computation', svar_name=mmrv.general_computation)
+        result_flow_name = general_computation_r.body[0]['Result_flow']
         if general_computation_r.body:
-            self.process_computation(result_flow_name=general_computation_r.body[0]['Result_flow'])
+            self.process_computation(result_flow_name=result_flow_name)
+            result_flow = self.activity_execution.flows[result_flow_name]
+            _logger.info(
+                sflow_msg(flow_name=result_flow_name, flow_dir=FlowDir.OUT, flow_type=result_flow.scalar,
+                          activity=self.activity_execution, value=result_flow.value)
+            )
         else:
             self.process_boolean_partition()
-
-
-        attribute_write_accesses_r = Relation.semijoin(
-            db=mmdb, rname1=mmrv.write_action, rname2="Attribute Write Access",
-            attrs={"ID": "Write_action", "Activity": "Activity", "Domain": "Domain"},
-            svar_name=mmrv.attr_write_accesses
-        )
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.attr_write_accesses))
-
-        # Get all attributes being written so we can look up each type
-        attr_r = Relation.semijoin(db=mmdb, rname1=mmrv.attr_write_accesses, rname2="Attribute",
-                                   attrs={"Attribute": "Name", "Class": "Class", "Domain": "Domain"},
-                                   svar_name=mmrv.attributes)
-
-        # Expand irefs to instance set
-        output_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="output_input")
-        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=output_iset_rv,
-                              class_name=self.source_flow.flowtype)
-
-        qty_instances_to_write = Relation.cardinality(db=self.domdb, rname=output_iset_rv)
-        if qty_instances_to_write > 1:
-            msg = f"Write to multiple instances not yet supported"
-            raise MXException(msg)
-
-        for access in attribute_write_accesses_r.body:
-            new_value = self.activity_execution.flows[access['Input_flow']].value
-            write_attr = access['Attribute'].replace(' ', '_')
-            class_name = access['Class'].replace(' ', '_')
-            # TODO: NOW self.source_flow.value is now an rv name, need to resolve that to id value
-            source_iref_str = Relation.get_rval_string(db=self.domdb, variable_name=self.source_flow.value)
-            source_iref_t_dict = Relation.make_pyrel(source_iref_str).body[0]
-
-            Relvar.updateone(db=self.domdb, relvar_name=class_name, id=source_iref_t_dict,
-                             update={write_attr: new_value})
-
-        log_table(_logger, table_msg(db=self.domdb, variable_name='Accessible Shaft Level'))
 
         self.complete()
 
     def process_computation(self, result_flow_name: str):
-        pass
+        """
+        Replace flow name markers in computation with flow values and set the result value
+        on the output flow.
+
+        Args:
+            result_flow_name: Flow (Fn) name of the output flow
+        """
+        fvals = {f: self.activity_execution.flows[f].value for f in self.input_flow_names}
+        result = evaluate_flow_expression(expr=self.expression, flow_values=fvals)
+        result_mx_type = SCALAR_TYPE[type(result)]
+        self.activity_execution.flows[result_flow_name] = ActiveFlow(
+            value=result, flowtype='scalar', scalar=result_mx_type)
 
     def process_boolean_partition(self):
+        pass
         mmrv = self.mmrv
         boolean_partition_r = Relation.semijoin(
             db=mmdb, rname1=mmrv.computation_action, rname2='Boolean Partition', svar_name=mmrv.boolean_partition)

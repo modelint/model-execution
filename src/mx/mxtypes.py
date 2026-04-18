@@ -6,6 +6,14 @@ from collections import namedtuple
 from enum import Enum, StrEnum
 
 
+# Map python to MX base scalar types
+SCALAR_TYPE = {
+    bool: 'Boolean',
+    int: 'Integer',
+    float: 'Float',
+    str: 'String'
+}
+
 class ActionState(StrEnum):
     U = "State:U"  # Unexecuted action
     E = "State:E"  # Enabled action

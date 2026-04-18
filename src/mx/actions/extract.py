@@ -79,7 +79,7 @@ class Extract(ActionExecution):
                                    svar_name=mmrv.attribute)
         attr_t = attr_r.body[0]
 
-        self.activity_execution.flows[self.dest_flow_name] = ActiveFlow(value=extracted_value, flowtype="scalar")
+        self.activity_execution.flows[self.dest_flow_name] = ActiveFlow(value=extracted_value, flowtype="scalar", scalar=attr_t['Scalar'])
 
         _logger.info(
             sflow_msg(flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT, flow_type=attr_t["Scalar"],

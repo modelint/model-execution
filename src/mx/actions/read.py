@@ -24,17 +24,20 @@ from mx.mxtypes import *
 
 _logger = logging.getLogger(__name__)
 
+
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
     this_read_action: str
     attr_read_accesses: str
     attributes: str
 
+
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner, "this_read_action", "attr_read_accesses", "attributes")
     return MMRVs(*rvs)
+
 
 class Read(ActionExecution):
 
@@ -64,13 +67,14 @@ class Read(ActionExecution):
         read_action_t = read_action_r.body[0]
 
         self.source_flow_name = read_action_t["Instance_flow"]
-        self.source_flow = self.activity_execution.flows[self.source_flow_name]  # The active content of source flow (value, type)
+        self.source_flow = self.activity_execution.flows[
+            self.source_flow_name]  # The active content of source flow (value, type)
 
         _logger.info("Flows")
         log_table(_logger, nsflow_msg(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
                                       flow_type=self.source_flow.flowtype, activity=self.activity_execution,
                                       db=self.domdb, rv_name=self.source_flow.value)
-                                      )
+                  )
 
         attribute_read_accesses_r = Relation.semijoin(db=mmdb, rname1=mmrv.this_read_action,
                                                       rname2="Attribute Read Access",
@@ -95,11 +99,13 @@ class Read(ActionExecution):
             attr_value_r = Relation.project(db=self.domdb, attributes=(access["Attribute"],),
                                             relation=input_iset_rv)
             attr_value = attr_value_r.body[0][snake(access["Attribute"])]
-            self.activity_execution.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar")
+            attr_type = atypes[access["Attribute"]]
+            self.activity_execution.flows[access["Output_flow"]] = ActiveFlow(value=attr_value, flowtype="scalar",
+                                                                              scalar=attr_type)
             _logger.info(f"- Attribute: {access["Attribute"]}")
             _logger.info(
-                sflow_msg(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT, flow_type=atypes[access["Attribute"]],
-                                         activity=self.activity_execution, value=attr_value)
+                sflow_msg(flow_name=access["Output_flow"], flow_dir=FlowDir.OUT, flow_type=attr_type,
+                          activity=self.activity_execution, value=attr_value)
             )
 
         self.complete()

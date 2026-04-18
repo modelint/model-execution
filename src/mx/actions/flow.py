@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 class ActiveFlow(NamedTuple):
     value: Any
     flowtype: str
+    scalar: str | None = None  # We set this value only if the flowtype is 'scalar'
 
 class FlowDir(Enum):
     IN = "in"
