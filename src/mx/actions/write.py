@@ -93,8 +93,8 @@ class Write(ActionExecution):
 
         for access in attribute_write_accesses_r.body:
             new_value = self.activity_execution.flows[access['Input_flow']].value
-            # Convert to string
-            new_value = str(new_value).upper() if isinstance(new_value, bool) else new_value
+            # Convert to TRUE/FALSE if boolean or just convert to string otherwise
+            new_value = str(new_value).upper() if isinstance(new_value, bool) else str(new_value)
             write_attr = access['Attribute'].replace(' ', '_')
             class_name = access['Class'].replace(' ', '_')
             # TODO: NOW self.source_flow.value is now an rv name, need to resolve that to id value
