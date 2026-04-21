@@ -4,17 +4,14 @@
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
-from mx.mxtypes import StateMachineType
-
-if TYPE_CHECKING:
-    from mx.activity_execution import ActivityExecution
-
 # Model Integration
 from pyral.relation import Relation
 from pyral.relation import _relation  # For table_msg
 from pyral.database import Database  # Diagnostics
 
 # MX
+if TYPE_CHECKING:
+    from mx.activity_execution import ActivityExecution
 from mx.log_table_config import TABLE, log_table
 from mx.message import *
 from mx.db_names import mmdb

@@ -21,6 +21,7 @@ from mx.multiple_assigner_state_machine import MultipleAssignerStateMachine
 from mx.single_assigner_state_machine import SingleAssignerStateMachine
 from mx.assigner_state_machine import AssignerStateMachine
 from mx.lifecycle_state_machine import LifecycleStateMachine
+from mx.ee import EE
 from mx.db_names import mmdb
 from mx.initial_states import InitialStateContext
 from mx.exceptions import *
@@ -99,11 +100,22 @@ class Domain:
         self.initiate_ma_state_machines()
         # self.initiate_sa_state_machines()
         # self.initiate_methods()
+        self.ee : dict[str, EE] = {}  # Dictionary of EE objects keyed by EE name
+        self.initialize_ees()
 
         # Clear out all relational variables used for initialization
         Relation.free_rvs(db=mmdb, owner=self.owner)
         # There is a set of _i instance tag relations, on per lifecycle and we
         # use these for state machine lookup, so only mmdb rvs are freed up here
+
+    def initialize_ees(self):
+        """
+        Build up a dictionary of any External Entities keyed by EE name with the service domain name as the value
+        """
+        # Look up all EE's defined for this domain in the populated metamodel
+        ee_r = Relation.restrict(db=mmdb, relation='External Entity', restriction=f"Domain:<{self.name}>")
+        for t in ee_r.body:
+            self.ee[t['Name']] = EE(name=t['Name'], service_domain_name=t['Service_domain'], domain=self)
 
     @property
     def busy(self) -> bool:

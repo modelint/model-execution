@@ -44,7 +44,6 @@ def main():
     # Start logging
     logger = get_logger()
 
-
     print('---')
     print(f'{PROGRAM_NAME} version: {version}')
     print('---')
@@ -89,7 +88,12 @@ def main():
 
     ]
 
+
     logger.info(f"Beginning scenario: {s.playground.name}")
+
+    # Set monitored response
+    from mx.actions.ext_signal import ExtSignal
+    ExtSignal.announce = True
 
     system_responses = s.inject(stimulus=interactions[0], responses=[interactions[1]])
 

@@ -41,6 +41,7 @@ from mx.actions.signal import Signal
 from mx.actions.method_call import MethodCall
 from mx.actions.computation import Computation
 from mx.actions.type_action import TypeAction
+from mx.actions.ext_signal import ExtSignal
 from mx.db_names import mmdb
 from mx.rvname import declare_rvs
 from mx.mxtypes import ActionState, NamedValues
@@ -92,6 +93,7 @@ class ActivityExecution(ABC):
         "gate": Gate,
         "pass": PassAction,
         "signal": Signal,
+        "ext signal": ExtSignal,
         "write": Write,
         "method call": MethodCall,
         "decision": Decision,
@@ -120,6 +122,11 @@ class ActivityExecution(ABC):
         self.signum = signum
         self.parameters = parameters
         self.ready_actions: set[str] = set()
+
+        # After this Activity Completes, check content of suspend actions
+        # if not empty, we need to suspend processing in this Domain and return control to the supervisor
+        # (the mdb model debugger for example)
+        self.suspend_actions = []
 
         # Flow content during this execution
         #   None - Flow has not been assigned a value yet

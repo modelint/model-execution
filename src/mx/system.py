@@ -3,7 +3,6 @@
 # System
 import sys
 import logging
-from typing import TYPE_CHECKING, Optional
 from pathlib import Path
 from contextlib import redirect_stdout
 
