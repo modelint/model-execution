@@ -52,6 +52,10 @@ class Domain:
             alias: The domain alias serves as the name of the corresponding domain database
             system: Reference to the single System object.
         """
+        # Domain components such as actions will make announcements to if they are being monitored
+        # When any are present, we pause execution and pass control back to the monitoring process so it can review them
+        self.announcements = []  # A list of any announcements made by domain components
+
         self.events_pending = False  # Initially, there is no work to do
         self.activity_executing = False  # Initially, no Activity is executing
 
@@ -131,13 +135,13 @@ class Domain:
         # Process all lifecycles
         for class_name, instance in self.lifecycles.items():
             for inst_id, sm in instance.items():
-                if sm.busy:
+                if sm.busy and not self.system.suspend:
                     sm.go()  # Operating at thread granularity 0, 0 max events
-        pass
+
         # Process all multiple assigner state machines
         for pclass_name, p_instance in self.mult_assigners.items():
             for inst_id, sm in p_instance.items():
-                if sm.busy:
+                if sm.busy and not self.system.suspend:
                     sm.go()
         # Process all single assigner state machines
         # TODO: Same for single assigners

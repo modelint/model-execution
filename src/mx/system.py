@@ -47,12 +47,11 @@ class System:
         self.mmdb_path = None  # Path to the populated metamodel database
         self.domains: dict[str, Domain] = {}  # All modeled domains in the system
         self.name = None  # Name of the system, extracted from the populated metamodel
-        self.debug = False
         self.verbose = False
         self.playground = None  # This is a set of populated domain dbs and compatible scenarios
-        self.response_monitor = None
+        self.suspend = False
 
-    def initialize(self, system_path: Path, verbose: bool, debug: bool):
+    def initialize(self, system_path: Path, verbose: bool):
         """
         Load the system from a populated metamodel database.
         The end result is a System with one or more modeled domains, each unpopulated
@@ -60,7 +59,6 @@ class System:
         Args:
             system_path:  Path to the system
             verbose:  If true, we may log to the console
-            debug: If true, we do some diagnostic activity
         """
         # for handler in logging.getLogger().handlers:
         #     if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
@@ -119,10 +117,13 @@ class System:
 
     def go(self):
         work_remaining = True  # Assume there is work to be done
-        while work_remaining:
+        suspend = False
+        while work_remaining and not suspend:
             for d in self.domains.values():
                 _logger.info(f"Executing domain: {d.alias}")
                 work_remaining = d.go()  # We'll stay in the loop as long as at least one domain reports true
+                if self.suspend:
+                    return
 
     def set_mmdb_path(self):
 
@@ -138,7 +139,7 @@ class System:
 
         self.mmdb_path = model_path / ral_files[0]
 
-    def set_response_monitors(self, responses):
+    def set_announcements(self, responses):
         """
         Flag any action associated with a response to be monitored so that when and if that action fires,
         it checks to see if its data matches an expected response.
@@ -146,19 +147,19 @@ class System:
         Args:
             responses: Any number of responses that should be monitored
         """
-        self.response_monitor = responses
+        self.announcements = responses
         for r in responses:
             match r.action:
                 case ActionType.EXTERNAL_EVENT:
-                    from mx.actions.signal import Signal
-                    Signal.monitor_external = True
+                    from mx.actions.ext_signal import ExtSignal
+                    ExtSignal.announce = True
                     _logger.info(f"Setting MDB external event monitor")
-                case ActionType.SIGNAL_INSTANCE:
-                    from mx.actions.signal import Signal
-                    Signal.monitor_internal = True
-                    _logger.info(f"Setting MDB internal signal monitor")
+                # case ActionType.SIGNAL_INSTANCE:
+                #     from mx.actions.signal import Signal
+                #     Signal.monitor_internal = True
+                #     _logger.info(f"Setting MDB internal signal monitor")
 
-    def inject(self, stimulus: Interaction, responses: list[Interaction]) -> Interaction:
+    def inject(self, stimulus: Interaction):
         """
         Inject the supplied stimulus and set a monitor for each expected response, if any
 
@@ -170,7 +171,7 @@ class System:
             Interaction:
         """
         # Save expected responses to be detected
-        self.set_response_monitors(responses)
+        # self.set_announcements(responses)
 
         # process the stimulus
         match stimulus.action:
@@ -185,13 +186,15 @@ class System:
         _logger.info("Transferring control from scenario to system")
         _logger.info("MDB --> SYS")
         _logger.info("---")
-        suspend_status = self.go()
+        self.go()
+        if self.suspend:
+            self.process_suspend()
+        pass
         # the suspend status tells us why the system stopped
         # monitor tripped, terminal condition
         # If monitor tripped, report the detected interaction and exit
 
-
-
+    def process_suspend(self):
         pass
 
     def process_signal_instance(self, s: Interaction):

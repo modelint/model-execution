@@ -1,5 +1,5 @@
 """
-Blueprint Model Execution
+Blueprint MX Model Execution
 
 """
 # System
@@ -11,11 +11,11 @@ from pathlib import Path
 import atexit
 
 # MX
-from mx.xe import XE
 from mx import version
+from mx.db_names import PROGRAM_NAME
+from mx._mdb import MDB
 
 _logpath = Path("mx.log")
-_progname = 'Blueprint Model Execution'
 
 def clean_up():
     """Normal and exception exit activities"""
@@ -30,15 +30,9 @@ def get_logger():
 
 # Configure the expected parameters and actions for the argparse module
 def parse(cl_input):
-    parser = argparse.ArgumentParser(description=_progname)
+    parser = argparse.ArgumentParser(description=PROGRAM_NAME)
     parser.add_argument('-s', '--system', action='store',
-                        help='Name of the metamodel TclRAL database *.ral file populated with one or more domains')
-    parser.add_argument('-c', '--context', action='store',
-                        help='Name of the context directory specifying the initialized domain dbs and a *.sip file')
-    parser.add_argument('-x', '--scenario', action='store',
-                        help='Name of the scenario *.yaml file to run against the populated system')
-    parser.add_argument('-D', '--debug', action='store_true',
-                        help='Debug mode'),
+                        help='Path to the system directory')
     parser.add_argument('-L', '--log', action='store_true',
                         help='Generate a diagnostic log file')
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -51,14 +45,16 @@ def parse(cl_input):
 def main():
     # Start logging
     logger = get_logger()
-    logger.info(f'{_progname} version: {version}')
+    print('---')
+    logger.info(f'{PROGRAM_NAME} version: {version}')
+    print('---')
 
     # Parse the command line args
     args = parse(sys.argv[1:])
 
     if args.version:
         # Just print the version and quit
-        print(f'{_progname} version: {version}')
+        print(f'{PROGRAM_NAME} version: {version}')
         sys.exit(0)
 
     if not args.log:
@@ -67,8 +63,9 @@ def main():
 
     # Domain specified
     if args.system:
-        xe = XE()  # Create the singleton instance
-        xe.initialize(mmdb_path=Path(args.system), verbose=args.verbose, debug=args.debug)
+        mdb = MDB()  # Create the singleton instance
+        spath = Path(args.system)
+        mdb.initialize(sys_path=spath, verbose=args.verbose)
 
     print("\nNo problemo")  # Comment this line out before release
     logger.info("No problemo")  # We didn't die on an exception, basically

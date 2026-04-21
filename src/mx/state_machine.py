@@ -121,6 +121,9 @@ class StateMachine:
                 comp_event = 1 if self.completion_event else 0
                 return len(self.interaction_events) + comp_event
             self.process_event()
+            if self.domain.announcements:
+                self.domain.system.suspend = True
+                return
 
     def process_event(self):
         self.active_event = self.select_next_event()

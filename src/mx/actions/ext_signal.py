@@ -115,18 +115,16 @@ class ExtSignal(ActionExecution):
         Report monitor status and completion of this action as a formatted message for transfer
         to a supervisor such as the model debugger.
         """
-        domain_name = self.ext_event_source.domain
         if isinstance(self.ext_event_source, InstanceAddress):
             source = self.ext_event_source.class_name
         else:
             source = self.ext_event_source.rel_name
-        inst = self.ext_event_source.instance_id
-        if inst:
-            inst_str = '<' + '-'.join([str(v) for v in inst.values()]) + '>'
-        else:
-            inst_str = ""
-        pstrings = [f"{n}={v[0]}" for n,v in self.params.items()]
-        param_str = ', '.join(pstrings)
-        action_monitor_msg = f"{domain_name} >|| {self.ee_name} : {source}{inst_str} {self.ext_event_name}( {param_str} )"
-        # Forward report message to the enclosing ActivityExecution
-        self.activity_execution.suspend_actions.append(action_monitor_msg)
+        ee_sent = ExternalEvent(
+            domain=self.ext_event_source.domain,
+            ee=self.ee_name,
+            source=source,
+            inst=self.ext_event_source.instance_id,
+            event=self.ext_event_name,
+            params=self.params
+        )
+        self.activity_execution.domain.announcements.append(ee_sent)
