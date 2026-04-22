@@ -119,7 +119,7 @@ class ExtSignal(ActionExecution):
             source = self.ext_event_source.class_name
         else:
             source = self.ext_event_source.rel_name
-        ee_sent = ExternalEvent(
+        ee_sent = ExternalEvent_Announcement(
             domain=self.ext_event_source.domain,
             ee=self.ee_name,
             source=source,

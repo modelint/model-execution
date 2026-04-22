@@ -18,7 +18,7 @@ from mx.domain import Domain
 from mx.db_names import mmdb, PROGRAM_NAME
 from mx.exceptions import *
 from mx.mdb_types import *
-from mx.mxtypes import ExternalAddress
+from mx.mxtypes import *
 # from mx.log_table_config import ConsoleTableFilter, ConsoleWarningFilter
 
 _logger = logging.getLogger(__name__)
@@ -159,7 +159,7 @@ class System:
                 #     Signal.monitor_internal = True
                 #     _logger.info(f"Setting MDB internal signal monitor")
 
-    def inject(self, stimulus: Interaction):
+    def inject(self, stimulus: Interaction) -> list[Announcement]:
         """
         Inject the supplied stimulus and set a monitor for each expected response, if any
 
@@ -188,14 +188,15 @@ class System:
         _logger.info("---")
         self.go()
         if self.suspend:
-            self.process_suspend()
+            return [a for d in self.domains.values() for a in d.announcements]
+        else:
+            return []
+
         pass
         # the suspend status tells us why the system stopped
         # monitor tripped, terminal condition
         # If monitor tripped, report the detected interaction and exit
 
-    def process_suspend(self):
-        pass
 
     def process_signal_instance(self, s: Interaction):
         _logger.info(f"Injecting signal: {s.name}")

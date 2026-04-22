@@ -46,7 +46,7 @@ class MDB:
         self._initialized = True
         self.verbose = True
         self.sys_path = None
-        self.announcements = None
+        self.announcements: list[str] = []
 
     def initialize(self, sys_path: Path, verbose: bool):
         self.sys_path = sys_path
@@ -93,18 +93,19 @@ class MDB:
         from mx.actions.ext_signal import ExtSignal
         ExtSignal.announce = True
 
-        self.announcements = s.inject(stimulus=interactions[0])
+        announcements = s.inject(stimulus=interactions[0])
+        self.format_announcements(announcement_tuples=announcements)
         pass
 
-    def format_announcemnts(self):
-        # inst = self.ext_event_source.instance_id
-        # if inst:
-        #     inst_str = '<' + '-'.join([str(v) for v in inst.values()]) + '>'
-        # else:
-        #     inst_str = ""
-        # pstrings = [f"{n}={v[0]}" for n,v in self.params.items()]
-        # param_str = ', '.join(pstrings)
-        # action_monitor_msg = f"{domain_name} >|| {self.ee_name} : {source}{inst_str} {self.ext_event_name}( {param_str} )"
-        # # Forward report message to the enclosing Domain
-        # self.activity_execution.domain.announcements.append(action_monitor_msg)
-        pass
+    def format_announcements(self, announcement_tuples: list[Announcement]):
+        for a in announcement_tuples:
+            if isinstance(a, ExternalEvent_Announcement):
+                if a.inst:
+                    inst_str = '<' + '-'.join([str(v) for v in a.inst.values()]) + '>'
+                else:
+                    inst_str = ""
+                pstrings = [f"{n}={v[0]}" for n,v in a.params.items()]
+                param_str = ', '.join(pstrings)
+                formatted_a = f"{a.domain} >|| {a.ee} : {a.source}{inst_str} {a.event}( {param_str} )"
+                # Forward report message to the enclosing Domain
+                self.announcements.append(formatted_a)
