@@ -65,7 +65,6 @@ class RankRestrict(ActionExecution):
                                                      rname2="Table_Action",
                                                      svar_name=mmrv.rank_restrict_table_action
                                                      )
-        Relation.print(db=mmdb, variable_name=mmrv.rank_restrict_table_action)
 
         rank_restrict_table_action_t = rank_restrict_table_action_r.body[0]
         _logger.info(f"- Attribute: {rank_restrict_table_action_t["Attribute"]}")

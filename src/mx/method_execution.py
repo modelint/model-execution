@@ -103,7 +103,6 @@ class MethodExecution(ActivityExecution):
         Relation.restrict(db=domdb, relation=self.class_name, restriction=R)
         id_attr_names = tuple(k for k in self.instance_id.keys())
         Relation.project(db=domdb, attributes=id_attr_names, svar_name=xi_flow_value_rv)
-        Relation.print(db=domdb, variable_name=xi_flow_value_rv)
 
         self.flows[self.xi_flow_name] = ActiveFlow(value=xi_flow_value_rv, flowtype=self.class_name)
         pass
