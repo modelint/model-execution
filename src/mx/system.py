@@ -49,7 +49,10 @@ class System:
         self.name = None  # Name of the system, extracted from the populated metamodel
         self.verbose = False
         self.playground = None  # This is a set of populated domain dbs and compatible scenarios
-        self.suspend = False
+        # Model components such as actions will make announcements to if they are being monitored
+        # These can be reviewed and processed by a monitoring process such as the model debugger
+        self.announcements: list[Announcement] = []
+        self.suspend = False  # When set to True, we will return control to the monitoring process
 
     def initialize(self, system_path: Path, verbose: bool):
         """
@@ -114,14 +117,14 @@ class System:
         _logger.info("")
         pass
 
-    def resume(self):
-        for d in self.domains.values():
-            d.announcements = []
-        self.go()
-
     def go(self):
+        """
+        This is the main system run loop
+        """
         work_remaining = True  # Assume there is work to be done
-        self.suspend = False
+        self.announcements = []  # Clear any prior announcments
+        self.suspend = False  # Reset the susupend status
+
         while work_remaining and not self.suspend:
             for d in self.domains.values():
                 _logger.info(f"Executing domain: {d.alias}")
@@ -163,20 +166,13 @@ class System:
                 #     Signal.monitor_internal = True
                 #     _logger.info(f"Setting MDB internal signal monitor")
 
-    def inject(self, stimulus: Interaction) -> list[Announcement]:
+    def inject(self, stimulus: Interaction):
         """
         Inject the supplied stimulus and set a monitor for each expected response, if any
 
         Args:
             stimulus:
-            responses:
-
-        Returns:
-            Interaction:
         """
-        # Save expected responses to be detected
-        # self.set_announcements(responses)
-
         # process the stimulus
         match stimulus.action:
             case ActionType.EXTERNAL_EVENT:
@@ -191,11 +187,6 @@ class System:
         _logger.info("MDB --> SYS")
         _logger.info("---")
         self.go()
-        if self.suspend:
-            return [a for d in self.domains.values() for a in d.announcements]
-        else:
-            return []
-
         pass
         # the suspend status tells us why the system stopped
         # monitor tripped, terminal condition

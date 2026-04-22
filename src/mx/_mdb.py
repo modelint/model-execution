@@ -101,10 +101,10 @@ class MDB:
         ExtSignal.announce = True
 
         self.format_interaction(interactions[1])
-        announcements = s.inject(stimulus=interactions[1])
-        self.format_announcements(announcement_tuples=announcements)
-        s.resume()
-        self.format_announcements(announcement_tuples=announcements)
+        s.inject(stimulus=interactions[1])  # and implicit s.go()
+        self.format_announcements(announcement_tuples=s.announcements)
+        s.go()
+        self.format_announcements(announcement_tuples=s.announcements)
         pass
 
     def format_interaction(self, i: Interaction):

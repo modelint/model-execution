@@ -52,10 +52,6 @@ class Domain:
             alias: The domain alias serves as the name of the corresponding domain database
             system: Reference to the single System object.
         """
-        # Domain components such as actions will make announcements to if they are being monitored
-        # When any are present, we pause execution and pass control back to the monitoring process so it can review them
-        self.announcements = []  # A list of any announcements made by domain components
-
         self.events_pending = False  # Initially, there is no work to do
         self.activity_executing = False  # Initially, no Activity is executing
 

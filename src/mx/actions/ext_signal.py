@@ -127,4 +127,4 @@ class ExtSignal(ActionExecution):
             event=self.ext_event_name,
             params=self.params
         )
-        self.activity_execution.domain.announcements.append(ee_sent)
+        self.activity_execution.domain.system.announcements.append(ee_sent)
