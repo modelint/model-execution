@@ -72,19 +72,26 @@ class MDB:
             'UI': ExternalAddress(domain='UI'),
             'EVMAN:XFER<S1>': InstanceAddress(domain='EVMAN', class_name='Transfer',
                                               instance_id={'Shaft': 'S1'}),
+            'EVMAN:Cabin<S1>': InstanceAddress(domain='EVMAN', class_name='Cabin',
+                                               instance_id={'Shaft': 'S1'}),
+            'TRANS': ExternalAddress(domain='TRANS'),
         }
 
-        interactions = [
-            Interaction(
+        interactions = {
+            1: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Stop request',
                 source=actors['UI'], target=actors['EVMAN:ASLEV<S1-3>'], parameters=None
             ),
-            Interaction(
+            2: Interaction(
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Set destination',
                 source=actors['EVMAN:XFER<S1>'], target=actors['UI'], parameters=None
             ),
+            3: Interaction(
+                direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Go to floor',
+                source=actors['EVMAN:Cabin<S1>'], target=actors['TRANS'], parameters={'dest floor': 3}
+            ),
 
-        ]
+        }
 
 
         _logger.info(f"Beginning scenario: {s.playground.name}")
@@ -93,9 +100,21 @@ class MDB:
         from mx.actions.ext_signal import ExtSignal
         ExtSignal.announce = True
 
-        announcements = s.inject(stimulus=interactions[0])
+        self.format_interaction(interactions[1])
+        announcements = s.inject(stimulus=interactions[1])
+        self.format_announcements(announcement_tuples=announcements)
+        s.resume()
         self.format_announcements(announcement_tuples=announcements)
         pass
+
+    def format_interaction(self, i: Interaction):
+        pass
+        if i.action == ActionType.SIGNAL_INSTANCE:
+            inst_str = '<' + '-'.join([str(v) for v in i.target.instance_id.values()]) + '>'
+            formatted_i = f"{i.source.domain} >|| {i.target.domain} : {i.name} -> {i.target.class_name} <{inst_str}>"
+        else:
+            formatted_i = "Unimplemented Acton Type"
+        print(formatted_i)
 
     def format_announcements(self, announcement_tuples: list[Announcement]):
         for a in announcement_tuples:
@@ -107,5 +126,5 @@ class MDB:
                 pstrings = [f"{n}={v[0]}" for n,v in a.params.items()]
                 param_str = ', '.join(pstrings)
                 formatted_a = f"{a.domain} >|| {a.ee} : {a.source}{inst_str} {a.event}( {param_str} )"
-                # Forward report message to the enclosing Domain
+                print(formatted_a)
                 self.announcements.append(formatted_a)

@@ -114,11 +114,15 @@ class System:
         _logger.info("")
         pass
 
+    def resume(self):
+        for d in self.domains.values():
+            d.announcements = []
+        self.go()
 
     def go(self):
         work_remaining = True  # Assume there is work to be done
-        suspend = False
-        while work_remaining and not suspend:
+        self.suspend = False
+        while work_remaining and not self.suspend:
             for d in self.domains.values():
                 _logger.info(f"Executing domain: {d.alias}")
                 work_remaining = d.go()  # We'll stay in the loop as long as at least one domain reports true
