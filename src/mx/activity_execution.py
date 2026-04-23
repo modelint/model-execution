@@ -173,6 +173,9 @@ class ActivityExecution(ABC):
             Relation.free_rvs(db=self.domain.alias, owner=snake(a))
         Relation.free_rvs(db=mmdb, owner=snake(self.owner_name))
         Database.get_rv_names()
+
+        # And we must use the proper PyRAL command to free up the one Relvar we defined
+        Relvar.unset(db=mmdb, relvar=self.action_states)
         _logger.info(f"\n\n    ^^^ ({self.anum}) {self.label} Complete ^^^ \n")
 
     @abstractmethod

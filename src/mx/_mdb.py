@@ -78,19 +78,25 @@ class MDB:
         }
 
         interactions = {
+            # Send the initial stop request to ASLEV S1-3
             1: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Stop request',
                 source=actors['UI'], target=actors['EVMAN:ASLEV<S1-3>'], parameters=None
             ),
+            # UI updated with request
             2: Interaction(
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Set destination',
                 source=actors['EVMAN:XFER<S1>'], target=actors['UI'], parameters=None
             ),
+
+            # Cabin S1 requests transport from TRANS
             3: Interaction(
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Go to floor',
                 source=actors['EVMAN:Cabin<S1>'], target=actors['TRANS'], parameters={'dest floor': '3'}
             ),
-            # Passing floors
+
+            # Passing floors TRANS reports passing floor, UI notified
+            # Floor 1
             4: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '1'}
@@ -99,6 +105,8 @@ class MDB:
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
                 source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '1'}
             ),
+
+            # Floor 2
             6: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '2'}
@@ -107,6 +115,8 @@ class MDB:
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
                 source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '2'}
             ),
+
+            # Floor 3 (destination)
             8: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '3'}
@@ -115,6 +125,8 @@ class MDB:
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
                 source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '3'}
             ),
+
+            # TRANS notifies Cabin that it has arrived
             10: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Arrived at floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters=None
@@ -129,21 +141,44 @@ class MDB:
         from mx.actions.ext_signal import ExtSignal
         ExtSignal.announce = True
 
-        self.format_interaction(interactions[1])
+        # Send the initial stop request to ASLEV S1-3 and UI updated with request
+        self.format_interaction(interactions[1])  # Stimulus from UI
         s.inject(stimulus=interactions[1])  # 1 Stop request -> ASLEV
+        # MX
+
         self.format_announcements(announcement_tuples=s.announcements)  # 2 Set destination >|| UI
         s.go()
+        # MX
+
+        # Cabin S1 requests transport from TRANS
         self.format_announcements(announcement_tuples=s.announcements)  # 3 Go to floor >|| TRANS
         self.format_interaction(interactions[4])
-        s.inject(stimulus=interactions[4])  # 4 Passing floor 1 -> Cabin
+        s.inject(stimulus=interactions[4])  # 4 Passing floor 1 TRANS -> Cabin
+        # MX
+
+        # Cabin reports passing floor 1
         self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 1 >|| UI
+        self.format_interaction(interactions[6])
+        s.inject(stimulus=interactions[6])  # 6 Passing floor 2 -> Cabin
+        # MX
+
+        # Cabin reports passing floor 2
+        self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 2 >|| UI
+        self.format_interaction(interactions[8])
+        s.inject(stimulus=interactions[8])  # 8 Passing floor 3 -> Cabin
+        # MX
+
+        self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 3 >|| UI
+        self.format_interaction(interactions[10])
+        s.inject(stimulus=interactions[10])  # 10 TRANS Arrived at floor -> Cabin
+        # MX
         pass
 
     def format_interaction(self, i: Interaction):
         pass
         if i.action == ActionType.SIGNAL_INSTANCE:
             inst_str = '<' + '-'.join([str(v) for v in i.target.instance_id.values()]) + '>'
-            formatted_i = f"{i.source.domain} >|| {i.target.domain} : {i.name} -> {i.target.class_name} <{inst_str}>"
+            formatted_i = f"{i.source.domain} >|| {i.target.domain} : {i.name} -> {i.target.class_name} {inst_str}"
         else:
             formatted_i = "Unimplemented Acton Type"
         print(formatted_i)
