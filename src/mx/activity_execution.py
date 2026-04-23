@@ -72,7 +72,7 @@ def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner,
                       "unexecuted_actions", "unenabled_actions", "flow_deps", "params", "activity_inputs",
                       "disabled_flow", "downstream_actions", "gatecheck", "newly_disabled", "gate_actions",
-                      "gate_upstream", "enabled_gate"
+                      "gate_upstream", "enabled_gate",
                       )
     return MMRVs(*rvs)
 
@@ -263,29 +263,24 @@ class ActivityExecution(ABC):
                 _logger.info(f"initial Scalar Value Flow {sv_flow_name} set to value {sval} type {sval_type}")
                 pass
 
-        # All input parameter flows
-        # We do a restrict using the signum to get the Activity's input params
-        R = f"Signature:<{self.signum}>, Domain:<{self.domain.name}>"
-        Relation.restrict(db=mmdb, relation='Parameter', restriction=R, svar_name=mmrv.params)
-        # We do a join instead of a semijoin so we retain the Parameter.Type attribute in the result
-        activity_input_r = Relation.join(db=mmdb, rname1=mmrv.params, rname2='Activity Input',
-                                         attrs={'Name': 'Parameter', 'Signature': 'Signature', 'Domain': 'Domain'},
-                                         svar_name=mmrv.activity_inputs)
-        log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.activity_inputs))
-
-        # Enable input flow value
-        _logger.info("Enabling input parameter flows...")
-        for t in activity_input_r.body:
-            pflow_name = t['Input_flow']
-            param_name = t['Name']
-            ptype = t['Type']
-            self.flows[pflow_name] = self.parameters[param_name]
-            if self.flows[pflow_name].flowtype == 'scalar':
-                _logger.info(sflow_msg(flow_name=pflow_name, flow_dir=FlowDir.IN, flow_type=ptype, activity=self,
-                                       value=self.flows[pflow_name].value))
-            else:
-                log_table(_logger, nsflow_msg(db=domdb, flow_name=pflow_name, flow_dir=FlowDir.IN, flow_type=ptype,
-                                              activity=self, rv_name=self.flows[pflow_name].value))
+        # All input parameter flows (Activity Inputs)
+        activity_input_r = Relation.semijoin(db=mmdb, rname1=self.activity_rvn, rname2='Activity Input', svar_name=mmrv.activity_inputs)
+        if activity_input_r.body:
+            _logger.info("Enabling input parameter flows...")
+            param_r = Relation.join(db=mmdb, rname1=mmrv.activity_inputs, rname2='Parameter',
+                                    attrs={'Parameter': 'Name', 'Signature': 'Signature', 'Domain': 'Domain'},
+                                    svar_name=mmrv.params)
+            log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.params))
+            for t in param_r.body:
+                pflow_name, pname, ptype = t['Input_flow'], t['Parameter'], t['Type']
+                pflow = self.parameters[pname]
+                self.flows[pflow_name] = pflow
+                if pflow.flowtype == 'scalar':
+                    _logger.info(sflow_msg(flow_name=pflow_name, flow_dir=FlowDir.IN, flow_type=ptype, activity=self,
+                                           value=pflow.value))
+                else:
+                    log_table(_logger, nsflow_msg(db=domdb, flow_name=pflow_name, flow_dir=FlowDir.IN, flow_type=ptype,
+                                                  activity=self, rv_name=pflow.value))
 
         # Now check for any class accessor and set each such flow to the name of the accessed class
         class_accessor_r = Relation.semijoin(db=mmdb, rname1=self.activity_rvn, rname2="Class Accessor",

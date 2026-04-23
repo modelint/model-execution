@@ -19,6 +19,7 @@ from mx.db_names import mmdb, PROGRAM_NAME
 from mx.exceptions import *
 from mx.mdb_types import *
 from mx.mxtypes import *
+from mx.actions.flow import ActiveFlow
 # from mx.log_table_config import ConsoleTableFilter, ConsoleWarningFilter
 
 _logger = logging.getLogger(__name__)
@@ -200,10 +201,31 @@ class System:
         else:
             pass
         target_domain = self.domains[s.target.domain]
-        params = s.parameters if s.parameters else {}
+        params = s.parameters if s.parameters is not None else {}
+        pflows = {}
+        if params:
+            event_spec_name = s.name
+            domain_alias = s.target.domain
+            domain_name = self.domains[domain_alias].name
+            class_name = s.target.class_name
+            R = f"Name:<{event_spec_name}>, State_model:<{class_name}>, Domain:<{domain_name}>"
+            Relation.restrict(db=mmdb, relation='Event Specification', restriction=R)
+            sig_param_r = Relation.semijoin(db=mmdb, rname2='Parameter', attrs={'State_signature': 'Signature', 'Domain': 'Domain'})
+            ptypes = {t['Name'] : t['Type'] for t in sig_param_r.body}
+            # Get the signature and ptypes
+            pflows = {}
+            for name, value in params.items():
+                # Get the type and determine whether or not it is a scalar
+                ptype = ptypes[name]
+                R = f"Name:<{ptype}>, Domain:<{domain_name}>"
+                scalar_r = Relation.restrict(db=mmdb, relation='Scalar', restriction=R)
+                if scalar_r.body:
+                    pflows[name] = ActiveFlow(value=value, flowtype='scalar', scalar=ptype)
+                else:
+                    pflows[name] = ActiveFlow(value=value, flowtype='ptype', scalar=None)
         ie = InteractionEvent.to_lifecycle(event_spec=s.name, source=s.source,
                                            to_instance=s.target.instance_id, to_class=s.target.class_name,
-                                           params=s.parameters, domain=target_domain)
+                                           params=pflows, domain=target_domain)
 
 def get() -> System:
     if System._instance is None:
