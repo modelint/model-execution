@@ -14,12 +14,13 @@ from pyral.database import Database
 
 # MX
 from mx.dispatched_event import DispatchedEvent
+from mx.actions.flow import ActiveFlow
 from mx.mxtypes import *
 
 
 class InteractionEvent(DispatchedEvent):
 
-    def __init__(self, sm_type: StateMachineType, event_spec: str, params: NamedValues,
+    def __init__(self, sm_type: StateMachineType, event_spec: str, params: dict[str, ActiveFlow],
                  domain: "Domain",
                  source: ElementAddress,
                  to_instance: NamedValues = None,
@@ -85,19 +86,19 @@ class InteractionEvent(DispatchedEvent):
 
     @classmethod
     def to_lifecycle(cls, event_spec: str, to_instance: NamedValues, to_class: str,
-                     params: NamedValues, domain: "Domain", source: ElementAddress):
+                     params: dict[str, ActiveFlow], domain: "Domain", source: ElementAddress):
         return cls(sm_type=StateMachineType.LIFECYCLE, event_spec=event_spec, params=params, domain=domain,
                    source=source, to_instance=to_instance, to_class=to_class)
 
     @classmethod
     def to_single_assigner(cls, event_spec: str, to_rnum: str,
-                           params: NamedValues, domain: "Domain", source: ElementAddress):
+                           params: dict[str, ActiveFlow], domain: "Domain", source: ElementAddress):
         return cls(sm_type=StateMachineType.SA, event_spec=event_spec, params=params, domain=domain,
                    source=source, to_rnum=to_rnum)
 
     @classmethod
     def to_multiple_assigner(cls, event_spec: str, paritioning_instance: NamedValues,
-                             partitioning_class: str, to_rnum: str, params: NamedValues, domain: "Domain",
+                             partitioning_class: str, to_rnum: str, params: dict[str, ActiveFlow], domain: "Domain",
                              source: ElementAddress):
         return cls(sm_type=StateMachineType.MA, event_spec=event_spec, params=params, domain=domain, source=source,
                    partitioning_instance=paritioning_instance, partitioning_class=partitioning_class, to_rnum=to_rnum)
