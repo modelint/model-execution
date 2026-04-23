@@ -88,32 +88,32 @@ class MDB:
             ),
             3: Interaction(
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Go to floor',
-                source=actors['EVMAN:Cabin<S1>'], target=actors['TRANS'], parameters={'dest floor': 3}
+                source=actors['EVMAN:Cabin<S1>'], target=actors['TRANS'], parameters={'dest floor': '3'}
             ),
             # Passing floors
             4: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
-                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': 1}
+                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '1'}
             ),
             5: Interaction(
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
-                source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': 1}
+                source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '1'}
             ),
             6: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
-                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': 2}
+                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '2'}
             ),
             7: Interaction(
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
-                source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': 2}
+                source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '2'}
             ),
             8: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
-                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': 3}
+                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '3'}
             ),
             9: Interaction(
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
-                source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': 3}
+                source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '3'}
             ),
             10: Interaction(
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Arrived at floor',

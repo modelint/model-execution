@@ -35,6 +35,7 @@ from mx.actions.restrict import Restrict
 from mx.actions.gate import Gate
 from mx.actions.create import Create
 from mx.actions.new_assoc_ref import NewAssocRef
+from mx.actions.update_ref import UpdateReference
 from mx.actions.pass_action import PassAction  # Can't be 'Pass' since pass is a python keyword
 from mx.actions.rank_restrict import RankRestrict
 from mx.actions.signal import Signal
@@ -99,6 +100,7 @@ class ActivityExecution(ABC):
         "decision": Decision,
         "create": Create,
         "new assoc ref": NewAssocRef,
+        "update ref": UpdateReference,
         "computation": Computation,
         "type action": TypeAction
     }

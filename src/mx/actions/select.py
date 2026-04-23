@@ -181,12 +181,19 @@ class Select(ActionExecution):
             scalar_flow_name = c['Value']
             value = self.activity_execution.flows[scalar_flow_name].value
             relop = c['Comparison']
-            pyral_op = ':' if relop == '==' and isinstance(value, str) else relop
-            # PyRAL specifies boolean values using ptyhon bool type, not strings
-            # PyRAL uses ":" for string matches and "==" for numeric matches, so we need to determine the type
-            # of the value
+            if isinstance(value, str):
+                pyral_op = ':' if relop == '==' else relop
+                value = f"<{value}>"
+            else:
+                # TODO: This case does not currently work
+                _logger.warning("Make comparison for non-string value in selection action not fully implemented")
+                # Test this case out in PyRAL: x == 12
+                pyral_op = f" {relop} "
+                # PyRAL specifies boolean values using ptyhon bool type, not strings
+                # PyRAL uses ":" for string matches and "==" for numeric matches, so we need to determine the type
+                # of the value
 
-            phrase = f"{attr}{pyral_op}<{value}>"
+            phrase = f"{attr}{pyral_op}{value}"
             criteria_rphrases.append(phrase)
         return criteria_rphrases
 
