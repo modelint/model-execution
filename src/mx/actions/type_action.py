@@ -28,17 +28,20 @@ from mx.usertypes import *
 
 _logger = logging.getLogger(__name__)
 
+
 # See comment in scalar_switch.py
 class MMRVs(NamedTuple):
     type_action: str
     type_operation: str
     selector: str
 
+
 # This wrapper calls the imported declare_rvs function to generate a NamedTuple instance with each of our
 # variables above as a member.
 def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner, "type_action", "type_operation", "selector")
     return MMRVs(*rvs)
+
 
 class TypeAction(ActionExecution):
 
@@ -83,7 +86,7 @@ class TypeAction(ActionExecution):
                 sflow_msg(flow_name=input_flow_name, flow_dir=FlowDir.IN, flow_type=source_flow.scalar,
                           activity=self.activity_execution, value=source_flow.value)
             )
-            output_value = self.process_type_operation(type_op=op_name, input_flow=input_flow_name)
+            output_value = self.process_type_operation(type_op=op_name, input_flow_name=input_flow_name)
             output_flow = ActiveFlow(value=output_value, flowtype='scalar', scalar=self.scalar_name)
             self.activity_execution.flows[self.output_flow_name] = output_flow
             _logger.info(
@@ -99,20 +102,27 @@ class TypeAction(ActionExecution):
         """
         Type selector operation. We simply output the selected value.
         """
+        # TODO: Not implemented yet
         pass
 
-    def process_type_operation(self, type_op: str, input_flow: str) -> str | bool | int | float:
+    def process_type_operation(self, type_op: str, input_flow_name: str) -> str | bool | int | float:
         """
         Type Operation. We execute the defined operation which may or may not
         yield an output.
 
         Args:
             type_op: Name of the Type Operation
+            input_flow_name: Name of the flow providing the input value
 
         Returns:
             The value produced by the type op function
         """
+        input_value, flow_type, input_type = self.activity_execution.flows[input_flow_name]
+        if flow_type != 'scalar':
+            msg = f"Non scalar flow input to Type Operation"
+            _logger.error(msg)
+            raise MXActionException(msg)
 
-        # TODO: Support parameter input to type ops
-        output_value = type_ops[self.scalar_name][type_op]()
+        # TODO: For now we are not converting the input_value from string to a Python type
+        output_value = type_ops[self.scalar_name][type_op](input_value)
         return output_value

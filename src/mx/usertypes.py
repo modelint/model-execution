@@ -14,12 +14,18 @@ selectors = { 'Boolean': { 'TRUE': True, 'FALSE': False} }
 """ Type selector operations defined for each Scalar type """
 
 # And these are implementations of type operations
-def mx_set() -> bool:
+def mx_Boolean__set(value=None) -> bool:
     return True
 
-def mx_unset() -> bool:
+def mx_Boolean__unset(value=None) -> bool:
     return False
+
+def mx_Direction__opposite( value: str ) -> str:
+    return 'up' if value == 'down' else 'down'
 
 
 # Here we map the name of each type operation to a corresponding impementation
-type_ops = {'Boolean': {'set': mx_set, 'unset': mx_unset}, }
+type_ops = {
+    'Boolean': {'set': mx_Boolean__set, 'unset': mx_Boolean__unset},
+    'Direction': {'opposite': mx_Direction__opposite }
+}
