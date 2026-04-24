@@ -122,7 +122,13 @@ class Traverse(ActionExecution):
         hops.sort(key=lambda d: int(d['Number']))  # Sorts in place
 
         # Initial hop starts at the source flow instance set
-        hop_from_rv = self.source_flow.value
+        hop_from_rv_iref = self.source_flow.value
+        # Convert the hop_from_rv to the full instance tuple because some of the referential attrs we need
+        # for joining are not necessarily included in the instance ref (Elevator Transfer class on R53, for example)
+        hop_from_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name='hop_from')
+        InstanceSet.instances(db=self.domdb, irefs_rv=hop_from_rv_iref, iset_rv=hop_from_rv, class_name=self.source_flow.flowtype)
+        _logger.info("Expanded source irefs to instances before hopping")
+        log_table(_logger, table_msg(db=self.domdb, variable_name=hop_from_rv))
 
         # Execute each hop in sequence until we reach the end of the traversal
         for h in hops:

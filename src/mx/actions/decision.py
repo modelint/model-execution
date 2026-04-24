@@ -73,7 +73,7 @@ class Decision(ActionExecution):
         # Get a NamedTuple with a field for each relation variable name
         mmrv = declare_my_module_rvs(db=mmdb, owner=self.owner)
 
-        # Lookup the Action instance
+        # Look up the Action instance
         decision_action_r = Relation.semijoin(
             db=mmdb, rname1=self.action_mmrv, rname2="Decision Action",
             svar_name=mmrv.decision_action)
@@ -108,20 +108,23 @@ class Decision(ActionExecution):
             source_flow_value_r = Relation.restrict(db=self.domdb, relation=self.source_flow.value)
             result = bool(len(source_flow_value_r.body))
 
+        _logger.info("Flows")
+        log_table(_logger, sflow_msg(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
+                                     flow_type=self.source_flow.flowtype, activity=self.activity_execution,
+                                     value = self.source_flow.value))
+
         # And then set the value of that output flow to the result (true or false)
         enabled_result_r = Relation.restrict(db=mmdb, relation=mmrv.results, restriction=f"Decision:<{result}>",
                                              svar_name=mmrv.enabled_result)
         # The disabled result is found by subtracting the enabled result
         Relation.subtract(db=mmdb, rname1=mmrv.results, rname2=mmrv.enabled_result, svar_name=mmrv.disabled_result)
 
-        enabled_flow_name = enabled_result_r.body[0]["Flow"]
-        self.activity_execution.flows[enabled_flow_name] = ActiveFlow(value=result, flowtype="scalar")
-        _logger.info("Flows")
-        log_table(_logger, sflow_msg(flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
-                                     flow_type=self.source_flow.flowtype, activity=self.activity_execution,
-                                     value = self.source_flow.value))
-        _logger.info(sflow_msg(flow_name=enabled_flow_name, flow_dir=FlowDir.OUT, flow_type='scalar',
-                               activity=self.activity_execution, value=str(result)))
+        if enabled_result_r.body:
+            enabled_flow_name = enabled_result_r.body[0]["Flow"]
+            self.activity_execution.flows[enabled_flow_name] = ActiveFlow(value=result, flowtype="scalar")
+
+            _logger.info(sflow_msg(flow_name=enabled_flow_name, flow_dir=FlowDir.OUT, flow_type='scalar',
+                                   activity=self.activity_execution, value=str(result)))
 
         # Disable all actions from the disabled result flow
         downstream_mmrv = self.activity_execution.mmrv.downstream_actions  # Declared, but no value assigned yet
