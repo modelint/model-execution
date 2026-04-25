@@ -221,6 +221,13 @@ class Domain:
         lifecycles = {t['Class'] for t in lifecycle_r.body}
         istates = self.lifecycle_initial_states
 
+        # Populate a dictionary of Deletion States per Lifecycle State Machine
+        # so that we can delete an instance upon completion of a Deletion State Activity
+        from mx.state_machine import StateMachine  # It is in the superclass to avoid a circular import
+        deletion_state_r = Relation.restrict(db=mmdb, relation='Deletion State', restriction=f"Domain:<{self.name}>")
+        for t in deletion_state_r.body:
+            StateMachine.lifecycle_deletion_states.setdefault(t['Class'], set()).add(t['Name'])
+
         # Get each class_name and its primary id for each lifecycle
         for class_name, id_attrs in self.class_ids.items():
             if class_name not in lifecycles:

@@ -7,6 +7,7 @@ from collections import defaultdict
 from enum import Enum
 from typing import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
     from mx.domain import Domain
 
@@ -39,6 +40,9 @@ sm_id_map = {}  # Map of identifier values to state machine instances
 
 
 class StateMachine:
+
+    # Convenient quick lookup of deletion states per lifecycle set by domain during init phase
+    lifecycle_deletion_states: dict[ str, set[str]] = {}
 
     def __init__(self, sm_id: str, rv_owner: str, current_state: str, state_model: str, sm_type: StateMachineType, domain: "Domain"):
         """
@@ -140,6 +144,12 @@ class StateMachine:
                                          svar_name=transition_rv)
         if transition_r.body:
             self.transition(transition_rv=transition_rv)
+            pass
+            #  If we transitioned into a deletion state, we need to delete the instance along with its statemachine
+            if (self.sm_type == StateMachineType.LIFECYCLE and
+                    self.current_state in StateMachine.lifecycle_deletion_states.get(self.state_model, set())):
+                # TODO: Delete the instance along with its lifecycle state machine
+                pass
         else:
             # Process non-transition
             R = (f"State:<{self.current_state}>, Event:<{self.active_event.event_spec}>, "
