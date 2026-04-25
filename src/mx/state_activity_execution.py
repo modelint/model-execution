@@ -144,7 +144,23 @@ class StateActivityExecution(ActivityExecution):
                     self.state_machine.state_model, set()
                 )
         ):
-            pass
+            domdb = self.domain.alias
+            # Find this State Activity's lifecycle state machine and delete it
+            # We use the state machine id and class name to find it in the domain's dictionary of lifecycles
+            sm_id = self.state_machine.lifecycle_sm_id
+            class_name = self.state_machine.class_name
+            inst_id = self.state_machine.instance_id
+            # And we delete that entry
+            del self.domain.lifecycles[class_name][sm_id]
+            # Now we need to delete the instance from the dommain db
+            Relvar.deleteone(db=domdb, relvar_name=class_name, tid=inst_id)
+            # Finally, update the inst_id mapping for the class
+            # We do this by restricting to our instance mapping and then subtracting it from the inst_mapping rv
+            id_to_delete_drv = Relation.declare_rv(db=domdb, owner=self.owner_name, name='id_to_delete')
+            inst_drv = self.domain.sm_instance_rvs[class_name]
+            Relation.restrict(db=domdb, relation=inst_drv, restriction=f'_instance:<{sm_id}>',
+                              svar_name=id_to_delete_drv)
+            Relation.subtract(db=domdb, rname1=inst_drv, rname2=id_to_delete_drv, svar_name=inst_drv)
 
     def enable_xi_flow(self):
         """
