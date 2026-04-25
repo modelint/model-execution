@@ -137,6 +137,15 @@ class StateActivityExecution(ActivityExecution):
         _logger.info("Actions states initialized")
         return True
 
+    def _check_delete_state(self) -> None:
+        # If completing in a lifecycle's deletion state, we need to delete the instance along with its statemachine
+        if (self.state_machine.sm_type == StateMachineType.LIFECYCLE and
+                self.state_machine.current_state in self.domain.lifecycle_deletion_states.get(
+                    self.state_machine.state_model, set()
+                )
+        ):
+            pass
+
     def enable_xi_flow(self):
         """
         An executing instance (xi) is the instance progressing through a Lifecycle

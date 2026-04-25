@@ -66,6 +66,8 @@ class Domain:
         self.sm_instance_rvs: dict[str, str] = {}
         self.ma_partitions: dict[str, MAPartitionClassID] = {}
         self.methods = None
+        # Convenient quick lookup of deletion states per lifecycle set by domain during init phase
+        self.lifecycle_deletion_states: dict[str, set[str]] = {}
 
         self.file_path = self.system.playground / 'population' / f"{self.alias}.ral"  # Path to the domain database file
 
@@ -226,7 +228,7 @@ class Domain:
         from mx.state_machine import StateMachine  # It is in the superclass to avoid a circular import
         deletion_state_r = Relation.restrict(db=mmdb, relation='Deletion State', restriction=f"Domain:<{self.name}>")
         for t in deletion_state_r.body:
-            StateMachine.lifecycle_deletion_states.setdefault(t['Class'], set()).add(t['Name'])
+            self.lifecycle_deletion_states.setdefault(t['Class'], set()).add(t['Name'])
 
         # Get each class_name and its primary id for each lifecycle
         for class_name, id_attrs in self.class_ids.items():
