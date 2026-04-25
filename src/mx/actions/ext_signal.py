@@ -74,19 +74,19 @@ class ExtSignal(ActionExecution):
         match self.activity_execution.state_machine.sm_type:
             case StateMachineType.LIFECYCLE:
                 self.ext_event_source = InstanceAddress(
-                    domain=self.activity_execution.domain.name,
+                    domain=self.activity_execution.domain.alias,
                     class_name=self.activity_execution.state_machine.state_model,
                     instance_id=self.activity_execution.state_machine.instance_id
                 )
             case StateMachineType.MA:
                 self.ext_event_source = AssignerAddress(
-                    domain=self.activity_execution.domain.name,
+                    domain=self.activity_execution.domain.alias,
                     rel_name=self.activity_execution.state_machine.state_model,
                     instance_id=self.activity_execution.state_machine.instance_id
                 )
             case StateMachineType.SA:
                 self.ext_event_source = AssignerAddress(
-                    domain=self.activity_execution.domain.name,
+                    domain=self.activity_execution.domain.alias,
                     rel_name=self.activity_execution.state_machine.state_model,
                     instance_id=None
                 )

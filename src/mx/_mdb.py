@@ -172,6 +172,9 @@ class MDB:
         self.format_interaction(interactions[10])
         s.inject(stimulus=interactions[10])  # 10 TRANS Arrived at floor -> Cabin
         # MX
+
+        self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 3 >|| UI
+        s.go()
         pass
 
     def format_interaction(self, i: Interaction):
