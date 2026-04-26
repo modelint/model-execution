@@ -132,7 +132,7 @@ class Domain:
         """
         # Process all lifecycles
         for class_name, instance in self.lifecycles.items():
-            for inst_id, sm in instance.items():
+            for inst_id, sm in list(instance.items()):
                 if sm.busy and not self.system.suspend:
                     sm.go()  # Operating at thread granularity 0, 0 max events
 
