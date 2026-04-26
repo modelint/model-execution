@@ -132,7 +132,11 @@ class Domain:
         """
         # Process all lifecycles
         for class_name, instance in self.lifecycles.items():
-            for inst_id, sm in list(instance.items()):
+            # We freeze the instance.items using list since the dictionary could mutate mid-loop
+            # This happens, for example, if a dynamic instance deletes itself in a deletion state
+            # Could also be trouble if we create new instances
+            # But we'll catch any changes when the next execution tick runs the outer loop again
+            for inst_id, sm in list(instance.items()):  # list freezes the current state of the dict here
                 if sm.busy and not self.system.suspend:
                     sm.go()  # Operating at thread granularity 0, 0 max events
 
