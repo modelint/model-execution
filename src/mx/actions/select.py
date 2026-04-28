@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 # Model Integration
 from pyral.relation import Relation
 from pyral.database import Database  # Diagnostics
+from pyral.rtypes import TAG
 
 # MX
 from mx.log_table_config import TABLE, log_table
@@ -72,17 +73,83 @@ class Select(ActionExecution):
                                       activity=self.activity_execution, rv_name=self.source_flow.value))
 
         # Get the destination flow name
-        subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.select_action, rname2="Single_Select")
+        subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.select_action, rname2="Single Select")
         if not subclass_r.body:
-            subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.select_action, rname2="Many_Select")
+            subclass_r = Relation.semijoin(db=mmdb, rname1=mmrv.select_action, rname2="Many Select")
         self.dest_flow_name = subclass_r.body[0]["Output_flow"]
 
+        # Check for a Select None, in which case we skip any Restriction Condition processing
+        select_none_r = Relation.semijoin(db=mmdb, rname1=mmrv.select_action, rname2='Select None')
+        if select_none_r.body:
+            self.card = 'NONE'  # For other Select Action subclasses, cardinality is in the restriction condition
+            criteria_phrases = []
+        else:
+            # Process the restriction condition (if any)
+            self.card, criteria_phrases = self.process_restriction_condition()
+
+        # Convert input irefs to instances and save in same rv
+        input_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="selection_input")
+        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=input_iset_rv,
+                              class_name=self.source_flow.flowtype)
+        log_table(_logger, table_msg(db=self.domdb, variable_name=input_iset_rv))
+
+        # Perform the selection and apply any cardinality
+        selection_output_drv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="selection_output")
+        if self.card == 'NONE':
+            # We don't actually do a restrict, we just produce an empty relation
+            Relation.emptyof(db=self.domdb, relation=input_iset_rv, svar_name=selection_output_drv)
+        else:
+            R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
+            Relation.restrict(db=self.domdb, relation=input_iset_rv, restriction=R.strip(),
+                              svar_name=selection_output_drv)
+            if self.card == 'ONE':
+                tuple_qty = Relation.cardinality(db=self.domdb, rname=selection_output_drv) > 1
+                if tuple_qty > 1:
+                    # We need to reduce the cardinality to a single tuple
+                    # Tag each tuple with a number
+                    Relation.tag(db=self.domdb, relation=selection_output_drv, svar_name=selection_output_drv)
+                    # Choose a random tag value within the tuple_qty and restrict on it
+                    import random
+                    rselect_tag = random.randrange(tuple_qty)
+                    Relation.restrict(db=self.domdb, relation=selection_output_drv,
+                                      restriction=f"{TAG}:<{rselect_tag}>", svar_name=selection_output_drv)
+                    # Project out the tag attr
+                    Relation.project(db=self.domdb, attributes=[TAG], relation=selection_output_drv,
+                                     exclude=True, svar_name=selection_output_drv)
+
+        log_table(_logger, table_msg(db=self.domdb, variable_name=selection_output_drv))
+
+        # Extract irefs for output
+        InstanceSet.irefs(db=self.domdb, iset_rv=selection_output_drv, irefs_rv=selection_output_drv,
+                          class_name=self.source_flow.flowtype,
+                          domain_name=self.activity_execution.domain.name)
+
+        log_table(_logger, table_msg(db=self.domdb, variable_name=selection_output_drv))
+
+        # Assign result to output flow
+        # For a select action, the source and dest flow types must match
+        self.activity_execution.flows[self.dest_flow_name] = ActiveFlow(
+            value=selection_output_drv, flowtype=self.source_flow.flowtype)
+
+        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
+                                      flow_type=self.source_flow.flowtype,
+                                      activity=self.activity_execution, rv_name=selection_output_drv))
+
+        self.complete()
+
+    def process_restriction_condition(self) -> tuple[str, list[str]]:
+
+        mmrv = self.mmrv
         # Get the Restriction Condition
         rcond_r = Relation.semijoin(db=mmdb, rname1=mmrv.select_action, rname2="Restriction Condition",
                                     attrs={"ID": "Action", "Activity": "Activity", "Domain": "Domain"},
                                     svar_name=mmrv.restriction_condition)
+        if not rcond_r.body:
+            return 'ALL', []  # With no restriction condition, we assume the least restrictive cardinality
+
+        rc_card = rcond_r.body[0]["Selection_cardinality"]
         log_table(_logger, table_msg(db=mmdb, variable_name=mmrv.restriction_condition))
-        _logger.info(f"- Card: {rcond_r.body[0]["Selection_cardinality"]}")
+        _logger.info(f"- Restriction Condition cardinality: {rc_card}")
 
         # The supplied expression helps us define any complex boolean logic
         # in the restriction phrase to be created.
@@ -105,38 +172,7 @@ class Select(ActionExecution):
         log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.source_flow_name, flow_dir=FlowDir.IN,
                                       flow_type=self.source_flow.flowtype,
                                       activity=self.activity_execution, rv_name=self.source_flow.value))
-
-        # Convert input irefs to instances and save in same rv
-        input_iset_rv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="selection_input")
-        InstanceSet.instances(db=self.domdb, irefs_rv=self.source_flow.value, iset_rv=input_iset_rv,
-                              class_name=self.source_flow.flowtype)
-        log_table(_logger, table_msg(db=self.domdb, variable_name=input_iset_rv))
-
-        # Perform the selection
-        selection_output_drv = Relation.declare_rv(db=self.domdb, owner=self.owner, name="selection_output")
-        R = ', '.join(criteria_phrases)  # For now we will just and them all together using commas
-        Relation.restrict(db=self.domdb, relation=input_iset_rv, restriction=R.strip(),
-                          svar_name=selection_output_drv)
-
-        log_table(_logger, table_msg(db=self.domdb, variable_name=selection_output_drv))
-
-        # Extract irefs for output
-        InstanceSet.irefs(db=self.domdb, iset_rv=selection_output_drv, irefs_rv=selection_output_drv,
-                          class_name=self.source_flow.flowtype,
-                          domain_name=self.activity_execution.domain.name)
-
-        log_table(_logger, table_msg(db=self.domdb, variable_name=selection_output_drv))
-
-        # Assign result to output flow
-        # For a select action, the source and dest flow types must match
-        self.activity_execution.flows[self.dest_flow_name] = ActiveFlow(
-            value=selection_output_drv, flowtype=self.source_flow.flowtype)
-
-        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=self.dest_flow_name, flow_dir=FlowDir.OUT,
-                                      flow_type=self.source_flow.flowtype,
-                                      activity=self.activity_execution, rv_name=selection_output_drv))
-
-        self.complete()
+        return rc_card, criteria_phrases
 
     def make_eq_phrases(self) -> list[str]:
         """

@@ -67,6 +67,10 @@ class StateMachine:
         self.max_comp_events = 0
         self.active_event = None
 
+        # For building the sm and state entry log messages
+        self.sm_info = ""
+        self.event_info = ""
+
     def accept_completion_event(self, event: CompletionEvent):
         """
         New Completion event received. Only one may be pending at a time,
@@ -102,13 +106,14 @@ class StateMachine:
         """
         match self.sm_type:
             case StateMachineType.LIFECYCLE:
-                sm_info = f"{self.sm_type.name}: {self.state_model} [{self.current_state}] <{self.instance_id}>"
+                inst_msg = ', '.join(f"{k} {v}" for k, v in self.instance_id.items())
+                self.sm_info = f"{self.sm_type.name}: {self.state_model} <{inst_msg}>"
             case StateMachineType.MA:
-                sm_info = f"{self.sm_type.name}: {self.state_model} [{self.current_state}] P<{self.instance_id}>"
+                inst_msg = ', '.join(f"{k} {v}" for k, v in self.instance_id.items())
+                self.sm_info = f"{self.sm_type.name}: {self.state_model} <{inst_msg}>"
             case StateMachineType.SA:
-                sm_info = f"{self.sm_type.name}: {self.state_model} [{self.current_state}]"
+                self.sm_info = f"{self.sm_type.name}: {self.state_model}"
 
-        _logger.info(f"{sm_info} checking events")
 
         self.max_int_events = max_int_events
         self.max_comp_events = max_comp_events
@@ -131,7 +136,6 @@ class StateMachine:
         if not self.active_event:
             return
 
-        _logger.info(f"Active event: {self.active_event.event_spec}")
 
         # Check for transition
         transition_rv = Relation.declare_rv(db=mmdb, owner=self.rv_owner, name="transition")
@@ -190,11 +194,12 @@ class StateMachine:
                                                       "Domain": "Domain"})
         Relation.free_rvs(db=mmdb, owner=self.rv_owner, names=("transition",))
         dest_real_state_t = dest_real_state_r.body[0]
+        msg = f"\n\nTransition:\n  {self.sm_info}"
+        from_state = self.current_state
         self.current_state = dest_real_state_t["Name"]
-        msg = f"transitioning to [{self.current_state}]"
-        _logger.info(msg)
-        StateActivityExecution(state_name=dest_real_state_t["Name"], anum=dest_real_state_t["Activity"], state_machine=self)
-        pass
+        _logger.info(f"{msg}\n  [{from_state}] ({self.active_event.event_spec}) -> [{self.current_state}]\n")
+        StateActivityExecution(state_name=dest_real_state_t["Name"], anum=dest_real_state_t["Activity"],
+                               state_machine=self)
         # start activity execution and wait for completion
 
     def ignore(self):

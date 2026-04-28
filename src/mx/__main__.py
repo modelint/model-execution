@@ -69,7 +69,7 @@ def main():
 
     print("\nNo problemo")  # Comment this line out before release
     logger.info("No problemo")  # We didn't die on an exception, basically
-    if args.verbose or args.debug:
+    if args.verbose:
         print("\nNo problemo")
 
 

@@ -52,9 +52,6 @@ class Domain:
             alias: The domain alias serves as the name of the corresponding domain database
             system: Reference to the single System object.
         """
-        self.events_pending = False  # Initially, there is no work to do
-        self.activity_executing = False  # Initially, no Activity is executing
-
         self.name = name
         self.alias = alias  # Now we have access to both the mmdb and this domain's schema
         self.owner = f"{alias}_init"  # We used this to organize any rv's, such as the instance_ids
@@ -119,10 +116,6 @@ class Domain:
         for t in ee_r.body:
             self.ee[t['Name']] = EE(name=t['Name'], service_domain_name=t['Service_domain'], domain=self)
 
-    @property
-    def busy(self) -> bool:
-        return self.events_pending or self.activity_executing
-
     def go(self) -> bool:
         """
         Run all state machines
@@ -130,6 +123,8 @@ class Domain:
         Returns:
             True if there is still work remaining (unprocessed events)
         """
+        work_remaing = False
+        lsm_work = False
         # Process all lifecycles
         for class_name, instance in self.lifecycles.items():
             # We freeze the instance.items using list since the dictionary could mutate mid-loop
@@ -137,17 +132,21 @@ class Domain:
             # Could also be trouble if we create new instances
             # But we'll catch any changes when the next execution tick runs the outer loop again
             for inst_id, sm in list(instance.items()):  # list freezes the current state of the dict here
+                lsm_work = True if sm.busy else lsm_work  # If any lsm is busy there is work remaning
                 if sm.busy and not self.system.suspend:
                     sm.go()  # Operating at thread granularity 0, 0 max events
 
+        ma_work = False
         # Process all multiple assigner state machines
         for pclass_name, p_instance in self.mult_assigners.items():
             for inst_id, sm in p_instance.items():
+                ma_work = True if sm.busy else ma_work  # If any ma is busy there is work remaining
                 if sm.busy and not self.system.suspend:
                     sm.go()
         # Process all single assigner state machines
         # TODO: Same for single assigners
-        return self.busy
+        work_remaining = lsm_work or ma_work
+        return work_remaining
 
     def set_class_ids(self):
         """

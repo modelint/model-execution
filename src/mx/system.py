@@ -129,6 +129,7 @@ class System:
         while work_remaining and not self.suspend:
             for d in self.domains.values():
                 _logger.info(f"Executing domain: {d.alias}")
+                _logger.info("---")
                 work_remaining = d.go()  # We'll stay in the loop as long as at least one domain reports true
                 if self.suspend:
                     return

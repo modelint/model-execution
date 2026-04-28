@@ -52,9 +52,9 @@ class ActionExecution:
         required_flow_names = [d["Flow"] for d in dependencies_r.body]
         # Check our dictionary of active flows and disable if any required input flows were not set
         if self.action_type == "gate":
-            self.disabled = all(self.activity_execution.flows[f] is None for f in required_flow_names)
+            self.disabled = all(self.activity_execution.flows.get(f) is None for f in required_flow_names)
         else:
-            self.disabled = any(self.activity_execution.flows[f] is None for f in required_flow_names)
+            self.disabled = any(self.activity_execution.flows.get(f) is None for f in required_flow_names)
         pass
 
         # To simplify the lookup of each subclass of Action, we extend the activity tuple with our action id
