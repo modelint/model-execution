@@ -75,6 +75,9 @@ class MDB:
             'EVMAN:Cabin<S1>': InstanceAddress(domain='EVMAN', class_name='Cabin',
                                                instance_id={'Shaft': 'S1'}),
             'TRANS': ExternalAddress(domain='TRANS'),
+            'SIO': ExternalAddress(domain='SIO'),
+            'EVMAN:Door<S1>': InstanceAddress(domain='EVMAN', class_name='Door',
+                                              instance_id={'Shaft': 'S1'}),
         }
 
         interactions = {
@@ -132,6 +135,11 @@ class MDB:
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters=None
             ),
 
+            # SIO notifies Door that it has opened
+            11: Interaction(
+                direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Door opened',
+                source=actors['SIO'], target=actors['EVMAN:Door<S1>'], parameters=None
+            ),
         }
 
 
@@ -174,7 +182,13 @@ class MDB:
         # MX
 
         self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 3 >|| UI
-        s.go()
+        self.format_interaction(interactions[11])  # 11 Door opening >|| SIO, UI (to trigger SIO to open the door)
+        s.inject(stimulus=interactions[11])  # 11 SIO Door opened -> Door
+        # TODO: Implement Door state activies to get to Door OPEN state
+        pass
+        self.format_announcements(announcement_tuples=s.announcements)  # Door Opened >|| UI
+        # Door has fully opened (note that timer will be pending)
+        s.go()  # No more work to do / Scenario complete
         pass
 
     def format_interaction(self, i: Interaction):
