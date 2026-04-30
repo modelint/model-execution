@@ -85,14 +85,23 @@ class Gate(ActionExecution):
         input_flow_name, activity_execution.flows[output_flow_name] = next(iter(input_values.items()))
         _logger.info(f"\nGate: {self.action_id} passing Flow: {input_flow_name} to Flow: {output_flow_name}")
 
-        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=input_flow_name, flow_dir=FlowDir.IN,
-                                      flow_type=activity_execution.flows[input_flow_name].flowtype,
-                                      activity=self.activity_execution,
-                                      rv_name=activity_execution.flows[input_flow_name].value))
+        input_flow = self.activity_execution.flows[input_flow_name]
+        output_flow = self.activity_execution.flows[output_flow_name]
+        if not self.activity_execution.flows[input_flow_name].scalar:
+            log_table(_logger, nsflow_msg(db=self.domdb, flow_name=input_flow_name, flow_dir=FlowDir.IN,
+                                          flow_type=input_flow.flowtype, activity=self.activity_execution,
+                                          rv_name=input_flow.value))
+            log_table(_logger, nsflow_msg(db=self.domdb, flow_name=output_flow_name, flow_dir=FlowDir.OUT,
+                                          flow_type=output_flow.flowtype, activity=self.activity_execution,
+                                          rv_name=output_flow.value))
 
-        log_table(_logger, nsflow_msg(db=self.domdb, flow_name=output_flow_name, flow_dir=FlowDir.OUT,
-                                      flow_type=activity_execution.flows[output_flow_name].flowtype,
-                                      activity=self.activity_execution,
-                                      rv_name=activity_execution.flows[output_flow_name].value))
+        else:
+            log_table(_logger, sflow_msg(flow_name=input_flow_name, flow_dir=FlowDir.IN,
+                                         flow_type=input_flow.flowtype, activity=self.activity_execution,
+                                         value=input_flow.value))
+
+            log_table(_logger, sflow_msg(flow_name=output_flow_name, flow_dir=FlowDir.OUT,
+                                         flow_type=output_flow.flowtype, activity=self.activity_execution,
+                                         value=output_flow.value))
 
         self.complete()

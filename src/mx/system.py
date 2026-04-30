@@ -54,6 +54,7 @@ class System:
         # These can be reviewed and processed by a monitoring process such as the model debugger
         self.announcements: list[Announcement] = []
         self.suspend = False  # When set to True, we will return control to the monitoring process
+        self.time_override = False  # When set to True, the monitoring process will manage all delayed event timing
 
     def initialize(self, system_path: Path, verbose: bool):
         """
