@@ -1,7 +1,7 @@
 """ dispatched_event.py """
 
 # System
-from datetime import datetime
+from datetime import timedelta, datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ class InteractionEvent(DispatchedEvent):
                  source: ElementAddress,
                  to_instance: NamedValues = None,
                  to_class: str = None, partitioning_instance: NamedValues = None,
-                 partitioning_class: str = None, to_rnum: str = None):
+                 partitioning_class: str = None, to_rnum: str = None, delay: timedelta = None):
         """
 
         """
@@ -53,7 +53,10 @@ class InteractionEvent(DispatchedEvent):
                          params=params, domain=domain)
 
         self.arrival_time = datetime.now()
-        self.dispatch()
+        if delay:
+           pass
+        else:
+            self.dispatch()
 
     def dispatch(self):
         # Look up the target state machine and put this event in its set

@@ -3,6 +3,7 @@
 # System
 import logging
 from typing import TYPE_CHECKING, NamedTuple
+from datetime import timedelta
 
 # Model Integration
 from pyral.relation import Relation
@@ -20,6 +21,7 @@ from mx.actions.flow import ActiveFlow
 from mx.completion_event import CompletionEvent
 from mx.interaction_event import InteractionEvent
 from mx.rvname import declare_rvs
+from mx.exceptions import *
 from mx.mxtypes import *
 
 _logger = logging.getLogger(__name__)
@@ -184,6 +186,25 @@ class Signal(ActionExecution):
         Args:
             target_inst_flow_name: The name of the flow providing the instance recieving the signal
         """
+        mmrv = self.mmrv
+        # Check for a delivery time
+        delay_duration = None  # Default assumption
+        delivery_time_r = Relation.semijoin(db=mmdb, rname1=mmrv.signal_instance_action, rname2='Delivery Time',
+                                            attrs={'ID': 'Action', 'Activity': 'Activity', 'Domain': 'Domain'})
+        if delivery_time_r.body:
+            t = delivery_time_r.body[0]
+            if not t['Relative']:
+                # This is not a delay, but a specified time
+                # TODO: We'll support this in the future
+                msg = f"Absolute time event delivery not yet supported"
+                _logger.error(msg)
+                raise MXActionException(msg)
+            pass
+
+            delay_flow_name = t['Flow']
+            flow_delay_value = float(self.activity_execution.flows[delay_flow_name].value)
+            delay_duration = timedelta(seconds=flow_delay_value)
+
         # The Signal Instance Action takes an input that specifies any number of target instances
         # all belonging to the same class
         target_inst_flow = self.activity_execution.flows[target_inst_flow_name]
@@ -199,7 +220,7 @@ class Signal(ActionExecution):
             # Each t is a reference to a single instance of the flow's class type
             InteractionEvent(sm_type=StateMachineType.LIFECYCLE, event_spec=self.event_spec, params=self.supplied_params,
                              domain=self.activity_execution.domain, source=self.signal_source, to_instance=t,
-                             to_class=target_class_name)
+                             to_class=target_class_name, delay=delay_duration)
         pass
 
     def initial_signal(self):
