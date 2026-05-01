@@ -129,7 +129,7 @@ class Domain:
         Returns:
             True if there is still work remaining (unprocessed events)
         """
-        work_remaing = False
+        work_remaining = False
         lsm_work = False
         # Process all lifecycles
         for class_name, instance in self.lifecycles.items():
@@ -155,9 +155,22 @@ class Domain:
         # Check for any delayed events to dispatch
         expired_events = self.delayed_events.check()
         for de in expired_events:
+            msg = f"Dispatching event {de.event_spec} to {de.state_model} {de.to_instance}"
+            _logger.info(msg)
+            print(msg)  # TODO: For quick debug, REMOVE this
             de.dispatch()
-        work_remaining = lsm_work or ma_work or expired_events or not self.delayed_events.is_empty
+        work_remaining = self.unprocessed_events() or not self.delayed_events.is_empty
         return work_remaining
+
+    def unprocessed_events(self) -> bool:
+        for c, instances in self.lifecycles.items():
+            for lsm in instances.values():
+                if lsm.busy:
+                    return True
+        for pc, pinstances in self.mult_assigners.items():
+            for ma_sm in pinstances.values():
+                if ma_sm.busy:
+                    return True
 
     def set_class_ids(self):
         """

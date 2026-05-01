@@ -190,6 +190,11 @@ class MDB:
         self.format_announcements(announcement_tuples=s.announcements)  # Door Opened >|| UI
         # Door has fully opened (note that timer will be pending)
         s.go()  # No more work to do / Scenario complete
+        self.format_announcements(announcement_tuples=s.announcements)
+        s.go()  # No more work to do / Scenario complete
+        self.format_announcements(announcement_tuples=s.announcements)
+        s.go()  # No more work to do / Scenario complete
+        self.format_announcements(announcement_tuples=s.announcements)
         pass
 
     def format_interaction(self, i: Interaction):

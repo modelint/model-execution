@@ -38,7 +38,7 @@ def declare_mm_rvs(owner: str) -> MMRVs:
     rvs = declare_rvs(mmdb, owner, "computation_action", "boolean_partition", "general_computation")
     return MMRVs(*rvs)
 
-def evaluate_flow_expression(expr: str, flow_values: dict[str, int | float | str]) -> int | float | bool | str:
+def evaluate_flow_expression(expr: str, flow_values: dict[str, ActiveFlow]) -> int | float | bool | str:
     """
     Evaluate an expression containing <Fn> flow markers.
 
@@ -60,7 +60,12 @@ def evaluate_flow_expression(expr: str, flow_values: dict[str, int | float | str
     # Replace each <Fn> marker with its value, quoting strings
     def replacement(match: re.Match) -> str:
         name = match.group(1)
-        val = flow_values[name]
+        val, _, vtype = flow_values[name]
+        if vtype == 'Boolean':
+            # We don't want to treat the string 'TRUE' or 'FALSE' value like an actual string
+            # leading to something like "not 'FALSE'" in the expression
+            return 'True' if val == 'TRUE' else 'False'
+        # We quote any string values using repr, otherwise just convert to a non-quoted string
         return repr(val) if isinstance(val, str) else str(val)
 
     python_expr = re.sub(r'<(F\d+)>', replacement, expr)
@@ -139,7 +144,7 @@ class Computation(ActionExecution):
         Args:
             result_flow_name: Flow (Fn) name of the output flow
         """
-        fvals = {f: self.activity_execution.flows[f].value for f in self.input_flow_names}
+        fvals = {f: self.activity_execution.flows[f] for f in self.input_flow_names}
         result = evaluate_flow_expression(expr=self.expression, flow_values=fvals)
         result_mx_type = SCALAR_TYPE[type(result)]
         self.activity_execution.flows[result_flow_name] = ActiveFlow(

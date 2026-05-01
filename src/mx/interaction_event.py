@@ -1,6 +1,7 @@
 """ dispatched_event.py """
 
 # System
+import logging
 from datetime import timedelta, datetime
 from typing import TYPE_CHECKING
 
@@ -17,6 +18,7 @@ from mx.dispatched_event import DispatchedEvent
 from mx.actions.flow import ActiveFlow
 from mx.mxtypes import *
 
+_logger = logging.getLogger(__name__)
 
 class InteractionEvent(DispatchedEvent):
 
@@ -54,8 +56,10 @@ class InteractionEvent(DispatchedEvent):
 
         self.arrival_time = datetime.now()
         if delay:
+            msg = f"Queueing delayed event {event_spec} for {delay} seconds"
+            _logger.info(msg)
+            print(msg)  # TODO: Quick debug, REMOVE this statement
             self.domain.delayed_events.enqueue(event=self, delay=delay)
-            pass
         else:
             self.dispatch()
 

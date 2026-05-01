@@ -54,7 +54,6 @@ class StateMachine:
         self.sm_id = sm_id  # State machine id (unique across all state machine types in this domain)
         self.rv_owner = rv_owner
         self.sm_type = sm_type
-        self.activity_executing = False
         self.current_state = current_state
         self.interaction_events: list[InteractionEvent] = []
         self.completion_event: CompletionEvent | None = None
@@ -91,7 +90,7 @@ class StateMachine:
 
     @property
     def busy(self) -> bool:
-        return self.interaction_events or self.completion_event or self.activity_executing
+        return self.interaction_events or self.completion_event is not None
 
     def go(self, max_int_events: int = 0, max_comp_events: int = 0):
         """
