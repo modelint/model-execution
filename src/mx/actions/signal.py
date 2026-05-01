@@ -3,7 +3,6 @@
 # System
 import logging
 from typing import TYPE_CHECKING, NamedTuple
-from datetime import timedelta
 
 # Model Integration
 from pyral.relation import Relation
@@ -202,8 +201,7 @@ class Signal(ActionExecution):
             pass
 
             delay_flow_name = t['Flow']
-            flow_delay_value = float(self.activity_execution.flows[delay_flow_name].value)
-            delay_duration = timedelta(seconds=flow_delay_value)
+            delay_duration = float(self.activity_execution.flows[delay_flow_name].value)
 
         # The Signal Instance Action takes an input that specifies any number of target instances
         # all belonging to the same class

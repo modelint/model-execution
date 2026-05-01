@@ -8,7 +8,7 @@ class DelayedEvent:
     event: Any          # your Event instance
     delta: float        # additional seconds beyond the previous entry
 
-class DeltaQueue:
+class DelayedEventQ:
     def __init__(self):
         self._queue: deque[DelayedEvent] = deque()
         self._interval_start: float | None = None   # when current monitored interval began
@@ -17,6 +17,10 @@ class DeltaQueue:
     @property
     def monitoring(self) -> bool:
         return self._interval_start is not None
+
+    @property
+    def is_empty(self) -> bool:
+        return not self._queue
 
     @property
     def remaining(self) -> float:

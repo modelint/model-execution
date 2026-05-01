@@ -16,6 +16,9 @@ from pyral.database import Database
 from pyral.relvar import Relvar
 
 # Model Execution
+if TYPE_CHECKING:
+    from mx.interaction_event import InteractionEvent
+from mx.delayed_event import DelayedEventQ
 from mx.method_execution import MethodExecution
 from mx.multiple_assigner_state_machine import MultipleAssignerStateMachine
 from mx.single_assigner_state_machine import SingleAssignerStateMachine
@@ -84,6 +87,9 @@ class Domain:
         self.ma_initial_states = is_context.ma_istates
         # TODO: Single assigner initial states not yet specified in the sip file syntax
 
+        # Set up the delayed event queue
+        self.delayed_events = DelayedEventQ()
+
         # Load the domain database
         _logger.info(f"---")
         _logger.info(f"Loading {self.alias} domain database")
@@ -145,7 +151,12 @@ class Domain:
                     sm.go()
         # Process all single assigner state machines
         # TODO: Same for single assigners
-        work_remaining = lsm_work or ma_work
+
+        # Check for any delayed events to dispatch
+        expired_events = self.delayed_events.check()
+        for de in expired_events:
+            de.dispatch()
+        work_remaining = lsm_work or ma_work or expired_events or not self.delayed_events.is_empty
         return work_remaining
 
     def set_class_ids(self):

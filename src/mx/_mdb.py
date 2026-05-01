@@ -184,6 +184,7 @@ class MDB:
         self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 3 >|| UI
         self.format_interaction(interactions[11])  # 11 Door opening >|| SIO, UI (to trigger SIO to open the door)
         s.inject(stimulus=interactions[11])  # 11 SIO Door opened -> Door
+        # Here we wait for the timer to go off
         # TODO: Implement Door state activies to get to Door OPEN state
         pass
         self.format_announcements(announcement_tuples=s.announcements)  # Door Opened >|| UI

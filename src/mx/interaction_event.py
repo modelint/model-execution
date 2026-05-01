@@ -54,7 +54,8 @@ class InteractionEvent(DispatchedEvent):
 
         self.arrival_time = datetime.now()
         if delay:
-           pass
+            self.domain.delayed_events.enqueue(event=self, delay=delay)
+            pass
         else:
             self.dispatch()
 
