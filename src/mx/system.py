@@ -54,6 +54,7 @@ class System:
         self.announcements: list[Announcement] = []
         self.suspend = False  # When set to True, we will return control to the monitoring process
         self.time_override = False  # When set to True, the monitoring process will manage all delayed event timing
+        self.playground = None
 
     def initialize(self, system_path: Path, verbose: bool):
         """
