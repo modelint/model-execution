@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mi-mx"
-version = "0.2.0"
+version = "0.2.1"
 description = "Shlaer-Mellor Executable UML Model Execution Environment"
 readme = "README.md"
 authors = [{ name = "Leon Starr", email = "leon_starr@modelint.com" }]
