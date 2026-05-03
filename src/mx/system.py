@@ -49,7 +49,6 @@ class System:
         self.domains: dict[str, Domain] = {}  # All modeled domains in the system
         self.name = None  # Name of the system, extracted from the populated metamodel
         self.verbose = False
-        self.playground = None  # This is a set of populated domain dbs and compatible scenarios
         # Model components such as actions will make announcements to if they are being monitored
         # These can be reviewed and processed by a monitoring process such as the model debugger
         self.announcements: list[Announcement] = []
@@ -136,15 +135,13 @@ class System:
                     return
 
     @property
-    def playgrounds(self) -> list[str] | None:
+    def playgrounds(self) -> list[str]:
         """
-        Names of playground subdirectories, or None if no playground is set.
+        Names of playground subdirectories, if any
 
         Returns:
             List of subdirectory names (possibly empty), or None if playground is unset.
         """
-        if self.playground is None:
-            return None
         return [d.name for d in (self.path / 'playgrounds').iterdir() if d.is_dir()]
 
     def set_mmdb_path(self):
