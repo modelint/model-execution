@@ -135,6 +135,18 @@ class System:
                 if self.suspend:
                     return
 
+    @property
+    def playgrounds(self) -> list[str] | None:
+        """
+        Names of playground subdirectories, or None if no playground is set.
+
+        Returns:
+            List of subdirectory names (possibly empty), or None if playground is unset.
+        """
+        if self.playground is None:
+            return None
+        return [d.name for d in (self.path / 'playgrounds').iterdir() if d.is_dir()]
+
     def set_mmdb_path(self):
 
         model_path = self.path / 'models'
