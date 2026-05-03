@@ -21,8 +21,8 @@ from mx.actions.flow import ActiveFlow
 from mx.activity_execution import ActivityExecution
 from mx.deprecated.bridge import NamedValues
 from mx.instance_set import InstanceSet
-from db_names import mmdb
-from exceptions import *
+from mx.db_names import mmdb
+from mx.exceptions import *
 from mx.mxtypes import *
 
 _logger = logging.getLogger(__name__)
