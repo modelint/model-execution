@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from mx.domain import Domain
 
 # Model Integration
-from mdb_types import *
 
 # MX
 from mx.mxtypes import *
