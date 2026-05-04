@@ -93,6 +93,8 @@ class System:
 
         self.name = system_i.body[0]['Name']
         _logger.info(f"System [{self.name}] located from populated metamodel")
+        if self.verbose:
+            print(f"System [{self.name}] located from populated metamodel")
 
     def load_domains(self, playground: str):
         """
