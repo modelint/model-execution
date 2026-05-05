@@ -56,6 +56,26 @@ class System:
         self.time_override = False  # When set to True, the monitoring process will manage all delayed event timing
         self.playground = None
 
+    @staticmethod
+    def set_announce_triggers(triggers: list[str]):
+        """
+        An external service such as the model debugger can set a trigger on certain actions
+        that will transfer control back to the service when the associated action type completes.
+        For now, we only support setting it on external signals, but this is ripe for expansion to
+        other action types and perhaps non-action behaviors.
+
+        Args:
+            triggers: A list of strings each defining a known trigger type named after an action type
+        """
+        # TODO: expand this to handle other trigger types
+        for t in triggers:
+            match t:
+                case "external signal":
+                    from mx.actions.ext_signal import ExtSignal
+                    ExtSignal.announce = True
+                case _:
+                    pass
+
     def initialize(self, system_path: Path, verbose: bool):
         """
         Load the system from a populated metamodel database.
@@ -206,7 +226,6 @@ class System:
         # the suspend status tells us why the system stopped
         # monitor tripped, terminal condition
         # If monitor tripped, report the detected interaction and exit
-
 
     def process_signal_instance(self, s: Interaction):
         _logger.info(f"Injecting signal: {s.name}")
