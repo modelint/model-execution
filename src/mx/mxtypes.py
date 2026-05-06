@@ -7,19 +7,19 @@ from dataclasses import dataclass
 from enum import Enum, StrEnum
 
 class ActionType(Enum):
-    SIGNAL_INSTANCE = "SIGNAL_INSTANCE"
-    EXTERNAL_EVENT = "EXTERNAL_EVENT"
+    SIGNAL_INSTANCE = "signal instance"
+    EXTERNAL_EVENT = "external event"
 
 class Direction(Enum):
-    STIMULUS = "STIMULUS"
-    RESPONSE = "RESPONSE"
+    STIMULUS = "stimulus"
+    RESPONSE = "response"
 
 class SuspendStatus(Enum):
     """
     Reasons why the system has stopped running
     """
-    MONITOR_TRIPPED = "MONITOR_TRIPPED"  # An monitored condition or response was detected
-    TERMINAL_CONDITION = "TERMINAL_CONDITION"  # The system has entered a terminal state
+    MONITOR_TRIPPED = "monitor tripped"  # An monitored condition or response was detected
+    TERMINAL_CONDITION = "terminal condition"  # The system has entered a terminal state
 
 # Map python to MX base scalar types
 SCALAR_TYPE = {
