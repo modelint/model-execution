@@ -3,8 +3,23 @@
 # System
 from typing import NamedTuple, Dict, Any, TypeAlias, Union
 from collections import namedtuple
+from dataclasses import dataclass
 from enum import Enum, StrEnum
 
+class ActionType(Enum):
+    SIGNAL_INSTANCE = "SIGNAL_INSTANCE"
+    EXTERNAL_EVENT = "EXTERNAL_EVENT"
+
+class Direction(Enum):
+    STIMULUS = "STIMULUS"
+    RESPONSE = "RESPONSE"
+
+class SuspendStatus(Enum):
+    """
+    Reasons why the system has stopped running
+    """
+    MONITOR_TRIPPED = "MONITOR_TRIPPED"  # An monitored condition or response was detected
+    TERMINAL_CONDITION = "TERMINAL_CONDITION"  # The system has entered a terminal state
 
 # Map python to MX base scalar types
 SCALAR_TYPE = {
@@ -36,6 +51,19 @@ Announcement = Union[ExternalEvent_Announcement, InteractionSignal_Announcement]
 # parameter values, or any other set of attribute values
 NamedValues: TypeAlias = Dict[str, Any]
 
+@dataclass(frozen=True)
+class Interaction:
+    """
+    We use this to package up stimulus and response data loaded from a yaml scenario file
+    for interaction with the MX.
+    """
+    description: str            # User friendly purpose or context of the interaction
+    direction: Direction        # Stimulus or Response (input or output) with respect to the MX
+    action: ActionType          # MX action that injects or reports the interaction
+    name: str                   # Name of the specific action (event name, domain operation, etc)
+    source: ElementAddress      # Model address of any emitter/receiver:  instance, domain, assigner, etc
+    target: ElementAddress      # Same as source field
+    parameters: NamedValues     # Parameters, empty if none or not relevant to the acion type
 
 class StateMachineType(Enum):
     LIFECYCLE = 1

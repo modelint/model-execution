@@ -17,7 +17,6 @@ from mx.interaction_event import InteractionEvent
 from mx.domain import Domain
 from mx.db_names import mmdb, PROGRAM_NAME
 from mx.exceptions import *
-from mx.mdb_types import *
 from mx.mxtypes import *
 from mx.actions.flow import ActiveFlow
 # from mx.log_table_config import ConsoleTableFilter, ConsoleWarningFilter

@@ -58,7 +58,7 @@ class InteractionEvent(DispatchedEvent):
         if delay:
             msg = f"Queueing delayed event {event_spec} for {delay} seconds"
             _logger.info(msg)
-            print(msg)  # TODO: Quick debug, REMOVE this statement
+            print(f"    {msg}")  # TODO: Quick debug, REMOVE this statement
             self.domain.delayed_events.enqueue(event=self, delay=delay)
         else:
             self.dispatch()

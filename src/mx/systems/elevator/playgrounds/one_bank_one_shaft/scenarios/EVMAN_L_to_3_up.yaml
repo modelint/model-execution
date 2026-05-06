@@ -41,20 +41,20 @@ Actors:
   internal:
     EVMAN:
       'ASLEV<S1-3>':
-        class_name: 'Accessible Shaft Level'
+        class: 'Accessible Shaft Level'
         instance:
           Shaft: S1
           Floor: 3
       'XFER<S1>':
-        class_name: 'Transfer'
+        class: 'Transfer'
         instance:
           Shaft: S1
       'Cabin<S1>':
-        class_name: 'Cabin'
+        class: 'Cabin'
         instance:
           Shaft: S1
       'Door<S1>':
-        class_name: 'Door'
+        class: 'Door'
         instance:
           Shaft: S1
   external:
@@ -69,20 +69,20 @@ Interactions:
     action: signal instance
     name: Stop request
     source: UI
-    target: 'ASLEV<S1-3>'
+    target: 'EVMAN:ASLEV<S1-3>'
 
   - description: 'UI updated with request'
     direction: response
     action: external event
     name: Set destination
-    source: 'XFER<S1>'
+    source: 'EVMAN:XFER<S1>'
     target: UI
 
   - description: 'Cabin S1 requests transport from TRANS'
     direction: response
     action: external event
     name: Go to floor
-    source: 'Cabin<S1>'
+    source: 'EVMAN:Cabin<S1>'
     target: TRANS
     parameters:
       dest floor: '3'
@@ -94,7 +94,7 @@ Interactions:
     action: signal instance
     name: Passing floor
     source: TRANS
-    target: 'Cabin<S1>'
+    target: 'EVMAN:Cabin<S1>'
     parameters:
       floor: '1'
 
@@ -102,7 +102,7 @@ Interactions:
     direction: response
     action: external event
     name: Passing floor
-    source: 'Cabin<S1>'
+    source: 'EVMAN:Cabin<S1>'
     target: UI
     parameters:
       floor: '1'
@@ -114,7 +114,7 @@ Interactions:
     action: signal instance
     name: Passing floor
     source: TRANS
-    target: 'Cabin<S1>'
+    target: 'EVMAN:Cabin<S1>'
     parameters:
       floor: '2'
 
@@ -122,7 +122,7 @@ Interactions:
     direction: response
     action: external event
     name: Passing floor
-    source: 'Cabin<S1>'
+    source: 'EVMAN:Cabin<S1>'
     target: UI
     parameters:
       floor: '2'
@@ -134,7 +134,7 @@ Interactions:
     action: signal instance
     name: Passing floor
     source: TRANS
-    target: 'Cabin<S1>'
+    target: 'EVMAN:Cabin<S1>'
     parameters:
       floor: '3'
 
@@ -142,7 +142,7 @@ Interactions:
     direction: response
     action: external event
     name: Passing floor
-    source: 'Cabin<S1>'
+    source: 'EVMAN:Cabin<S1>'
     target: UI
     parameters:
       floor: '3'
@@ -152,28 +152,35 @@ Interactions:
     action: signal instance
     name: Arrived at floor
     source: TRANS
-    target: 'Cabin<S1>'
+    target: 'EVMAN:Cabin<S1>'
 
   - description: 'Cabin reports arrival to UI'
     direction: response
     action: external event
     name: Cabin arrived
-    source: 'Cabin<S1>'
+    source: 'EVMAN:Cabin<S1>'
     target: UI
 
   - description: 'ASLEV state entry implicitly requests clear stop request to UI'
     direction: response
     action: external event
     name: Clear stop request
-    source: 'ASLEV<S1-3>'
+    source: 'EVMAN:ASLEV<S1-3>'
     target: UI
 
-  - description: 'OPENING state implicitly requests door open and notifies UI'
+  - description: 'OPENING state implicitly notifies UI of door open request'
     direction: response
     action: external event
     name: Door opening
-    source: 'Door<S1>'
-    target: [SIO, UI]
+    source: 'EVMAN:Door<S1>'
+    target: UI
+
+  - description: 'OPENING state implicitly requests door open from SIO'
+    direction: response
+    action: external event
+    name: Door opening
+    source: 'EVMAN:Door<S1>'
+    target: SIO
 
   - description: 'SIO notifies Door that it has opened'
     delay: 3.0
@@ -182,19 +189,25 @@ Interactions:
     action: signal instance
     name: Door opened
     source: SIO
-    target: 'Door<S1>'
+    target: 'EVMAN:Door<S1>'
 
   - description: 'OPEN state implicitly notifies UI that door is open'
     direction: response
     action: external event
     name: Door opened
-    source: 'Door<S1>'
+    source: 'EVMAN:Door<S1>'
     target: UI
 
-  - description: 'CLOSING state implicitly requests door close and notifies UI'
+  - description: 'CLOSING state implicitly notifies UI that door is closing'
     direction: response
     action: external event
     name: Door closing
-    source: 'Door<S1>'
-    target: [SIO, UI]
+    source: 'EVMAN:Door<S1>'
+    target: UI
 
+  - description: 'CLOSING state implicitly requests door close from SIO'
+    direction: response
+    action: external event
+    name: Door closing
+    source: 'EVMAN:Door<S1>'
+    target: SIO

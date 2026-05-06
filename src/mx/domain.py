@@ -157,7 +157,7 @@ class Domain:
         for de in expired_events:
             msg = f"Dispatching event {de.event_spec} to {de.state_model} {de.to_instance}"
             _logger.info(msg)
-            print(msg)  # TODO: For quick debug, REMOVE this
+            print(f"    {msg}")  # TODO: For quick debug, REMOVE this
             de.dispatch()
         work_remaining = self.unprocessed_events() or not self.delayed_events.is_empty
         return work_remaining

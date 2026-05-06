@@ -19,7 +19,6 @@ from pyral.database import Database
 
 # MX
 from mx.system import System
-from mx.mdb_types import *
 from mx.mxtypes import *
 from mx.db_names import mmdb
 from mx.utility import print_classes
@@ -82,61 +81,61 @@ class MDB:
 
         interactions = {
             # Send the initial stop request to ASLEV S1-3
-            1: Interaction(
+            1: Interaction(description="",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Stop request',
                 source=actors['UI'], target=actors['EVMAN:ASLEV<S1-3>'], parameters=None
             ),
             # UI updated with request
-            2: Interaction(
+            2: Interaction("",
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Set destination',
                 source=actors['EVMAN:XFER<S1>'], target=actors['UI'], parameters=None
             ),
 
             # Cabin S1 requests transport from TRANS
-            3: Interaction(
+            3: Interaction("",
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Go to floor',
                 source=actors['EVMAN:Cabin<S1>'], target=actors['TRANS'], parameters={'dest floor': '3'}
             ),
 
             # Passing floors TRANS reports passing floor, UI notified
             # Floor 1
-            4: Interaction(
+            4: Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '1'}
             ),
-            5: Interaction(
+            5: Interaction("",
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
                 source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '1'}
             ),
 
             # Floor 2
-            6: Interaction(
+            6: Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '2'}
             ),
-            7: Interaction(
+            7: Interaction("",
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
                 source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '2'}
             ),
 
             # Floor 3 (destination)
-            8: Interaction(
+            8: Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '3'}
             ),
-            9: Interaction(
+            9: Interaction("",
                 direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
                 source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '3'}
             ),
 
             # TRANS notifies Cabin that it has arrived
-            10: Interaction(
+            10: Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Arrived at floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters=None
             ),
 
             # SIO notifies Door that it has opened
-            11: Interaction(
+            11: Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Door opened',
                 source=actors['SIO'], target=actors['EVMAN:Door<S1>'], parameters=None
             ),
@@ -198,13 +197,13 @@ class MDB:
         pass
 
     def format_interaction(self, i: Interaction):
-        pass
+        print()
         if i.action == ActionType.SIGNAL_INSTANCE:
             inst_str = '<' + '-'.join([str(v) for v in i.target.instance_id.values()]) + '>'
             formatted_i = f"{i.source.domain} >|| {i.target.domain} : {i.name} -> {i.target.class_name} {inst_str}"
         else:
             formatted_i = "Unimplemented Acton Type"
-        print(formatted_i)
+        print(f"{formatted_i}")
 
     def format_announcements(self, announcement_tuples: list[Announcement]):
         for a in announcement_tuples:
@@ -216,5 +215,5 @@ class MDB:
                 pstrings = [f"{n}={v[0]}" for n,v in a.params.items()]
                 param_str = ', '.join(pstrings)
                 formatted_a = f"{a.domain} >|| {a.ee} : {a.source}{inst_str} {a.event}( {param_str} )"
-                print(formatted_a)
+                print(f"    {formatted_a}")
                 self.announcements.append(formatted_a)
