@@ -143,6 +143,8 @@ class MDB:
 
 
         _logger.info(f"Beginning scenario: {s.playground.name}")
+        current_states = s.domains['EVMAN'].get_current_states()
+        pass
 
         # Set monitored response
         from mx.actions.ext_signal import ExtSignal
@@ -179,6 +181,7 @@ class MDB:
         self.format_interaction(interactions[10])
         s.inject(stimulus=interactions[10])  # 10 TRANS Arrived at floor -> Cabin
         # MX
+        current_states = s.domains['EVMAN'].get_current_states()
 
         self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 3 >|| UI
         self.format_interaction(interactions[11])  # 11 Door opening >|| SIO, UI (to trigger SIO to open the door)

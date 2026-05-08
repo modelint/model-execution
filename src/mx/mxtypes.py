@@ -6,6 +6,8 @@ from collections import namedtuple
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 
+SM_State = namedtuple('SM_State', 'state_model instance state')
+
 class ActionType(Enum):
     SIGNAL_INSTANCE = "signal instance"
     EXTERNAL_EVENT = "external event"

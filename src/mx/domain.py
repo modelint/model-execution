@@ -30,6 +30,7 @@ from mx.initial_states import InitialStateContext
 from mx.exceptions import *
 from mx.mxtypes import snake
 from mx.utility import *
+from mx.mxtypes import SM_State
 
 _logger = logging.getLogger(__name__)
 
@@ -112,6 +113,20 @@ class Domain:
         Relation.free_rvs(db=mmdb, owner=self.owner)
         # There is a set of _i instance tag relations, on per lifecycle and we
         # use these for state machine lookup, so only mmdb rvs are freed up here
+
+    def get_current_states(self) -> list[SM_State]:
+        """
+
+        """
+        cs = []
+        for lc_name, sms in self.lifecycles.items():
+            for s, sdata in sms.items():
+                cs.append(SM_State(sdata.class_name, sdata.instance_id, sdata.current_state))
+                pass
+        for ma_name, sms in self.mult_assigners.items():
+            for s, sdata in sms.items():
+                cs.append(SM_State(sdata.rnum, sdata.instance_id, sdata.current_state))
+        return cs
 
     def initialize_ees(self):
         """
