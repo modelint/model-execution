@@ -114,13 +114,20 @@ class Domain:
         # There is a set of _i instance tag relations, on per lifecycle and we
         # use these for state machine lookup, so only mmdb rvs are freed up here
 
-    def get_pending_events(self):
+    def get_pending_events(self) -> dict[str, SM_Pending]:
+        """
+        Report any pending events for all state machines in this domain.
+
+        Returns:
+            A dictionary keyed by state model name with a tuple of event sets for each state machine instance
+        """
+        # TODO: Add single assigner state machines when we have an example
         pending_events = {}
         for sm_name, sms in self.lifecycles.items():
             pending_events[sm_name] = [sm.get_pending_events() for _, sm in sms.items()]
         for sm_name, sms in self.mult_assigners.items():
-            pending_events[sm_name] = [sm.get_pending_events() for _, sm in sms.items()]
-        pass
+            pending_events[f"{sms[0].rnum}/{sm_name}"] = [sm.get_pending_events() for _, sm in sms.items()]
+        return pending_events
 
     def get_current_states(self) -> list[SM_State]:
         """

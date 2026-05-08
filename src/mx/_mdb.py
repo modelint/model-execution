@@ -180,7 +180,6 @@ class MDB:
         self.format_interaction(interactions[10])
         s.inject(stimulus=interactions[10])  # 10 TRANS Arrived at floor -> Cabin
         # MX
-        pending_events = s.domains['EVMAN'].get_pending_events()
 
         self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 3 >|| UI
         self.format_interaction(interactions[11])  # 11 Door opening >|| SIO, UI (to trigger SIO to open the door)
