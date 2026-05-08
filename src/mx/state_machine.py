@@ -104,7 +104,7 @@ class StateMachine:
         cevent = SM_Completion(
             event_name=self.completion_event.event_spec,
             params=self.completion_event.params,
-            arrival_time=self.completion_event.arrival_time
+            arrival_time=None,
         ) if self.completion_event else None
         return SM_Pending(instance=instance_id, interaction=ievents, completion=cevent)
 

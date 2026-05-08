@@ -170,6 +170,9 @@ class MDB:
         s.inject(stimulus=interactions[6])  # 6 Passing floor 2 -> Cabin
         # MX
 
+        pe = s.domains['EVMAN'].get_pending_events()
+        pass
+
         # Cabin reports passing floor 2
         self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 2 >|| UI
         self.format_interaction(interactions[8])
