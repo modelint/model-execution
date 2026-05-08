@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from enum import Enum, StrEnum
 
 SM_State = namedtuple('SM_State', 'state_model instance state')
+SM_Pending = namedtuple('SM_Pending', 'instance interaction completion')
+SM_Interactive = namedtuple('SM_Interactive', 'source event_name params arrival_time')
+SM_Completion = namedtuple('SM_Completion', 'event_name params arrival_time')
 
 class ActionType(Enum):
     SIGNAL_INSTANCE = "signal instance"

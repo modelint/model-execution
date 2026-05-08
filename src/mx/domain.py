@@ -30,7 +30,7 @@ from mx.initial_states import InitialStateContext
 from mx.exceptions import *
 from mx.mxtypes import snake
 from mx.utility import *
-from mx.mxtypes import SM_State
+from mx.mxtypes import SM_State, SM_Pending
 
 _logger = logging.getLogger(__name__)
 
@@ -114,9 +114,21 @@ class Domain:
         # There is a set of _i instance tag relations, on per lifecycle and we
         # use these for state machine lookup, so only mmdb rvs are freed up here
 
+    def get_pending_events(self):
+        pending_events = {}
+        for sm_name, sms in self.lifecycles.items():
+            pending_events[sm_name] = [sm.get_pending_events() for _, sm in sms.items()]
+        for sm_name, sms in self.mult_assigners.items():
+            pending_events[sm_name] = [sm.get_pending_events() for _, sm in sms.items()]
+        pass
+
     def get_current_states(self) -> list[SM_State]:
         """
+        For each state machine, report the state model name, instance id if not a single assigner state machine,
+        and the name of the current state.
 
+        Returns:
+            A list of current states as a named tuple
         """
         cs = []
         for lc_name, sms in self.lifecycles.items():

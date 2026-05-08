@@ -24,7 +24,7 @@ from mx.interaction_event import InteractionEvent
 from mx.completion_event import CompletionEvent
 from mx.dispatched_event import DispatchedEvent
 from mx.state_activity_execution import StateActivityExecution
-from mx.mxtypes import StateMachineType
+from mx.mxtypes import StateMachineType, SM_Pending, SM_Interactive, SM_Completion
 from mx.message import *
 
 
@@ -87,6 +87,26 @@ class StateMachine:
         # Otherwise, accept the completion event
         self.completion_event = event
         pass
+
+    def get_pending_events(self):
+        """
+        Reports any pending interaction events and any pending completion event for this state machine.
+
+        Returns:
+
+        """
+        # Lifecycles and Multiple Assigners have an instance_id for the executing or partitioning instance
+        instance_id = None if self.sm_type == StateMachineType.SA else self.instance_id
+        ievents = [
+            SM_Interactive(source=e.source, event_name=e.event_spec, params=e.params, arrival_time=e.arrival_time)
+            for e in self.interaction_events
+        ]
+        cevent = SM_Completion(
+            event_name=self.completion_event.event_spec,
+            params=self.completion_event.params,
+            arrival_time=self.completion_event.arrival_time
+        ) if self.completion_event else None
+        return SM_Pending(instance=instance_id, interaction=ievents, completion=cevent)
 
     @property
     def busy(self) -> bool:

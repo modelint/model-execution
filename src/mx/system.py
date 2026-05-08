@@ -55,6 +55,16 @@ class System:
         self.time_override = False  # When set to True, the monitoring process will manage all delayed event timing
         self.playground = None
 
+    def get_current_states(self) -> dict[str, list[SM_State]]:
+        """
+        Report the current state of each modeled domain
+
+        Returns:
+            A dictionary keyed by domain alias. Each value is a list of current states as named tuple
+        """
+        return {n: d.get_current_states() for n, d in self.domains.items()}
+
+
     @staticmethod
     def set_announce_triggers(triggers: list[str]):
         """
