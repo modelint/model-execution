@@ -67,7 +67,9 @@ class Interaction:
     action: ActionType          # MX action that injects or reports the interaction
     name: str                   # Name of the specific action (event name, domain operation, etc)
     source: ElementAddress      # Model address of any emitter/receiver:  instance, domain, assigner, etc
+    source_actor: str           # ID used by mdb to name the source for formatted output
     target: ElementAddress      # Same as source field
+    target_actor: str           # ID used by mdb to name the source for formatted output
     parameters: NamedValues     # Parameters, empty if none or not relevant to the acion type
 
 class StateMachineType(Enum):
