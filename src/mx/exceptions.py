@@ -6,6 +6,10 @@ class MXException(Exception):
     """ Model Execution exception """
     pass
 
+class MXInputException(MXException):
+    """ Error encountered due to bad mdb/user input """
+    pass
+
 class MXActionException(MXException):
     """ Error encountered during Action execution """
     pass

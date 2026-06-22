@@ -55,6 +55,38 @@ class System:
         self.time_override = False  # When set to True, the monitoring process will manage all delayed event timing
         self.playground = None
 
+    @staticmethod
+    def validate_class_name(class_name: str, domain_name: str) -> str:
+        """
+        Verify that the class name exists in the populated metamodel. If so, return the class name.
+        If not, look up the alias using the provided class name. If found, return the class name.
+
+        If both cases fail (class name doesn't match and not an alias), raise an exception.
+
+        Args:
+            class_name: A class name to validate
+            domain_name:  Class should be defined in this domain
+
+        Returns:
+            The class name if it exists
+        """
+        # Look up the class using its name
+        R = f"Name:<{class_name}>, Domain:<{domain_name}>"
+        class_r = Relation.restrict(db=mmdb, relation="Class", restriction=R)
+        if class_r.body:
+            return class_name  # Valid class name
+
+        # Class name not found, maybe the class_name is actually an alias
+        R = f"Name:<{class_name}>, Domain:<{domain_name}>"
+        alias_r = Relation.restrict(db=mmdb, relation="Alias", restriction=R)
+        if alias_r.body:
+            return alias_r.body[0]['Class']  # Return tthe actual class name
+
+        # Neither found, raise exception
+        msg = f"Class {class_name}::{domain_name} not found in populated metamodel"
+        _logger.error(msg)
+        raise MXInputException(msg)
+
     def get_current_states(self) -> dict[str, list[SM_State]]:
         """
         Report the current state of each modeled domain
@@ -273,4 +305,5 @@ def get() -> System:
     if System._instance is None:
         raise RuntimeError("System has not been initialized")
     return System._instance
+
 
