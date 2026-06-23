@@ -72,6 +72,8 @@ class Domain:
 
         self.file_path = self.system.playground / 'population' / f"{self.alias}.ral"  # Path to the domain database file
 
+        self.announce_state_entry: bool = True  # If set, each state entry in this domain will be announced
+
         # Load the domain types
         types_path = self.system.path / 'models' / f"{self.alias}_types.yaml"
         try:

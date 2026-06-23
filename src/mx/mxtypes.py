@@ -50,7 +50,8 @@ ElementAddress = Union[InstanceAddress, AssignerAddress, ExternalAddress]
 # Announcements
 ExternalEvent_Announcement = namedtuple('mx_ExternalEvent_Announcement', 'domain ee source inst event params')
 InteractionSignal_Announcement = namedtuple('mx_InteractionSignal_Announcement', 'domain sm inst event params')
-Announcement = Union[ExternalEvent_Announcement, InteractionSignal_Announcement]
+StateEntry_Announcement = namedtuple('mx_StateEntry_Announcement', 'domain sm inst state')
+Announcement = Union[ExternalEvent_Announcement, InteractionSignal_Announcement, StateEntry_Announcement]
 
 # Used any time we have a set of named values such as a set of identifier attribute values
 # parameter values, or any other set of attribute values

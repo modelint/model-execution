@@ -24,7 +24,7 @@ from mx.interaction_event import InteractionEvent
 from mx.completion_event import CompletionEvent
 from mx.dispatched_event import DispatchedEvent
 from mx.state_activity_execution import StateActivityExecution
-from mx.mxtypes import StateMachineType, SM_Pending, SM_Interactive, SM_Completion
+from mx.mxtypes import *
 from mx.message import *
 
 
@@ -146,6 +146,7 @@ class StateMachine:
                 comp_event = 1 if self.completion_event else 0
                 return len(self.interaction_events) + comp_event
             self.process_event()
+            # TODO: Also check for state entry announcements
             if self.domain.system.announcements:
                 self.domain.system.suspend = True
                 return
@@ -216,10 +217,21 @@ class StateMachine:
         msg = f"\n\nTransition:\n  {self.sm_info}"
         from_state = self.current_state
         self.current_state = dest_real_state_t["Name"]
+        # TODO: If domain sets state entry reporting, announce new state and instance id
         _logger.info(f"{msg}\n  [{from_state}] ({self.active_event.event_spec}) -> [{self.current_state}]\n")
+        # start activity execution and wait for completion
         StateActivityExecution(state_name=dest_real_state_t["Name"], anum=dest_real_state_t["Activity"],
                                state_machine=self)
-        # start activity execution and wait for completion
+        if self.domain.announce_state_entry:
+            state_entered = StateEntry_Announcement(
+                domain=self.domain.alias,
+                sm=self.state_model,
+                inst=None if self.sm_type == StateMachineType.SA else self.instance_id,
+                state=self.current_state
+            )
+            self.domain.system.announcements.append(state_entered)
+
+
 
     def ignore(self):
         """
