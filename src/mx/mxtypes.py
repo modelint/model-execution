@@ -63,6 +63,7 @@ class Interaction:
     for interaction with the MX.
     """
     description: str            # User friendly purpose or context of the interaction
+    delay: float                # Wait before triggering this Stimulus (ignored for responses)
     direction: Direction        # Stimulus or Response (input or output) with respect to the MX
     action: ActionType          # MX action that injects or reports the interaction
     name: str                   # Name of the specific action (event name, domain operation, etc)

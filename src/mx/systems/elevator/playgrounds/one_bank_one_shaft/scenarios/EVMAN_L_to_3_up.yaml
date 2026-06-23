@@ -41,22 +41,22 @@ Actors:
   internal:
     EVMAN:
       'ASLEV<S1-3>':
-        class: 'Accessible Shaft Level'
+        class: Accessible Shaft Level
         instance:
-          Shaft: S1
-          Floor: 3
+          Shaft: 'S1'
+          Floor: '3'
       'XFER<S1>':
-        class: 'Transfer'
+        class: Transfer
         instance:
-          Shaft: S1
+          Shaft: 'S1'
       'Cabin<S1>':
-        class: 'Cabin'
+        class: Cabin
         instance:
-          Shaft: S1
+          Shaft: 'S1'
       'Door<S1>':
-        class: 'Door'
+        class: Door
         instance:
-          Shaft: S1
+          Shaft: 'S1'
   external:
     - UI
     - TRANS
@@ -65,6 +65,8 @@ Actors:
 
 Interactions:
   - description: 'Send the initial stop request to ASLEV S1-3'
+    delay: 1.0
+    time: s
     direction: stimulus
     action: signal instance
     name: Stop request
