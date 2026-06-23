@@ -2,7 +2,7 @@
 
 # System
 import logging
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, Any
 from collections import defaultdict
 from contextlib import redirect_stdout
 import yaml
@@ -128,6 +128,38 @@ class Domain:
         for sm_name, sms in self.mult_assigners.items():
             pending_events[f"{sms[0].rnum}/{sm_name}"] = [sm.get_pending_events() for _, sm in sms.items()]
         return pending_events
+
+    def get_current_state(self, sm_name: str, instance_id: dict[str, Any]) -> str | None:
+        """
+        Given a state machine name, return its current state. None returned if there is no
+        such state machine.
+
+        Args:
+            sm_name: Name of the class or relationship
+            instance_id: dictionary of identifier attribute/value pairs
+
+        Returns:
+            Name of the current state of that state machine instance
+        """
+        # First locate the state machine instances
+        sm_instances = None
+
+        # Might be a lifecycle
+        if sm_name in self.lifecycles:
+            sm_instances = self.lifecycles[sm_name]
+        # Otherwise a multiple assigner
+        elif sm_name in self.mult_assigners:
+            sm_instances = self.mult_assigners[sm_name]
+        # TODO: Support single assigners
+
+        # Match the instance and return its current state
+        if sm_instances:
+            for i in sm_instances.values():
+                if i.instance_id == instance_id:
+                    return i.current_state
+
+        # Either no such state model or no such state machine instance
+        return None
 
     def get_current_states(self) -> list[SM_State]:
         """
