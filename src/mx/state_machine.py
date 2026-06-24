@@ -208,6 +208,21 @@ class StateMachine:
         _logger.info(f"Interaction events pending: {len(self.interaction_events)}")
         self.domain.events_pending = True
 
+        # Announce accepted interaction event
+        if self.domain.announce_interaction:
+            interaction_event = InteractionSignal_Announcement(
+                source=event.source,
+                dest=InternalAddress(
+                    domain=self.domain.alias,
+                    sm_name=self.state_model,
+                    sm_type=self.sm_type,
+                    instance_id=None if self.sm_type == StateMachineType.SA else self.instance_id,
+                ),
+                event=event.event_spec,
+                params=event.params,
+            )
+            self.domain.system.announcements.append(interaction_event)
+
     def transition(self, transition_rv: str):
         dest_real_state_r = Relation.semijoin(db=mmdb, rname1=transition_rv, rname2="Real State",
                                               attrs= {"To_state": "Name", "State_model": "State_model",

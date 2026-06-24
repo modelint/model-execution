@@ -262,6 +262,8 @@ class System:
         _logger.info("Transferring control from scenario to system")
         _logger.info("MDB --> SYS")
         _logger.info("---")
+        if self.announcements:
+            return
         self.go()
         pass
         # the suspend status tells us why the system stopped
@@ -271,7 +273,7 @@ class System:
     def process_signal_instance(self, s: Interaction):
         _logger.info(f"Injecting signal: {s.name}")
         if isinstance(s.source, ExternalAddress):
-            _logger.info(f"{s.source.domain} >|| {s.target.domain} : {s.name} -> {s.target.class_name} <{s.target.instance_id}>")
+            _logger.info(f"{s.source.domain} >|| {s.target.domain} : {s.name} -> {s.target.sm_name} <{s.target.instance_id}>")
         else:
             pass
         target_domain = self.domains[s.target.domain]
@@ -298,7 +300,7 @@ class System:
                 else:
                     pflows[name] = ActiveFlow(value=value, flowtype='ptype', scalar=None)
         ie = InteractionEvent.to_lifecycle(event_spec=s.name, source=s.source,
-                                           to_instance=s.target.instance_id, to_class=s.target.class_name,
+                                           to_instance=s.target.instance_id, to_class=s.target.sm_name,
                                            params=pflows, domain=target_domain)
 
 def get() -> System:

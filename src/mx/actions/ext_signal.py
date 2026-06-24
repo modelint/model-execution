@@ -46,9 +46,6 @@ class ExtSignal(ActionExecution):
     See the Signal Action subsystem class model to find all referenced classes in the comments
     in this python module.
     """
-    # If set to true by a monitoring process, completion of this action will be announced
-    announce = False
-
     def __init__(self, action_id: str, activity_execution: "ActivityExecution"):
         super().__init__(activity_execution=activity_execution, action_id=action_id)
 
@@ -71,25 +68,13 @@ class ExtSignal(ActionExecution):
 
         # Resolve source of ext signal
         # Determine the source type
-        match self.activity_execution.state_machine.sm_type:
-            case StateMachineType.LIFECYCLE:
-                self.ext_event_source = InstanceAddress(
-                    domain=self.activity_execution.domain.alias,
-                    class_name=self.activity_execution.state_machine.state_model,
-                    instance_id=self.activity_execution.state_machine.instance_id
-                )
-            case StateMachineType.MA:
-                self.ext_event_source = AssignerAddress(
-                    domain=self.activity_execution.domain.alias,
-                    rel_name=self.activity_execution.state_machine.state_model,
-                    instance_id=self.activity_execution.state_machine.instance_id
-                )
-            case StateMachineType.SA:
-                self.ext_event_source = AssignerAddress(
-                    domain=self.activity_execution.domain.alias,
-                    rel_name=self.activity_execution.state_machine.state_model,
-                    instance_id=None
-                )
+        sm_type = self.activity_execution.state_machine.state_model
+        self.ext_event_source = InternalAddress(
+            domain=self.activity_execution.domain.name,
+            sm_name=self.activity_execution.state_machine.state_model,
+            sm_type=sm_type,
+            instance_id=self.activity_execution.state_machine.instance_id if sm_type != StateMachineType.SA else None
+        )
 
         # Process outgoing event params
         external_param_r = Relation.semijoin(db=mmdb,
@@ -104,7 +89,7 @@ class ExtSignal(ActionExecution):
         # Hand off to the EE for bridging
         self.ee.process_ext_signal(ext_signal=self)
 
-        if ExtSignal.announce:
+        if self.activity_execution.domain.announce_external_events:
             # Monitoring is on for this action type. Announce completion.
             self.make_announcement()
 
@@ -115,14 +100,10 @@ class ExtSignal(ActionExecution):
         Report monitor status and completion of this action as a formatted message for transfer
         to a supervisor such as the model debugger.
         """
-        if isinstance(self.ext_event_source, InstanceAddress):
-            source = self.ext_event_source.class_name
-        else:
-            source = self.ext_event_source.rel_name
         ee_sent = ExternalEvent_Announcement(
             domain=self.ext_event_source.domain,
             ee=self.ee_name,
-            source=source,
+            source=self.ext_event_source.sm_name,
             inst=self.ext_event_source.instance_id,
             event=self.ext_event_name,
             params=self.params

@@ -42,14 +42,13 @@ class ActionState(StrEnum):
     D = "State:D"  # Disabled action
 
 
-InstanceAddress = namedtuple('mx_InstanceAddress', 'domain class_name instance_id')
-AssignerAddress = namedtuple('mx_AssignerAddress', 'domain rel_name instance_id')
+InternalAddress = namedtuple('mx_InternalAddress', 'domain sm_name sm_type instance_id')
 ExternalAddress = namedtuple('mx_ExternalAddress', 'domain')
-ElementAddress = Union[InstanceAddress, AssignerAddress, ExternalAddress]
+ElementAddress = Union[InternalAddress, ExternalAddress]
 
 # Announcements
 ExternalEvent_Announcement = namedtuple('mx_ExternalEvent_Announcement', 'domain ee source inst event params')
-InteractionSignal_Announcement = namedtuple('mx_InteractionSignal_Announcement', 'domain sm inst event params')
+InteractionSignal_Announcement = namedtuple('mx_InteractionSignal_Announcement', 'source dest event params')
 StateEntry_Announcement = namedtuple('mx_StateEntry_Announcement', 'domain sm inst state')
 Announcement = Union[ExternalEvent_Announcement, InteractionSignal_Announcement, StateEntry_Announcement]
 
@@ -64,14 +63,14 @@ class Interaction:
     for interaction with the MX.
     """
     description: str            # User friendly purpose or context of the interaction
-    delay: float                # Wait before triggering this Stimulus (ignored for responses)
+    # delay: float                # Wait before triggering this Stimulus (ignored for responses)
     direction: Direction        # Stimulus or Response (input or output) with respect to the MX
     action: ActionType          # MX action that injects or reports the interaction
     name: str                   # Name of the specific action (event name, domain operation, etc)
     source: ElementAddress      # Model address of any emitter/receiver:  instance, domain, assigner, etc
-    source_actor: str           # ID used by mdb to name the source for formatted output
+    # source_actor: str           # ID used by mdb to name the source for formatted output
     target: ElementAddress      # Same as source field
-    target_actor: str           # ID used by mdb to name the source for formatted output
+    # target_actor: str           # ID used by mdb to name the source for formatted output
     parameters: NamedValues     # Parameters, empty if none or not relevant to the acion type
 
 class StateMachineType(Enum):

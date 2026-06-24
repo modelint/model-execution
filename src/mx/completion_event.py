@@ -25,15 +25,7 @@ class CompletionEvent(DispatchedEvent):
         """
 
         """
-        state_model = None
-        match sm_type:
-            case StateMachineType.LIFECYCLE:
-                state_model = source.class_name
-            case StateMachineType.SA:
-                state_model = source.rel_name
-            case StateMachineType.MA:
-                state_model = source.rel_name
-        super().__init__(source=source, event_spec=event_spec, state_model=state_model, sm_type=sm_type,
+        super().__init__(source=source, event_spec=event_spec, state_model=source.sm_name, sm_type=sm_type,
                          to_instance=to_instance,
                          partitioning_class=partitioning_class, partitioning_instance=partitioning_instance,
                          params=params, domain=domain)

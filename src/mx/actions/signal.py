@@ -54,10 +54,6 @@ class Signal(ActionExecution):
     See the Signal Action subsystem class model to find all referenced classes in the comments
     in this python module.
     """
-    # Default model debugger monitoring options
-    monitor_external = False
-    monitor_internal = False
-
     def __init__(self, action_id: str, activity_execution: "ActivityExecution"):
         super().__init__(activity_execution=activity_execution, action_id=action_id)
 
@@ -85,25 +81,13 @@ class Signal(ActionExecution):
         """
         # TODO: This only works for state activity sources, add Method / Domain operation activities
         # Determine the source type
-        match self.activity_execution.state_machine.sm_type:
-            case StateMachineType.LIFECYCLE:
-                signal_source = InstanceAddress(
-                    domain=self.activity_execution.domain.name,
-                    class_name=self.activity_execution.state_machine.state_model,
-                    instance_id=self.activity_execution.state_machine.instance_id
-                )
-            case StateMachineType.MA:
-                signal_source = AssignerAddress(
-                    domain=self.activity_execution.domain.name,
-                    rel_name=self.activity_execution.state_machine.state_model,
-                    instance_id=self.activity_execution.state_machine.instance_id
-                )
-            case StateMachineType.SA:
-                signal_source = AssignerAddress(
-                    domain=self.activity_execution.domain.name,
-                    rel_name=self.activity_execution.state_machine.state_model,
-                    instance_id=None
-                )
+        sm_type = self.activity_execution.state_machine.sm_type
+        signal_source = InternalAddress(
+            domain=self.activity_execution.domain.name,
+            sm_name=self.activity_execution.state_machine.state_model,
+            sm_type=sm_type,
+            instance_id=self.activity_execution.state_machine.instance_id if sm_type != StateMachineType.SA else None
+        )
         return signal_source
 
     def process_signal(self):
@@ -180,7 +164,7 @@ class Signal(ActionExecution):
 
     def signal_instance(self, target_inst_flow_name: str):
         """
-        Process an signal to an instance. An event is dispatched to an existing lifecycle state machine.
+        Process a signal to an instance. An event is dispatched to an existing lifecycle state machine.
 
         Args:
             target_inst_flow_name: The name of the flow providing the instance recieving the signal
@@ -219,7 +203,6 @@ class Signal(ActionExecution):
             InteractionEvent(sm_type=StateMachineType.LIFECYCLE, event_spec=self.event_spec, params=self.supplied_params,
                              domain=self.activity_execution.domain, source=self.signal_source, to_instance=t,
                              to_class=target_class_name, delay=delay_duration)
-        pass
 
     def initial_signal(self):
         """
@@ -263,15 +246,17 @@ class Signal(ActionExecution):
             pflow_t = Relation.restrict(db=self.domdb, relation=pflow_value)
             pinst_id = pflow_t.body[0]
         send_signal_action_t = Relation.restrict(db=mmdb, relation=mmrv.send_signal_action)
+        source_sm_type = self.activity_execution.state_machine.sm_type
         InteractionEvent(
             sm_type=StateMachineType.MA if partition_flow else StateMachineType.SA,
             event_spec=send_signal_action_t.body[0]["Event_spec"],
             params=self.supplied_params,
             domain=self.activity_execution.domain,
-            source=InstanceAddress(
+            source=InternalAddress(
                 domain=self.activity_execution.domain.name,
-                class_name=self.activity_execution.state_machine.state_model,
-                instance_id=self.activity_execution.state_machine.instance_id),
+                sm_name=self.activity_execution.state_machine.state_model,
+                sm_type=self.activity_execution.state_machine.sm_type,
+                instance_id=self.activity_execution.state_machine.instance_id if source_sm_type != StateMachineType.SA else None),
             to_instance=None,
             to_class=None,
             partitioning_instance=pinst_id,

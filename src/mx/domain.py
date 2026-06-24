@@ -73,6 +73,9 @@ class Domain:
         self.file_path = self.system.playground / 'population' / f"{self.alias}.ral"  # Path to the domain database file
 
         self.announce_state_entry: bool = True  # If set, each state entry in this domain will be announced
+        self.announce_interaction: bool = True  # If set, each dispatched interaction event will be announced
+        self.announce_external_events: bool = True  # If set, all external events are announced
+        self.announce_external_operations: bool = True  # If set, all external operations are announced
 
         # Load the domain types
         types_path = self.system.path / 'models' / f"{self.alias}_types.yaml"

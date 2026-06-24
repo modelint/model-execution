@@ -64,18 +64,22 @@ class MDB:
 
         # Begin hard coded scenario
         actors = {
-            'EVMAN:ASLEV<S1-3>': InstanceAddress(
-                domain='EVMAN', class_name='Accessible Shaft Level',
+            'EVMAN:ASLEV<S1-3>': InternalAddress(
+                domain='EVMAN', sm_name='Accessible Shaft Level', sm_type='lifecycle',
                 instance_id={'Shaft': 'S1', 'Floor': '3'}
             ),
             'UI': ExternalAddress(domain='UI'),
-            'EVMAN:XFER<S1>': InstanceAddress(domain='EVMAN', class_name='Transfer',
+            'EVMAN:R53 / Shaft': InternalAddress(
+                domain='EVMAN', sm_name='R53', sm_type='ma',
+                instance_id={'Shaft': 'S1'}
+            ),
+            'EVMAN:XFER<S1>': InternalAddress(domain='EVMAN', sm_name='Transfer', sm_type='lifecycle',
                                               instance_id={'Shaft': 'S1'}),
-            'EVMAN:Cabin<S1>': InstanceAddress(domain='EVMAN', class_name='Cabin',
+            'EVMAN:Cabin<S1>': InternalAddress(domain='EVMAN', sm_name='Cabin', sm_type='lifecycle',
                                                instance_id={'Shaft': 'S1'}),
             'TRANS': ExternalAddress(domain='TRANS'),
             'SIO': ExternalAddress(domain='SIO'),
-            'EVMAN:Door<S1>': InstanceAddress(domain='EVMAN', class_name='Door',
+            'EVMAN:Door<S1>': InternalAddress(domain='EVMAN', sm_name='Door', sm_type='lifecycle',
                                               instance_id={'Shaft': 'S1'}),
         }
 
@@ -145,12 +149,10 @@ class MDB:
         _logger.info(f"Beginning scenario: {s.playground.name}")
         pass
 
-        # Set monitored response
-        from mx.actions.ext_signal import ExtSignal
-        ExtSignal.announce = True
+        # Set monitored response (all choices default to true for now)
 
         # Send the initial stop request to ASLEV S1-3 and UI updated with request
-        self.format_interaction(interactions[1])  # Stimulus from UI
+        # self.format_interaction(interactions[1])  # Stimulus from UI
         s.inject(stimulus=interactions[1])  # 1 Stop request -> ASLEV
         # MX
 
@@ -204,10 +206,13 @@ class MDB:
         print()
         if i.action == ActionType.SIGNAL_INSTANCE:
             inst_str = '<' + '-'.join([str(v) for v in i.target.instance_id.values()]) + '>'
-            formatted_i = f"{i.source.domain} >|| {i.target.domain} : {i.name} -> {i.target.class_name} {inst_str}"
+            formatted_i = f"{i.source.domain} >|| {i.target.domain} : {i.name} -> {i.target.sm_name} {inst_str}"
         else:
             formatted_i = "Unimplemented Acton Type"
         print(f"{formatted_i}")
+
+    def format_internal_address(self, s: InternalAddress) -> str:
+        fstr = f"{s.domain} : "
 
     def format_announcements(self, announcement_tuples: list[Announcement]):
         for a in announcement_tuples:
@@ -221,3 +226,8 @@ class MDB:
                 formatted_a = f"{a.domain} >|| {a.ee} : {a.source}{inst_str} {a.event}( {param_str} )"
                 print(f"    {formatted_a}")
                 self.announcements.append(formatted_a)
+            elif isinstance(a, InteractionSignal_Announcement):
+                if isinstance(a.source, ExternalAddress):
+                    src_str = f"{a.source.domain} >|| "
+                    dest_str = f"{}"
+                pass
