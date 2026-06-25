@@ -22,7 +22,7 @@ _logger = logging.getLogger(__name__)
 
 class InteractionEvent(DispatchedEvent):
 
-    def __init__(self, sm_type: StateMachineType, event_spec: str, params: dict[str, ActiveFlow],
+    def __init__(self, from_state: str | None, sm_type: StateMachineType, event_spec: str, params: dict[str, ActiveFlow],
                  domain: "Domain",
                  source: ElementAddress,
                  to_instance: NamedValues = None,
@@ -31,6 +31,7 @@ class InteractionEvent(DispatchedEvent):
         """
 
         """
+        self.from_state = from_state  # Signal was emitted from this state, None if injected externally
         # Validate target state machine type
         sm = None
         match sm_type:
@@ -93,21 +94,21 @@ class InteractionEvent(DispatchedEvent):
         pass
 
     @classmethod
-    def to_lifecycle(cls, event_spec: str, to_instance: NamedValues, to_class: str,
+    def to_lifecycle(cls, from_state: str, event_spec: str, to_instance: NamedValues, to_class: str,
                      params: dict[str, ActiveFlow], domain: "Domain", source: ElementAddress):
-        return cls(sm_type=StateMachineType.LIFECYCLE, event_spec=event_spec, params=params, domain=domain,
+        return cls(from_state=from_state, sm_type=StateMachineType.LIFECYCLE, event_spec=event_spec, params=params, domain=domain,
                    source=source, to_instance=to_instance, to_class=to_class)
 
     @classmethod
-    def to_single_assigner(cls, event_spec: str, to_rnum: str,
+    def to_single_assigner(cls, from_state: str, event_spec: str, to_rnum: str,
                            params: dict[str, ActiveFlow], domain: "Domain", source: ElementAddress):
-        return cls(sm_type=StateMachineType.SA, event_spec=event_spec, params=params, domain=domain,
+        return cls(from_state=from_state, sm_type=StateMachineType.SA, event_spec=event_spec, params=params, domain=domain,
                    source=source, to_rnum=to_rnum)
 
     @classmethod
-    def to_multiple_assigner(cls, event_spec: str, paritioning_instance: NamedValues,
+    def to_multiple_assigner(cls, from_state: str, event_spec: str, paritioning_instance: NamedValues,
                              partitioning_class: str, to_rnum: str, params: dict[str, ActiveFlow], domain: "Domain",
                              source: ElementAddress):
-        return cls(sm_type=StateMachineType.MA, event_spec=event_spec, params=params, domain=domain, source=source,
+        return cls(from_state=from_state, sm_type=StateMachineType.MA, event_spec=event_spec, params=params, domain=domain, source=source,
                    partitioning_instance=paritioning_instance, partitioning_class=partitioning_class, to_rnum=to_rnum)
 

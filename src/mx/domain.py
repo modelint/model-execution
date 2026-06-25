@@ -64,6 +64,7 @@ class Domain:
         self.lifecycles: dict[str, dict[ int, LifecycleStateMachine]] = {}
         self.mult_assigners: dict[str, dict[ int, MultipleAssignerStateMachine]] = {}
         self.class_ids: dict[str, list[str]] = {}
+        self.class_aliases: dict[str, str] = {}  # Class name : Alias lookup
         self.sm_instance_rvs: dict[str, str] = {}
         self.ma_partitions: dict[str, MAPartitionClassID] = {}
         self.methods = None
@@ -267,6 +268,11 @@ class Domain:
             c_id_attrs = [t['Attribute'] for t in id_result.body]  # id attributes for the current class
             self.class_ids[c] = c_id_attrs
             _logger.info(f"    Setting {c} id to {c_id_attrs}")
+            R = f"Class:<{c}>, Domain:<{self.name}>"
+            alias_r = Relation.restrict(db=mmdb, restriction=R, relation='Alias')
+            if alias_r.body:
+                self.class_aliases[c] = alias_r.body[0]['Name']
+
 
     def find_single_assigners(self):
         """

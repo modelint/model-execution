@@ -273,10 +273,10 @@ class System:
     def process_signal_instance(self, s: Interaction):
         _logger.info(f"Injecting signal: {s.name}")
         if isinstance(s.source, ExternalAddress):
-            _logger.info(f"{s.source.domain} >|| {s.target.domain} : {s.name} -> {s.target.sm_name} <{s.target.instance_id}>")
+            _logger.info(f"{s.source.domain} >|| {s.target.domain_alias} : {s.name} -> {s.target.sm_name} <{s.target.instance_id}>")
         else:
             pass
-        target_domain = self.domains[s.target.domain]
+        target_domain = self.domains[s.target.domain_alias]
         params = s.parameters if s.parameters is not None else {}
         pflows = {}
         if params:
@@ -299,7 +299,7 @@ class System:
                     pflows[name] = ActiveFlow(value=value, flowtype='scalar', scalar=ptype)
                 else:
                     pflows[name] = ActiveFlow(value=value, flowtype='ptype', scalar=None)
-        ie = InteractionEvent.to_lifecycle(event_spec=s.name, source=s.source,
+        ie = InteractionEvent.to_lifecycle(from_state=None, event_spec=s.name, source=s.source,
                                            to_instance=s.target.instance_id, to_class=s.target.sm_name,
                                            params=pflows, domain=target_domain)
 

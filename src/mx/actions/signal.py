@@ -83,7 +83,8 @@ class Signal(ActionExecution):
         # Determine the source type
         sm_type = self.activity_execution.state_machine.sm_type
         signal_source = InternalAddress(
-            domain=self.activity_execution.domain.name,
+            domain_name=self.activity_execution.domain.name,
+            domain_alias=self.activity_execution.domain.alias,
             sm_name=self.activity_execution.state_machine.state_model,
             sm_type=sm_type,
             instance_id=self.activity_execution.state_machine.instance_id if sm_type != StateMachineType.SA else None
@@ -200,9 +201,17 @@ class Signal(ActionExecution):
         for t in target_inst_r.body:
             # Create an instance of Interaction Event to dispatch it
             # Each t is a reference to a single instance of the flow's class type
-            InteractionEvent(sm_type=StateMachineType.LIFECYCLE, event_spec=self.event_spec, params=self.supplied_params,
-                             domain=self.activity_execution.domain, source=self.signal_source, to_instance=t,
-                             to_class=target_class_name, delay=delay_duration)
+            InteractionEvent(
+                from_state=self.activity_execution.state,
+                sm_type=StateMachineType.LIFECYCLE,
+                event_spec=self.event_spec,
+                params=self.supplied_params,
+                domain=self.activity_execution.domain,
+                source=self.signal_source,
+                to_instance=t,
+                to_class=target_class_name,
+                delay=delay_duration
+            )
 
     def initial_signal(self):
         """
@@ -224,7 +233,8 @@ class Signal(ActionExecution):
                                         source_activity_execution=self.activity_execution)
 
         # Create an instance of Interaction Event to dispatch it
-        InteractionEvent(sm_type=StateMachineType.LIFECYCLE, event_spec=self.event_spec, params=self.supplied_params,
+        InteractionEvent(from_state=self.activity_execution.state,
+                         sm_type=StateMachineType.LIFECYCLE, event_spec=self.event_spec, params=self.supplied_params,
                          domain=self.activity_execution.domain, source=self.signal_source, to_instance=dca.new_inst_id,
                          to_class=dca.lsm.class_name)
         pass
@@ -248,12 +258,14 @@ class Signal(ActionExecution):
         send_signal_action_t = Relation.restrict(db=mmdb, relation=mmrv.send_signal_action)
         source_sm_type = self.activity_execution.state_machine.sm_type
         InteractionEvent(
+            from_state=self.activity_execution.state,
             sm_type=StateMachineType.MA if partition_flow else StateMachineType.SA,
             event_spec=send_signal_action_t.body[0]["Event_spec"],
             params=self.supplied_params,
             domain=self.activity_execution.domain,
             source=InternalAddress(
-                domain=self.activity_execution.domain.name,
+                domain_name=self.activity_execution.domain.name,
+                domain_alias=self.activity_execution.domain.alias,
                 sm_name=self.activity_execution.state_machine.state_model,
                 sm_type=self.activity_execution.state_machine.sm_type,
                 instance_id=self.activity_execution.state_machine.instance_id if source_sm_type != StateMachineType.SA else None),
