@@ -234,11 +234,7 @@ class StateMachine:
         msg = f"\n\nTransition:\n  {self.sm_info}"
         from_state = self.current_state
         self.current_state = dest_real_state_t["Name"]
-        # TODO: If domain sets state entry reporting, announce new state and instance id
         _logger.info(f"{msg}\n  [{from_state}] ({self.active_event.event_spec}) -> [{self.current_state}]\n")
-        # start activity execution and wait for completion
-        StateActivityExecution(state_name=dest_real_state_t["Name"], anum=dest_real_state_t["Activity"],
-                               state_machine=self)
         if self.domain.announce_state_entry:
             state_entered = StateEntry_Announcement(
                 domain=self.domain.alias,
@@ -247,6 +243,9 @@ class StateMachine:
                 state=self.current_state
             )
             self.domain.system.announcements.append(state_entered)
+        # start activity execution and wait for completion
+        StateActivityExecution(state_name=dest_real_state_t["Name"], anum=dest_real_state_t["Activity"],
+                               state_machine=self)
 
 
 

@@ -281,10 +281,10 @@ class System:
         pflows = {}
         if params:
             event_spec_name = s.name
-            domain_alias = s.target.domain
-            domain_name = self.domains[domain_alias].name
-            class_name = s.target.class_name
-            R = f"Name:<{event_spec_name}>, State_model:<{class_name}>, Domain:<{domain_name}>"
+            domain_alias = s.target.domain_alias
+            domain_name = s.target.domain_name
+            sm_name = s.target.sm_name
+            R = f"Name:<{event_spec_name}>, State_model:<{sm_name}>, Domain:<{domain_name}>"
             Relation.restrict(db=mmdb, relation='Event Specification', restriction=R)
             sig_param_r = Relation.semijoin(db=mmdb, rname2='Parameter', attrs={'State_signature': 'Signature', 'Domain': 'Domain'})
             ptypes = {t['Name'] : t['Type'] for t in sig_param_r.body}

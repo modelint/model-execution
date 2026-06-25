@@ -13,6 +13,7 @@ import logging
 from pathlib import Path
 from collections import namedtuple
 from enum import Enum
+import time
 
 # Model Integration
 from pyral.database import Database
@@ -46,18 +47,19 @@ class MDB:
         self.verbose = True
         self.sys_path = None
         self.announcements: list[str] = []
+        self.s = None
 
     def initialize(self, sys_path: Path, verbose: bool):
         self.sys_path = sys_path
         self.verbose = verbose
         # Now we can try loading the system
-        s = System()  # Create the singleton instance
-        s.initialize(system_path=sys_path, verbose=verbose)
+        self.s = System()  # Create the singleton instance
+        self.s.initialize(system_path=sys_path, verbose=verbose)
 
         # Try printing it out
         print_classes(db=mmdb, class_names=['Class', 'Attribute'], output_file='class.txt')
 
-        s.load_domains(playground='one_bank_one_shaft')
+        self.s.load_domains(playground='one_bank_one_shaft')
 
         print_classes(db='EVMAN', class_names=['Cabin', 'Door'], output_file='evman_cabin_door.txt')
 
@@ -92,132 +94,68 @@ class MDB:
                                               instance_id={'Shaft': 'S1'}),
         }
 
-        interactions = {
+        stimuli = [
             # Send the initial stop request to ASLEV S1-3
-            1: Interaction(description="",
+            Interaction(description="",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Stop request',
                 source=actors['UI'], target=actors['EVMAN:ASLEV<S1-3>'], parameters=None
-            ),
-            # UI updated with request
-            2: Interaction("",
-                direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Set destination',
-                source=actors['EVMAN:XFER<S1>'], target=actors['UI'], parameters=None
-            ),
-
-            # Cabin S1 requests transport from TRANS
-            3: Interaction("",
-                direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Go to floor',
-                source=actors['EVMAN:Cabin<S1>'], target=actors['TRANS'], parameters={'dest floor': '3'}
             ),
 
             # Passing floors TRANS reports passing floor, UI notified
             # Floor 1
-            4: Interaction("",
+            3,
+
+            Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '1'}
             ),
-            5: Interaction("",
-                direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
-                source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '1'}
-            ),
-
+            2,
             # Floor 2
-            6: Interaction("",
+            Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '2'}
             ),
-            7: Interaction("",
-                direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
-                source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '2'}
-            ),
-
+            2,
             # Floor 3 (destination)
-            8: Interaction("",
+            Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '3'}
             ),
-            9: Interaction("",
-                direction=Direction.RESPONSE, action=ActionType.EXTERNAL_EVENT, name='Passing floor',
-                source=actors['EVMAN:Cabin<S1>'], target=actors['UI'], parameters={'floor': '3'}
-            ),
+            3,
 
             # TRANS notifies Cabin that it has arrived
-            10: Interaction("",
+            Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Arrived at floor',
                 source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters=None
             ),
+            1,
 
             # SIO notifies Door that it has opened
-            11: Interaction("",
+            Interaction("",
                 direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Door opened',
                 source=actors['SIO'], target=actors['EVMAN:Door<S1>'], parameters=None
             ),
-        }
+        ]
 
 
-        _logger.info(f"Beginning scenario: {s.playground.name}")
+        _logger.info(f"Beginning scenario: {self.s.playground.name}")
         pass
+
+        for stim in stimuli:
+            if isinstance(stim, int):
+                time.sleep(stim)
+            else:
+                self.s.inject(stimulus=stim)  # 1 Stop request -> ASLEV
+                self.run_thru_announcements()
 
         # Set monitored response (all choices default to true for now)
 
-        # Send the initial stop request to ASLEV S1-3 and UI updated with request
-        # self.format_interaction(interactions[1])  # Stimulus from UI
-        s.inject(stimulus=interactions[1])  # 1 Stop request -> ASLEV
-        # MX
+        # pe = self.s.domains['EVMAN'].get_pending_events()
 
-        self.format_announcements(announcement_tuples=s.announcements)  # 2 Set destination >|| UI
-        s.go()
-        # MX
-
-        # Cabin S1 requests transport from TRANS
-        self.format_announcements(announcement_tuples=s.announcements)  # 3 Go to floor >|| TRANS
-        # self.format_interaction(interactions[4])
-        s.go()
-        self.format_announcements(announcement_tuples=s.announcements)  # 3 Go to floor >|| TRANS
-
-        s.go()
-        self.format_announcements(announcement_tuples=s.announcements)  # 3 Go to floor >|| TRANS
-
-        s.go()
-        self.format_announcements(announcement_tuples=s.announcements)  # 3 Go to floor >|| TRANS
-        s.inject(stimulus=interactions[4])  # 4 Passing floor 1 TRANS -> Cabin
-        # MX
-
-        # Cabin reports passing floor 1
-        self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 1 >|| UI
-        self.format_interaction(interactions[6])
-        s.inject(stimulus=interactions[6])  # 6 Passing floor 2 -> Cabin
-        # MX
-
-        pe = s.domains['EVMAN'].get_pending_events()
-        pass
-
-        # Cabin reports passing floor 2
-        self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 2 >|| UI
-        self.format_interaction(interactions[8])
-        s.inject(stimulus=interactions[8])  # 8 Passing floor 3 -> Cabin
-        # MX
-
-        self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 3 >|| UI
-        self.format_interaction(interactions[10])
-        s.inject(stimulus=interactions[10])  # 10 TRANS Arrived at floor -> Cabin
-        # MX
-
-        self.format_announcements(announcement_tuples=s.announcements)  # 5 Passing floor 3 >|| UI
-        self.format_interaction(interactions[11])  # 11 Door opening >|| SIO, UI (to trigger SIO to open the door)
-        s.inject(stimulus=interactions[11])  # 11 SIO Door opened -> Door
-        # Here we wait for the timer to go off
-        # TODO: Implement Door state activies to get to Door OPEN state
-        pass
-        self.format_announcements(announcement_tuples=s.announcements)  # Door Opened >|| UI
-        # Door has fully opened (note that timer will be pending)
-        s.go()  # No more work to do / Scenario complete
-        self.format_announcements(announcement_tuples=s.announcements)
-        s.go()  # No more work to do / Scenario complete
-        self.format_announcements(announcement_tuples=s.announcements)
-        s.go()  # No more work to do / Scenario complete
-        self.format_announcements(announcement_tuples=s.announcements)
-        pass
+    def run_thru_announcements(self):
+        while self.s.announcements:
+            self.format_announcements(announcement_tuples=self.s.announcements)
+            self.s.go()
 
     def format_interaction(self, i: Interaction):
         print()
@@ -250,7 +188,7 @@ class MDB:
                     self.announcements.append(formatted_a)
                 case 'mx_InteractionSignal_Announcement':
                     if isinstance(a.source, ExternalAddress):
-                        formatted_a = f"{a.source.domain} >|| {a.event} -> "
+                        formatted_a = f"{a.source.domain} >|| {a.dest.domain_alias} : {a.event} -> "
                         formatted_a = formatted_a + self.format_sm_addr(a.dest)
                         print(f"    {formatted_a}")
                     else:

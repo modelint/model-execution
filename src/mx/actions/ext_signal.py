@@ -70,7 +70,8 @@ class ExtSignal(ActionExecution):
         # Determine the source type
         sm_type = self.activity_execution.state_machine.state_model
         self.ext_event_source = InternalAddress(
-            domain=self.activity_execution.domain.name,
+            domain_name=self.activity_execution.domain.name,
+            domain_alias=self.activity_execution.domain.alias,
             sm_name=self.activity_execution.state_machine.state_model,
             sm_type=sm_type,
             instance_id=self.activity_execution.state_machine.instance_id if sm_type != StateMachineType.SA else None
@@ -101,7 +102,7 @@ class ExtSignal(ActionExecution):
         to a supervisor such as the model debugger.
         """
         ee_sent = ExternalEvent_Announcement(
-            domain=self.ext_event_source.domain,
+            domain=self.ext_event_source.domain_alias,
             ee=self.ee_name,
             source=self.ext_event_source.sm_name,
             inst=self.ext_event_source.instance_id,
