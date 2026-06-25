@@ -63,14 +63,14 @@ class Interaction:
     for interaction with the MX.
     """
     description: str            # User friendly purpose or context of the interaction
-    # delay: float                # Wait before triggering this Stimulus (ignored for responses)
+    delay: float                # Wait before triggering this Stimulus (ignored for responses)
     direction: Direction        # Stimulus or Response (input or output) with respect to the MX
     action: ActionType          # MX action that injects or reports the interaction
     name: str                   # Name of the specific action (event name, domain operation, etc)
     source: ElementAddress      # Model address of any emitter/receiver:  instance, domain, assigner, etc
-    # source_actor: str           # ID used by mdb to name the source for formatted output
+    source_actor: str           # ID used by mdb to name the source for formatted output
     target: ElementAddress      # Same as source field
-    # target_actor: str           # ID used by mdb to name the source for formatted output
+    target_actor: str           # ID used by mdb to name the source for formatted output
     parameters: NamedValues     # Parameters, empty if none or not relevant to the acion type
 
 class StateMachineType(Enum):

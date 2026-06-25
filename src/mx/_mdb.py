@@ -96,44 +96,74 @@ class MDB:
 
         stimuli = [
             # Send the initial stop request to ASLEV S1-3
-            Interaction(description="",
-                direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Stop request',
-                source=actors['UI'], target=actors['EVMAN:ASLEV<S1-3>'], parameters=None
+            Interaction(
+                description="",
+                delay=0,
+                direction=Direction.STIMULUS,
+                action=ActionType.SIGNAL_INSTANCE,
+                name='Stop request',
+                source=actors['UI'], source_actor='UI',
+                target=actors['EVMAN:ASLEV<S1-3>'], target_actor='EVMAN:ASLEV<S1-3>',
+                parameters=None
             ),
 
             # Passing floors TRANS reports passing floor, UI notified
             # Floor 1
-            3,
-
-            Interaction("",
-                direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
-                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '1'}
+            Interaction(
+                description="",
+                delay=3,
+                direction=Direction.STIMULUS,
+                action=ActionType.SIGNAL_INSTANCE,
+                name='Passing floor',
+                source=actors['TRANS'], source_actor='TRANS',
+                target=actors['EVMAN:Cabin<S1>'], target_actor='EVMAN:Cabin<S1>',
+                parameters={'floor': '1'}
             ),
-            2,
             # Floor 2
-            Interaction("",
-                direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
-                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '2'}
+            Interaction(
+                description="",
+                delay=2,
+                direction=Direction.STIMULUS,
+                action=ActionType.SIGNAL_INSTANCE,
+                name='Passing floor',
+                source=actors['TRANS'], source_actor='TRANS',
+                target=actors['EVMAN:Cabin<S1>'], target_actor='EVMAN:Cabin<S1>',
+                parameters={'floor': '2'}
             ),
-            2,
             # Floor 3 (destination)
-            Interaction("",
-                direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Passing floor',
-                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters={'floor': '3'}
+            Interaction(
+                description="",
+                delay=2,
+                direction=Direction.STIMULUS,
+                action=ActionType.SIGNAL_INSTANCE,
+                name='Passing floor',
+                source=actors['TRANS'], source_actor='TRANS',
+                target=actors['EVMAN:Cabin<S1>'], target_actor='EVMAN:Cabin<S1>',
+                parameters={'floor': '3'}
             ),
-            3,
 
             # TRANS notifies Cabin that it has arrived
-            Interaction("",
-                direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Arrived at floor',
-                source=actors['TRANS'], target=actors['EVMAN:Cabin<S1>'], parameters=None
+            Interaction(
+                description="",
+                delay=3,
+                direction=Direction.STIMULUS,
+                action=ActionType.SIGNAL_INSTANCE,
+                name='Arrived at floor',
+                source=actors['TRANS'], source_actor='TRANS',
+                target=actors['EVMAN:Cabin<S1>'], target_actor='EVMAN:Cabin<S1>',
+                parameters=None
             ),
-            1,
 
             # SIO notifies Door that it has opened
-            Interaction("",
-                direction=Direction.STIMULUS, action=ActionType.SIGNAL_INSTANCE, name='Door opened',
-                source=actors['SIO'], target=actors['EVMAN:Door<S1>'], parameters=None
+            Interaction(
+                description="",
+                delay=1,
+                direction=Direction.STIMULUS,
+                action=ActionType.SIGNAL_INSTANCE,
+                name='Door opened',
+                source=actors['SIO'], source_actor='SIO',
+                target=actors['EVMAN:Door<S1>'], target_actor='EVMAN:Door<S1>',
+                parameters=None
             ),
         ]
 
@@ -142,11 +172,10 @@ class MDB:
         pass
 
         for stim in stimuli:
-            if isinstance(stim, int):
-                time.sleep(stim)
-            else:
-                self.s.inject(stimulus=stim)  # 1 Stop request -> ASLEV
-                self.run_thru_announcements()
+            if stim.delay:
+                time.sleep(stim.delay)
+            self.s.inject(stimulus=stim)  # 1 Stop request -> ASLEV
+            self.run_thru_announcements()
 
         # Set monitored response (all choices default to true for now)
 

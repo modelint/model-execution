@@ -1,0 +1,68 @@
+    UI >|| EVMAN : Stop request -> ASLEV <3-S1>
+        ASLEV <3-S1> >[Registering stop]
+        ASLEV <3-S1> >[Requesting service]
+    EVMAN >|| Service requested -> R53 <S1>
+        ASLEV <3-S1> >[REQUESTED]
+        R53 <S1> >[Search for new destination]
+    EVMAN >|| Execute -> XFER <S1>
+        XFER <S1> >[WAITING FOR CABIN]
+    EVMAN >|| New transfer -> Cabin <S1>
+    EVMAN >|| UI : Transfer<S1> Set destination( dest=3 )
+        Cabin <S1> >[Are we already there?]
+        Cabin <S1> >[SECURING DOORS]
+    EVMAN >|| Lock -> Door <S1>
+        Door <S1> >[LOCKED]
+    EVMAN >|| Doors secure -> Cabin <S1>
+        Cabin <S1> >[READY TO GO]
+    EVMAN >|| Ready to go -> XFER <S1>
+        XFER <S1> >[Dispatching cabin]
+    EVMAN >|| Go -> Cabin <S1>
+        Cabin <S1> >[Requesting transport]
+    EVMAN >|| TRANS : Cabin<S1> Go to floor( dest floor=3 )
+        Cabin <S1> >[MOVING]
+        XFER <S1> >[CABIN IN MOTION]
+        R53 <S1> >[TRANSFER IN PROGRESS]
+    TRANS >|| EVMAN : Passing floor -> Cabin <S1>
+        Cabin <S1> >[Update location]
+    EVMAN >|| UI : Cabin<S1> Passing floor( floor=1 )
+        Cabin <S1> >[MOVING]
+    TRANS >|| EVMAN : Passing floor -> Cabin <S1>
+        Cabin <S1> >[Update location]
+    EVMAN >|| UI : Cabin<S1> Passing floor( floor=2 )
+        Cabin <S1> >[MOVING]
+    TRANS >|| EVMAN : Passing floor -> Cabin <S1>
+        Cabin <S1> >[Update location]
+    EVMAN >|| UI : Cabin<S1> Passing floor( floor=3 )
+        Cabin <S1> >[MOVING]
+    TRANS >|| EVMAN : Arrived at floor -> Cabin <S1>
+        Cabin <S1> >[PICKUP DROPOFF]
+    EVMAN >|| Cabin at destination -> XFER <S1>
+    EVMAN >|| Unlock -> Door <S1>
+        Door <S1> >[OPENING]
+    EVMAN >|| UI : Door<S1> Door opening(  )
+    EVMAN >|| SIO : Door<S1> Door opening(  )
+        XFER <S1> >[Check for cabin reversal]
+        XFER <S1> >[Check for active floor service]
+    EVMAN >|| UI : Transfer<S1> Cabin arrived( shaft=S1, direction=up )
+    EVMAN >|| Stop serviced -> ASLEV <3-S1>
+        ASLEV <3-S1> >[Clear stop request]
+    EVMAN >|| UI : Accessible Shaft Level<3-S1> Accessible Shaft Level clear stop request(  )
+        ASLEV <3-S1> >[NOT REQUESTED]
+    EVMAN >|| Requests cleared -> XFER <S1>
+        XFER <S1> >[WAITING FOR REQUESTS TO CLEAR]
+        XFER <S1> >[Delete]
+    EVMAN >|| Transfer completed -> R53 <S1>
+        R53 <S1> >[Search for new destination]
+        R53 <S1> >[NO TRANSFER]
+    SIO >|| EVMAN : Door opened -> Door <S1>
+    Queueing delayed event Time to close for 4.0 seconds
+        Door <S1> >[OPEN]
+    EVMAN >|| UI : Door<S1> Door open(  )
+    Dispatching event Time to close to Door {'Shaft': 'S1'}
+    EVMAN >|| Time to close -> Door <S1>
+        Door <S1> >[HOLDING OPEN]
+        Door <S1> >[CLOSING]
+    EVMAN >|| UI : Door<S1> Door closing(  )
+    EVMAN >|| SIO : Door<S1> Door closing(  )
+
+No problemo
