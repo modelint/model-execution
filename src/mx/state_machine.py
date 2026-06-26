@@ -215,7 +215,8 @@ class StateMachine:
                 dest=InternalAddress(
                     domain_name=self.domain,
                     domain_alias=self.domain.alias,
-                    sm_name=self.domain.class_aliases.get(self.state_model, self.state_model),
+                    sm_name=self.state_model,
+                    # sm_name=self.domain.class_aliases.get(self.state_model, self.state_model),
                     sm_type=self.sm_type,
                     instance_id=None if self.sm_type == StateMachineType.SA else self.instance_id,
                 ),
@@ -238,7 +239,8 @@ class StateMachine:
         if self.domain.announce_state_entry:
             state_entered = StateEntry_Announcement(
                 domain=self.domain.alias,
-                sm=self.domain.class_aliases.get(self.state_model, self.state_model),
+                sm=self.state_model,
+                # sm=self.domain.class_aliases.get(self.state_model, self.state_model),
                 inst=None if self.sm_type == StateMachineType.SA else self.instance_id,
                 state=self.current_state
             )
