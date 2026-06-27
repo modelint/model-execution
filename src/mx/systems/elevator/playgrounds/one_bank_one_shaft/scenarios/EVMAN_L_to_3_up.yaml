@@ -48,7 +48,7 @@ Actors:
       'R53 / Shaft<S1>':
         rnum: R53
         instance:
-          Shaft: 'S1'
+          ID: 'S1'
       'XFER<S1>':
         class: Transfer
         instance:
