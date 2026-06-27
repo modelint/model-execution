@@ -82,10 +82,12 @@ class Signal(ActionExecution):
         # TODO: This only works for state activity sources, add Method / Domain operation activities
         # Determine the source type
         sm_type = self.activity_execution.state_machine.sm_type
+        source_sm_name = self.activity_execution.state_machine.state_model
         signal_source = InternalAddress(
             domain_name=self.activity_execution.domain.name,
             domain_alias=self.activity_execution.domain.alias,
-            sm_name=self.activity_execution.state_machine.state_model,
+            sm_name=source_sm_name,
+            sm_alias=self.activity_execution.domain.class_aliases.get(source_sm_name, source_sm_name),
             sm_type=sm_type,
             instance_id=self.activity_execution.state_machine.instance_id if sm_type != StateMachineType.SA else None
         )
@@ -257,6 +259,7 @@ class Signal(ActionExecution):
             pinst_id = pflow_t.body[0]
         send_signal_action_t = Relation.restrict(db=mmdb, relation=mmrv.send_signal_action)
         source_sm_type = self.activity_execution.state_machine.sm_type
+        source_sm_name = self.activity_execution.state_machine.state_model
         InteractionEvent(
             from_state=self.activity_execution.state,
             sm_type=StateMachineType.MA if partition_flow else StateMachineType.SA,
@@ -266,7 +269,8 @@ class Signal(ActionExecution):
             source=InternalAddress(
                 domain_name=self.activity_execution.domain.name,
                 domain_alias=self.activity_execution.domain.alias,
-                sm_name=self.activity_execution.state_machine.state_model,
+                sm_name=source_sm_name,
+                sm_alias=self.activity_execution.domain.class_aliases.get(source_sm_name, source_sm_name),
                 sm_type=self.activity_execution.state_machine.sm_type,
                 instance_id=self.activity_execution.state_machine.instance_id if source_sm_type != StateMachineType.SA else None),
             to_instance=None,

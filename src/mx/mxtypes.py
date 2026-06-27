@@ -42,12 +42,12 @@ class ActionState(StrEnum):
     D = "State:D"  # Disabled action
 
 
-InternalAddress = namedtuple('mx_InternalAddress', 'domain_name domain_alias sm_name sm_type instance_id')
+InternalAddress = namedtuple('mx_InternalAddress', 'domain_name domain_alias sm_name sm_alias sm_type instance_id')
 ExternalAddress = namedtuple('mx_ExternalAddress', 'domain')
 ElementAddress = Union[InternalAddress, ExternalAddress]
 
 # Announcements
-ExternalEvent_Announcement = namedtuple('mx_ExternalEvent_Announcement', 'domain ee source inst event params')
+ExternalEvent_Announcement = namedtuple('mx_ExternalEvent_Announcement', 'domain ee source event params')
 InteractionSignal_Announcement = namedtuple('mx_InteractionSignal_Announcement', 'source dest event params state')
 StateEntry_Announcement = namedtuple('mx_StateEntry_Announcement', 'domain sm inst state')
 Announcement = Union[ExternalEvent_Announcement, InteractionSignal_Announcement, StateEntry_Announcement]

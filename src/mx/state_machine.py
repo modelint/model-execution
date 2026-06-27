@@ -216,7 +216,7 @@ class StateMachine:
                     domain_name=self.domain,
                     domain_alias=self.domain.alias,
                     sm_name=self.state_model,
-                    # sm_name=self.domain.class_aliases.get(self.state_model, self.state_model),
+                    sm_alias=self.domain.class_aliases.get(self.state_model, self.state_model),
                     sm_type=self.sm_type,
                     instance_id=None if self.sm_type == StateMachineType.SA else self.instance_id,
                 ),

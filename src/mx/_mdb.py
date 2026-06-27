@@ -69,28 +69,35 @@ class MDB:
             'EVMAN:ASLEV<S1-3>': InternalAddress(
                 domain_name='Elevator Management',
                 domain_alias='EVMAN',
-                sm_name='Accessible Shaft Level', sm_type='lifecycle',
+                sm_name='Accessible Shaft Level', sm_alias='ASLEV',
+                sm_type='lifecycle',
                 instance_id={'Shaft': 'S1', 'Floor': '3'}
             ),
             'UI': ExternalAddress(domain='UI'),
             'EVMAN:R53 / Shaft': InternalAddress(
                 domain_name='Elevator Management',
                 domain_alias='EVMAN',
-                sm_name='R53', sm_type='ma',
-                instance_id={'Shaft': 'S1'}
+                sm_name='R53', sm_alias=None,
+                sm_type='ma',
+                instance_id={'ID': 'S1'}
             ),
             'EVMAN:XFER<S1>': InternalAddress(domain_name='Elevator Management',
                                               domain_alias='EVMAN',
-                                              sm_name='Transfer', sm_type='lifecycle',
+                                              sm_name='Transfer', sm_alias='XFER',
+                                              sm_type='lifecycle',
                                               instance_id={'Shaft': 'S1'}),
             'EVMAN:Cabin<S1>': InternalAddress(domain_name='Elevator Management',
                                                domain_alias='EVMAN',
-                                               sm_name='Cabin', sm_type='lifecycle',
+                                               sm_name='Cabin', sm_alias=None,
+                                               sm_type='lifecycle',
                                                instance_id={'Shaft': 'S1'}),
             'TRANS': ExternalAddress(domain='TRANS'),
             'SIO': ExternalAddress(domain='SIO'),
             'EVMAN:Door<S1>': InternalAddress(domain_name='Elevator Management',
-                                              domain_alias='EVMAN', sm_name='Door', sm_type='lifecycle',
+                                              domain_alias='EVMAN',
+                                              sm_name='Door',
+                                              sm_alias=None,
+                                              sm_type='lifecycle',
                                               instance_id={'Shaft': 'S1'}),
         }
 
@@ -190,14 +197,14 @@ class MDB:
         print()
         if i.action == ActionType.SIGNAL_INSTANCE:
             inst_str = '<' + '-'.join([str(v) for v in i.target.instance_id.values()]) + '>'
-            formatted_i = f"{i.source.domain} >|| {i.target.domain} : {i.name} -> {i.target.sm_name} {inst_str}"
+            formatted_i = f"{i.source.domain} >|| {i.target.domain} : {i.name} -> {i.target.sm_alias} {inst_str}"
         else:
-            formatted_i = "Unimplemented Acton Type"
+            formatted_i = "Unimplemented Action Type"
         print(f"{formatted_i}")
 
     def format_sm_addr(self, sm_addr: InternalAddress ) -> str:
         inst_str = '<' + '-'.join([str(v) for v in sm_addr.instance_id.values()]) + '>'
-        return f"{sm_addr.sm_name} {inst_str}"
+        return f"{sm_addr.sm_alias} {inst_str}"
 
     def format_inst_id(self, i: dict[str, Any]) -> str:
         return '<' + '-'.join([str(v) for v in i.values()]) + '>'
@@ -206,13 +213,14 @@ class MDB:
         for a in announcement_tuples:
             match type(a).__name__:
                 case 'mx_ExternalEvent_Announcement':
-                    if a.inst:
-                        inst_str = '<' + '-'.join([str(v) for v in a.inst.values()]) + '>'
+                    if a.source.instance_id:
+                        inst_str = '<' + '-'.join([str(v) for v in a.source.instance_id.values()]) + '>'
                     else:
                         inst_str = ""
                     pstrings = [f"{n}={v[0]}" for n,v in a.params.items()]
                     param_str = ', '.join(pstrings)
-                    formatted_a = f"{a.domain} >|| {a.ee} : {a.source}{inst_str} {a.event}( {param_str} )"
+                    p_paren = '()' if not param_str else f"( {param_str} )"
+                    formatted_a = f"{a.domain} >|| {a.ee} : {a.source.sm_alias}{inst_str} {a.event}{p_paren}"
                     print(f"    {formatted_a}")
                     self.announcements.append(formatted_a)
                 case 'mx_InteractionSignal_Announcement':

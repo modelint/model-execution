@@ -69,10 +69,12 @@ class ExtSignal(ActionExecution):
         # Resolve source of ext signal
         # Determine the source type
         sm_type = self.activity_execution.state_machine.state_model
+        sm_name = self.activity_execution.state_machine.state_model
         self.ext_event_source = InternalAddress(
             domain_name=self.activity_execution.domain.name,
             domain_alias=self.activity_execution.domain.alias,
-            sm_name=self.activity_execution.state_machine.state_model,
+            sm_name=sm_name,
+            sm_alias=self.activity_execution.domain.class_aliases.get( sm_name, sm_name),
             sm_type=sm_type,
             instance_id=self.activity_execution.state_machine.instance_id if sm_type != StateMachineType.SA else None
         )
@@ -101,11 +103,18 @@ class ExtSignal(ActionExecution):
         Report monitor status and completion of this action as a formatted message for transfer
         to a supervisor such as the model debugger.
         """
+        sm_name = self.ext_event_source.sm_name
         ee_sent = ExternalEvent_Announcement(
             domain=self.ext_event_source.domain_alias,
             ee=self.ee_name,
-            source=self.ext_event_source.sm_name,
-            inst=self.ext_event_source.instance_id,
+            source=InternalAddress(
+                domain_name=self.ext_event_source.domain_name,
+                domain_alias=self.ext_event_source.domain_alias,
+                sm_name=sm_name,
+                sm_alias=self.activity_execution.domain.class_aliases.get(sm_name, sm_name),
+                sm_type=self.activity_execution.state_machine.sm_type,
+                instance_id=self.ext_event_source.instance_id,
+            ),
             event=self.ext_event_name,
             params=self.params
         )
