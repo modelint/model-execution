@@ -220,7 +220,8 @@ class MDB:
                     pstrings = [f"{n}={v[0]}" for n,v in a.params.items()]
                     param_str = ', '.join(pstrings)
                     p_paren = '()' if not param_str else f"( {param_str} )"
-                    formatted_a = f"{a.domain} >|| {a.ee} : {a.source.sm_alias}{inst_str} {a.event}{p_paren}"
+                    implicit = '*' if a.implicit else ''
+                    formatted_a = f"{a.domain} >|| {a.ee} : {a.source.sm_alias}{inst_str} {a.event}{p_paren}{implicit}"
                     print(f"    {formatted_a}")
                     self.announcements.append(formatted_a)
                 case 'mx_InteractionSignal_Announcement':

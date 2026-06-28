@@ -47,7 +47,7 @@ ExternalAddress = namedtuple('mx_ExternalAddress', 'domain')
 ElementAddress = Union[InternalAddress, ExternalAddress]
 
 # Announcements
-ExternalEvent_Announcement = namedtuple('mx_ExternalEvent_Announcement', 'domain ee source event params')
+ExternalEvent_Announcement = namedtuple('mx_ExternalEvent_Announcement', 'domain ee source event params implicit')
 InteractionSignal_Announcement = namedtuple('mx_InteractionSignal_Announcement', 'source dest event params state')
 StateEntry_Announcement = namedtuple('mx_StateEntry_Announcement', 'domain sm inst state')
 Announcement = Union[ExternalEvent_Announcement, InteractionSignal_Announcement, StateEntry_Announcement]

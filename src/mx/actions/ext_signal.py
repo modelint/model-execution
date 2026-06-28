@@ -56,8 +56,12 @@ class ExtSignal(ActionExecution):
         # Get a NamedTuple with a field for each relation variable name
         self.mmrv = declare_mm_rvs(owner=self.owner)
 
-        ext_signal_action_r = Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="External Signal Action",
+        Relation.semijoin(db=mmdb, rname1=self.action_mmrv, rname2="External Signal Action",
                                                 svar_name=self.mmrv.ext_signal_action)
+        # We need to add the implicit boolean attribute from External Event via R1281
+        ext_signal_action_r = Relation.join(db=mmdb, rname1=self.mmrv.ext_signal_action, rname2="External Event",
+                            attrs={"External_event": "Name", "EE": "EE", "Domain": "Domain"},
+                            svar_name=self.mmrv.ext_signal_action)
         log_table(_logger, table_msg(db=mmdb, variable_name=self.mmrv.ext_signal_action))
 
         # Unpack ext signal action tuple
@@ -65,6 +69,7 @@ class ExtSignal(ActionExecution):
         self.ee_name = t['EE']
         self.ee = activity_execution.domain.ee[self.ee_name]
         self.ext_event_name = t['External_event']
+        self.implicit = t['Implicit'].strip().lower() == 'true'
 
         # Resolve source of ext signal
         # Determine the source type
@@ -116,6 +121,7 @@ class ExtSignal(ActionExecution):
                 instance_id=self.ext_event_source.instance_id,
             ),
             event=self.ext_event_name,
-            params=self.params
+            params=self.params,
+            implicit=self.implicit
         )
         self.activity_execution.domain.system.announcements.append(ee_sent)
