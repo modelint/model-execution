@@ -13,10 +13,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
 ]
 keywords = ["shlaer-mellor", "metamodel", "executable uml", "mbse", "xuml", "xtuml", "platform independent", "sysml"]
-dependencies = ["xcm-parser", "xsm-parser", "mi-configurator", "mi-pyral", "sip-parser", "PyYAML", 'tomli; python_version < "3.13"']
-requires-python = ">=3.11"
+dependencies = ["xcm-parser", "xsm-parser", "mi-configurator", "mi-pyral", "sip-parser", "PyYAML"]
+requires-python = ">=3.13,<3.14"
 
 [project.optional-dependencies]
 build = ["build", "twine"]
